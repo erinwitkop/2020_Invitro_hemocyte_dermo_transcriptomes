@@ -2,15 +2,15 @@ cd #!/bin/bash
 #SBATCH -t 1000:00:00
 #SBATCH --nodes=1 --ntasks-per-node=1
 #SBATCH --export=NONE
-#SBATCH	-o /data3/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/SCRIPTS/SCRIPT_out_error_files
-#SBATCH	-e /data3/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/SCRIPTS/SCRIPT_out_error_files
+#SBATCH	-o /data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/SCRIPTS/SCRIPT_out_error_files/trim_out_2_22_21
+#SBATCH	-e /data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/SCRIPTS/SCRIPT_out_error_files/trim_error_2_22_21
 #SBATCH	--mail-user=erin_roberts@my.uri.edu
 
 echo "START $(date)"
 module load BBMap/37.36-foss-2016b-Java-1.8.0_131
 
 # Create variable for each path to raw data folder
-D=/data3/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/RAW_DATA
+D=/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/RAW_DATA
 
 ##### Paired End Read Trimming + Filtering  ######
 # Create array variables
