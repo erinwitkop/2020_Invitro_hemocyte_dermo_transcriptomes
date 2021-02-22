@@ -1,4 +1,4 @@
-cd #!/bin/bash
+#!/bin/bash
 #SBATCH -t 1000:00:00
 #SBATCH --nodes=1 --ntasks-per-node=1
 #SBATCH --export=NONE
@@ -15,19 +15,19 @@ D=/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/RAW_
 ##### Paired End Read Trimming + Filtering  ######
 # Create array variables
 
-array1=($(ls $D/*_1.fastq.gz))
+array1=($(ls $D/*R1_001.fastq.gz))
 for i in ${array1[@]}; do
-	bbduk.sh in1=${i} out1=${i}.clean in2=$(echo ${i}|sed s/_1/_2/) out2=$(echo ${i}|sed s/_1/_2/).clean ref=/opt/software/BBMap/37.36-foss-2016b-Java-1.8.0_131/resources/adapters.fa ktrim=r k=23 mink=11 hdist=1 tpe tbo
+	bbduk.sh in1=${i} out1=${i}.clean in2=$(echo ${i}|sed s/R1/R2/) out2=$(echo ${i}|sed s/R1/R2/).clean ref=/opt/software/BBMap/37.36-foss-2016b-Java-1.8.0_131/resources/adapters.fa ktrim=r k=23 mink=11 hdist=1 tpe tbo
 	echo "adapter trimming ${i} $(date)"
   #Quality trimmming, of both the left and the right sides to get rid of reads that are less than quality 20
-	bbduk.sh in1=${i}.clean out1=${i}.clean.trim in2=$(echo ${i}|sed s/_1/_2/).clean out2=$(echo ${i}|sed s/_1/_2/).clean.trim qtrim=rl trimq=20
+	bbduk.sh in1=${i}.clean out1=${i}.clean.trim in2=$(echo ${i}|sed s/R1/R2/).clean out2=$(echo ${i}|sed s/R1/R2/).clean.trim qtrim=rl trimq=20
 	echo "quality trimming ${i} $(date)"
 	#Quality filtering to get rid of entire low quality reads. maq=10 will trim reads that have average quality of less than 10
-	bbduk.sh in1=${i}.clean.trim out1=${i}.clean.trim.filter in2=$(echo ${i}|sed s/_1/_2/).clean.trim out2=$(echo ${i}|sed s/_1/_2/).clean.trim.filter maq=10
+	bbduk.sh in1=${i}.clean.trim out1=${i}.clean.trim.filter in2=$(echo ${i}|sed s/R1/R2/).clean.trim out2=$(echo ${i}|sed s/R1/R2/).clean.trim.filter maq=10
 	rm ${i}.clean
-  rm $(echo ${i}|sed s/_1/_2/).clean
+  rm $(echo ${i}|sed s/R1/R2/).clean
   rm ${i}.clean.trim
-  rm $(echo ${i}|sed s/_1/_2/).clean.trim
+  rm $(echo ${i}|sed s/R1/R2/).clean.trim
 	echo "quality filtering ${i} $(date)"
 done
 
@@ -40,7 +40,7 @@ done
 #Histogram generation, only generating for one of the pair (assuming that similar stats will be present).
 #All histogram output contents are combined into one file
 for i in ${array1[@]}; do
-  	 bbduk.sh in1=${i}.clean.trim.filter in2=$(echo ${i}|sed s/_1/_2/).clean.trim.filter  bhist=${i}.b.hist qhist=${i}.q.hist gchist=${i}.gc.hist lhist=${i}.l.hist gcbins=auto
+  	 bbduk.sh in1=${i}.clean.trim.filter in2=$(echo ${i}|sed s/R1/R2/).clean.trim.filter  bhist=${i}.b.hist qhist=${i}.q.hist gchist=${i}.gc.hist lhist=${i}.l.hist gcbins=auto
      echo ${i} > ${i}.hist.all
      echo "bhist" >> ${i}.hist.all
 		 cat ${i}.b.hist >> ${i}.hist.all
@@ -53,7 +53,7 @@ for i in ${array1[@]}; do
 	   echo "histogram DONE $(date)"
 		 rm ${i}.*.hist
 	   gzip ${i}.clean.trim.filter
-		 gzip $(echo ${i}|sed s/_1/_2/).clean.trim.filter
+		 gzip $(echo ${i}|sed s/R1/R2/).clean.trim.filter
 done
 		#lhist = output a read length histogram
         #qhist = per base average quality
