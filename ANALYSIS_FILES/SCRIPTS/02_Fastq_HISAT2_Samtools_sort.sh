@@ -28,10 +28,10 @@ CV=/data3/marine_diseases_lab/erin/2017_2020_Transcriptome_Analysis/pipeline_fil
 # reads are paired end
 
 # C_vir_Probiotic_SRA_ID
-array1=($(ls $D/*_1.fastq.gz.clean.trim.filter.gz))
+array1=($(ls $D/*R1_001.fastq.gz.clean.trim.filter.gz))
 for i in ${array1[@]}; do
   # outputs a single bam file
-	hisat2 --dta -x $CV/cvir_edited_index  -1 ${i} -2 $(echo ${i}|sed s/_1/_2/) -S ${i}.sam
+	hisat2 --dta -x $CV/cvir_edited_index  -1 ${i} -2 $(echo ${i}|sed s/R1/R2/) -S ${i}.sam
 	echo "HISAT2 PE ${i} $(date)"
   #SAMTOOLS sort to convert the SAM file into a BAM file to be used with StringTie. Stringtie only take sorted bam
   samtools sort ${i}.sam > ${i}.bam
