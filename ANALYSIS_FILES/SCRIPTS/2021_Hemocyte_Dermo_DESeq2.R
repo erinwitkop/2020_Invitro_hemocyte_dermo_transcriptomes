@@ -36,6 +36,9 @@ library(data.table)
 Apoptosis_frames <- load(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/C_gig_C_vir_apoptosis_products.RData")
 annotations <- load(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/C_gig_C_vir_annotations.RData")
 
+# C_vir_rtracklayer_transcripts
+C_vir_rtracklayer_transcripts <- C_vir_rtracklayer %>% filter(grepl("rna",ID))
+
 # Full IAP list with domain type
 load(file = "/Users/erinroberts/Documents/PhD_Research/Chapter_1_Apoptosis Paper/Chapter1_Apoptosis_Transcriptome_Analyses_2019/DATA ANALYSIS/apoptosis_data_pipeline/DESeq2/2020_Transcriptome_ANALYSIS/IAP_domain_structure_no_dup_rm.RData")
 # load DEG apop list joined with type from IAP script
@@ -50,148 +53,111 @@ load(file="/Users/erinroberts/Documents/PhD_Research/Chapter_1_Apoptosis Paper/C
 #### HEMOCYTE TRANSCRIPTOME ANALYSIS ####
 
 ## LOAD DATA
-Zhang_counts <- read.csv("/Users/erinroberts/Documents/PhD_Research/Chapter_1_Apoptosis Paper/Chapter1_Apoptosis_Transcriptome_Analyses_2019/DATA ANALYSIS/apoptosis_data_pipeline/DESeq2/2020_Transcriptome_ANALYSIS/Zhang_transcript_count_matrix.csv", header=TRUE,
+hemo_counts <- read.csv("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/Hemocyte_2021_transcript_count_matrix.csv", header=TRUE,
                          row.names = "transcript_id")
-head(Zhang_counts)
-colnames(Zhang_counts)
+colnames(hemo_counts)[1:12] <-  c("1_Dermo_GDC_R1_001",  "1_Dermo_ZVAD_R1_001", "1_Dermo_R1_001"     , "1_control_R1_001" ,   "2_Dermo_GDC_R1_001" , "2_Dermo_ZVAD_R1_001" ,"2_Dermo_R1_001",     
+                                                                    "2_control_R1_001"  ,  "3_Dermo_GDC_R1_001" , "3_Dermo_ZVAD_R1_001", "3_Dermo_R1_001"   ,   "3_control_R1_001"   )
+head(hemo_counts)
+colnames(hemo_counts)
 
-# remove MSTRG novel transcript lines (can assess these later if necessary)
-Zhang_counts <- Zhang_counts[!grepl("MSTRG", row.names(Zhang_counts)),]
+# remove MSTRG novel transcript lines (can assess these later)
+hemo_counts <- hemo_counts[!grepl("MSTRG", row.names(hemo_counts)),]
 
 # Cute the "rna-" from the beginning of rownames
 remove_rna = function(x){
   return(gsub("rna-","",x))
 }
-row.names(Zhang_counts) <- remove_rna(row.names(Zhang_counts))
-head(Zhang_counts)
+row.names(hemo_counts) <- remove_rna(row.names(hemo_counts))
+head(hemo_counts)
 
 #Load in sample metadata
-Zhang_coldata <- read.csv("/Users/erinroberts/Documents/PhD_Research/Chapter_1_Apoptosis Paper/Chapter1_Apoptosis_Transcriptome_Analyses_2019/DATA ANALYSIS/apoptosis_data_pipeline/DESeq2/2020_Transcriptome_ANALYSIS/Zhang_coldata2.csv", row.names = 1 )
-View(Zhang_coldata)  
-nrow(Zhang_coldata) 
+hemo_coldata <- read.csv("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/Hemo_Pmar_coldata.csv", row.names = 1 )
+View(hemo_coldata)  
+nrow(hemo_coldata) 
 
 # Make sure the columns of the count matrix and rows of the column data (sample metadata) are in the same order. 
-all(rownames(Zhang_coldata) %in% colnames(Zhang_counts))  #Should return TRUE
-# returns TRUE
-all(colnames(Zhang_counts) %in% rownames(Zhang_coldata))  
-# returns TRUE
-all(rownames(Zhang_coldata) == colnames(Zhang_counts))    # should return TRUE
-# returns TRUE
+hemo_coldata <- hemo_coldata[colnames(hemo_counts),]  
+# make the Pmar group the reference level
 
+all(rownames(hemo_coldata) %in% colnames(hemo_counts))  #Should return TRUE
+# returns TRUE
+all(colnames(hemo_counts) %in% rownames(hemo_coldata))  
+# returns TRUE
+all(rownames(hemo_coldata) == colnames(hemo_counts))    # should return TRUE
+# returns TRUE
 
 ### DATA QC PCA PLOT 
 # rlog transform data is recommended over vst for small data sets 
 # PCA plots of data (https://bioinformatics-core-shared-training.github.io/cruk-summer-school-2018/RNASeq2018/html/02_Preprocessing_Data.nb.html#count-distribution-boxplots)
-Zhang_counts_matrix <- as.matrix(Zhang_counts)
-Zhangrlogcounts <- rlog(Zhang_counts_matrix, blind =TRUE)
+hemo_counts_matrix <- as.matrix(hemo_counts)
+hemo_rlog_counts <- rlog(hemo_counts_matrix, blind =TRUE)
 
 # run PCA
-pcZhang <- prcomp(t(Zhangrlogcounts))
+pchemo <- prcomp(t(hemo_rlog_counts))
 # plot PCA
-autoplot(pcZhang)
+autoplot(pchemo)
 
 # Lets add colour to look at the clustering for Status
-autoplot(pcZhang,
-         data = Zhang_coldata, 
+autoplot(pchemo,
+         data = hemo_coldata, 
          colour="condition", 
-         size=5) # Vibrio tubiashi and LPS cluster together (somewhat)
-# with MSTRG removed, V aes and V alg2 cluster, Mlut, LPS and PBS cluster
-# control and PBS clustered together, LPS and M lut clustered together (see this in downstream PCAs too)
-autoplot(pcZhang,
-         data = Zhang_coldata, 
-         colour="group_by_sim", 
          size=5) 
+# little clustering by condition
 
-# Is there a time effect? 
-autoplot(pcZhang,
-         data = Zhang_coldata, 
-         colour="time", 
-         size=5)  # time may have some effect but because there are no replicates at this time point it is difficult to tell. 
-#Going to remove this from the DESeq2 formula
-# Where do the different conditions cluster?
-autoplot(pcZhang,
-         data = Zhang_coldata, 
-         colour="condition", 
-         size=5)
-# Plot PCA 2 and 3 for comparison
-autoplot(pcZhang,
-         data = Zhang_coldata, 
-         colour = "condition", 
-         size = 5,
-         x = 2,
-         y = 3) # control and PBS clustering here, LPS and V. tubiashi still clustering
-# with MSTRG removed, V tub and V aes are closest cluster, they also cluster with LPS
-autoplot(pcZhang,
-         data = Zhang_coldata, 
-         colour = "group_by_sim", 
-         size = 5,
-         x = 2,
-         y = 3)
-autoplot(pcZhang,
-         data = Zhang_coldata, 
-         colour = "condition", 
-         size = 5,
-         x = 3,
-         y = 4) # LPS and V. tubiashi still clustering
-# with MSTRG removed, V ang and V alg1 cluster the closest 
+autoplot(pchemo,
+         data = as.data.frame(hemo_coldata), 
+         colour="pool", # clustering by pool 
+         size=5) 
+# PC1 and PC2 don't explain much of the variation, which means that the Pool effect is not too large 
 
 ## MAKE DESEQ DATA SET FROM MATRIX
 # This object specifies the count data and metadata you will work with. The design piece is critical.
-# Design here is to combine control and PBS as control and the others as challenge
 # Correct for batch effects if necessary in this original formula: see this thread https://support.bioconductor.org/p/121408/
 # do not correct counts using the removeBatchEffects from limma based on thread above 
 
 ## Creating three here so I can compare the results
-Zhang_dds <- DESeqDataSetFromMatrix(countData = Zhang_counts,
-                                    colData = Zhang_coldata,
-                                    design = ~time + group_by_sim) # add time to control for injection and time effect
+hemo_dds <- DESeqDataSetFromMatrix(countData = hemo_counts,
+                                    colData = hemo_coldata,
+                                    design = ~condition) # only compare by condition
 
 ## Prefiltering the data
 # Data prefiltering helps decrease the size of the data set and get rid of
 # rows with no data or very minimal data (<10). Apply a minimal filtering here as more stringent filtering will be applied later
-Zhang_dds <- Zhang_dds[ rowSums(counts(Zhang_dds)) > 10, ]
+hemo_dds <- hemo_dds[ rowSums(counts(hemo_dds)) > 10, ]
 
 ## Check levels 
 # It is prefered in R that the first level of a factor be the reference level for comparison
 # (e.g. control, or untreated samples), so we can relevel the factor like so
 # Check factor levels, set it so that comparison group is the first
-levels(Zhang_coldata$condition) #"Control" "LPS"     "M_lut"   "PBS"     "V_aes"   "V_alg_1" "V_alg_2" "V_ang"   "V_tub"  
-levels(Zhang_coldata$group_by_sim) # "control"             "LPS_M_lut"           "V_aes_V_alg1_V_alg2" "V_tub_V_ang"    
-levels(Zhang_coldata$time) # 12hr, no injection
-Zhang_dds$time <- factor(Zhang_dds$time , levels = c("No_injection","12h"))
+levels(hemo_coldata$condition)  # control is currently listed first, so this looks good 
 
 ## DATA TRANSFORMATION AND VISUALIZATION
 # Assess sample clustering after setting initial formula for comparison
-Zhang_dds_rlog <- rlog(Zhang_dds, blind = TRUE) # keep blind = true before deseq function has been run
+hemo_dds_rlog <- rlog(hemo_dds, blind = TRUE) # keep blind = true before deseq function has been run
 
 ## PCA plot visualization of individuals in the family 
-plotPCA(Zhang_dds_rlog, intgroup=c("group_by_sim", "condition"))
-# control and PBS still clustering, LPS M. lut and V. aes clustering
-# with MSTRG removed, the LPS and M. lut cluster most closely 
+plotPCA(hemo_dds_rlog, intgroup=c("condition")) # a bit more clustering by condition now 
 
 ### DIFFERENTIAL EXPRESSION ANALYSIS
 # run pipeline with single command because the formula has already been specified
 # Steps: estimation of size factors (controlling for differences in the sequencing depth of the samples), 
 # the estimation of dispersion values for each gene, 
 # and fitting a generalized linear model.
-
-Zhang_dds_deseq <- DESeq(Zhang_dds) 
+hemo_dds_deseq <- DESeq(hemo_dds) 
 
 ## Check the resultsNames object of each to look at the available coefficients for use in lfcShrink command
-resultsNames(Zhang_dds_deseq) # [1] "Intercept"                                   "time_12h_vs_No_injection"                   
-#[3] "group_by_sim_LPS_M_lut_vs_control"           "group_by_sim_V_aes_V_alg1_V_alg2_vs_control"
-#[5] "group_by_sim_V_tub_V_ang_vs_control" 
+resultsNames(hemo_dds_deseq)
 
 ## BUILD THE RESULTS OBJECT
 # Examining the results object, change alpha to p <0.05, looking at object metadata
 # use mcols to look at metadata for each table
-Zhang_dds_deseq_res_V_alg1 <- results(Zhang_dds_deseq, alpha=0.05, name = "group_by_sim_V_aes_V_alg1_V_alg2_vs_control"  )
-Zhang_dds_deseq_res_V_tub <- results(Zhang_dds_deseq, alpha=0.05, name= "group_by_sim_V_tub_V_ang_vs_control" )
-Zhang_dds_deseq_res_LPS <- results(Zhang_dds_deseq, alpha=0.05, name= "group_by_sim_LPS_M_lut_vs_control")
+hemo_dds_deseq_res_Pmar <- results(hemo_dds_deseq, alpha=0.05, name = "condition_Pmar_vs_control"   )
+hemo_dds_deseq_res_Pmar_GDC <- results(hemo_dds_deseq, alpha=0.05, name= "condition_Pmar_GDC_vs_control" )
+hemo_dds_deseq_res_Pmar_ZVAD <- results(hemo_dds_deseq, alpha=0.05, name= "condition_Pmar_ZVAD_vs_control")
 
-head(Zhang_dds_deseq_res_V_alg1) #  group by sim Vibrio vs control 
-head(Zhang_dds_deseq_res_V_tub) # group by sim LPS M lut Vtub vs control 
-head(Zhang_dds_deseq_res_LPS) # group by sim V aes v alg2 vs control 
+head(hemo_dds_deseq_res_Pmar) #  condition Pmar vs control
+head(hemo_dds_deseq_res_Pmar_GDC) # condition Pmar GDC vs control
+head(hemo_dds_deseq_res_Pmar_ZVAD) # condition Pmar ZVAD vs control 
 
 ### Perform LFC Shrinkage with apeglm
 ## NOTES 
@@ -223,68 +189,187 @@ head(Zhang_dds_deseq_res_LPS) # group by sim V aes v alg2 vs control
 
 ## DECISION: USE SAME RES OBJECT TO KEEP ALPHA ADJUSTMENT, and use LFCShrink apeglm
 
-Zhang_dds_deseq_res_V_alg1_LFC <- lfcShrink(Zhang_dds_deseq, coef="group_by_sim_V_aes_V_alg1_V_alg2_vs_control" , type= "apeglm", res=Zhang_dds_deseq_res_V_alg1)
+hemo_dds_deseq_res_Pmar_LFC <- lfcShrink(hemo_dds_deseq, coef="condition_Pmar_vs_control" , type= "apeglm", res=hemo_dds_deseq_res_Pmar)
 # Review results object summary
-summary(Zhang_dds_deseq_res_V_alg1_LFC)
-#out of 33418 with nonzero total read count
+summary(hemo_dds_deseq_res_Pmar_LFC)
+#out of 45323 with nonzero total read count
 #adjusted p-value < 0.05
-#LFC > 0 (up)       : 1149, 3.4%
-#LFC < 0 (down)     : 173, 0.52%
-#outliers [1]       : 0, 0%
-#low counts [2]     : 5831, 17%
-#(mean count < 5)
+#LFC > 0 (up)       : 219, 0.48%
+#LFC < 0 (down)     : 299, 0.66%
+#outliers [1]       : 3499, 7.7%
+#low counts [2]     : 3515, 7.8%
+#(mean count < 2)
+
+hemo_dds_deseq_res_Pmar_GDC_LFC <- lfcShrink(hemo_dds_deseq, coef="condition_Pmar_GDC_vs_control" , type= "apeglm", res=hemo_dds_deseq_res_Pmar_GDC)
+summary(hemo_dds_deseq_res_Pmar_GDC_LFC)
+#out of 45323 with nonzero total read count
+#adjusted p-value < 0.05
+#LFC > 0 (up)       : 808, 1.8%
+#LFC < 0 (down)     : 769, 1.7%
+#outliers [1]       : 3499, 7.7%
+#low counts [2]     : 10077, 22%
+#(mean count < 6)
 #[1] see 'cooksCutoff' argument of ?results
 #[2] see 'independentFiltering' argument of ?results
 
-Zhang_dds_deseq_res_V_tub_LFC <- lfcShrink(Zhang_dds_deseq, coef="group_by_sim_V_tub_V_ang_vs_control" , type= "apeglm", res=Zhang_dds_deseq_res_V_tub)
-summary(Zhang_dds_deseq_res_V_tub_LFC)
-#out of 33418 with nonzero total read count
-#adjusted p-value < 0.05
-#LFC > 0 (up)       : 665, 2%
-#LFC < 0 (down)     : 217, 0.65%
-#outliers [1]       : 0, 0%
-#low counts [2]     : 9719, 29%
-#(mean count < 10)
-#[1] see 'cooksCutoff' argument of ?results
-#[2] see 'independentFiltering' argument of ?results
+hemo_dds_deseq_res_Pmar_ZVAD_LFC <- lfcShrink(hemo_dds_deseq, coef="condition_Pmar_ZVAD_vs_control", type= "apeglm", res=hemo_dds_deseq_res_Pmar_ZVAD)
+summary(hemo_dds_deseq_res_Pmar_ZVAD_LFC)
+# out of 45323 with nonzero total read count
+# adjusted p-value < 0.05
+# LFC > 0 (up)       : 440, 0.97%
+# LFC < 0 (down)     : 382, 0.84%
+# outliers [1]       : 3499, 7.7%
+# low counts [2]     : 11569, 26%
+# (mean count < 7)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
 
-Zhang_dds_deseq_res_LFC_LPS <- lfcShrink(Zhang_dds_deseq, coef="group_by_sim_LPS_M_lut_vs_control", type= "apeglm", res=Zhang_dds_deseq_res_LPS)
-summary(Zhang_dds_deseq_res_LFC_LPS)
-#out of 33418 with nonzero total read count
-#adjusted p-value < 0.05
-#LFC > 0 (up)       : 620, 1.9%
-#LFC < 0 (down)     : 213, 0.64%
-#outliers [1]       : 0, 0%
-#low counts [2]     : 11662, 35%
-#(mean count < 13)
-#[1] see 'cooksCutoff' argument of ?results
-#[2] see 'independentFiltering' argument of ?results
+### REPEAT WITH P.MAR AS THE COMPARISON GROUP 
+
+## MAKE DESEQ DATA SET FROM MATRIX
+# This object specifies the count data and metadata you will work with. The design piece is critical.
+# Correct for batch effects if necessary in this original formula: see this thread https://support.bioconductor.org/p/121408/
+# do not correct counts using the removeBatchEffects from limma based on thread above 
+
+hemo_counts_Pmar <- hemo_counts[,c(1:3,5:7,9:11)]
+hemo_coldata_Pmar <- hemo_coldata %>% filter(condition != "control")
+hemo_coldata_Pmar$condition <- droplevels(hemo_coldata_Pmar$condition)
+levels(hemo_coldata_Pmar$condition)
+
+## Creating three here so I can compare the results
+hemo_Pmar_dds <- DESeqDataSetFromMatrix(countData = hemo_counts_Pmar,
+                                   colData = hemo_coldata_Pmar,
+                                   design = ~condition) # only compare by condition
+
+## Prefiltering the data
+# Data prefiltering helps decrease the size of the data set and get rid of
+# rows with no data or very minimal data (<10). Apply a minimal filtering here as more stringent filtering will be applied later
+hemo_Pmar_dds <- hemo_Pmar_dds[ rowSums(counts(hemo_Pmar_dds)) > 10, ]
+
+## Check levels 
+# It is prefered in R that the first level of a factor be the reference level for comparison
+# (e.g. control, or untreated samples), so we can relevel the factor like so
+# Check factor levels, set it so that comparison group is the first
+# set Pmarinus to be the reference level
+levels(hemo_coldata_Pmar$condition) 
+
+## DATA TRANSFORMATION AND VISUALIZATION
+# Assess sample clustering after setting initial formula for comparison
+hemo_Pmar_dds_rlog <- rlog(hemo_Pmar_dds, blind = TRUE) # keep blind = true before deseq function has been run
+
+## PCA plot visualization of individuals in the family 
+plotPCA(hemo_Pmar_dds_rlog, intgroup=c("condition")) # a bit more clustering by condition now 
+
+### DIFFERENTIAL EXPRESSION ANALYSIS
+# run pipeline with single command because the formula has already been specified
+# Steps: estimation of size factors (controlling for differences in the sequencing depth of the samples), 
+# the estimation of dispersion values for each gene, 
+# and fitting a generalized linear model.
+hemo_Pmar_dds_deseq <- DESeq(hemo_Pmar_dds) 
+
+## Check the resultsNames object of each to look at the available coefficients for use in lfcShrink command
+resultsNames(hemo_Pmar_dds_deseq)
+
+## BUILD THE RESULTS OBJECT
+# Examining the results object, change alpha to p <0.05, looking at object metadata
+# use mcols to look at metadata for each table
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar <- results(hemo_Pmar_dds_deseq, alpha=0.05, name= "condition_Pmar_GDC_vs_Pmar" )
+hemo_Pmar_dds_deseq_res_Pmar_ZVAD_Pmar <- results(hemo_Pmar_dds_deseq, alpha=0.05, name= "condition_Pmar_ZVAD_vs_Pmar")
+
+head(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar) # condition Pmar GDC vs Pmar
+head(hemo_Pmar_dds_deseq_res_Pmar_ZVAD_Pmar) # condition Pmar ZVAD vs Pmar
+
+### Perform LFC Shrinkage with apeglm
+## NOTES 
+# Before plotting we need to apply an LFC shrinkage, set the coef as the specific comparison in the ResultsNames function of the deseq object
+# Issue that the specific comparisons I set in my results formulas are not available in the ResultsNames coef list.
+
+# NOTES from Michael love on Lfcshrinkage (https://support.bioconductor.org/p/77461/): 
+# https://support.bioconductor.org/p/110307/ # very helpful distinction between lfcestimate and lfc shrinkage
+# The difference between results() and lfcShrink() is that the former does not provide fold change shrinkage. 
+# The latter function calls results() internally to create the p-value and adjusted p-value columns, 
+# which provide inference on the maximum likelihood LFC. The shrunken fold changes are useful for ranking genes by 
+# effect size and for visualization.
+# The shrinkage is generally useful, which is why it is enabled by default. Full methods are described in the DESeq2 paper (see DESeq2 citation),
+# but in short, it looks at the largest fold changes that are not due to low counts and uses these to inform a prior distribution. 
+# So the large fold changes from genes with lots of statistical information are not shrunk, while the imprecise fold changes are shrunk. 
+# This allows you to compare all estimated LFC across experiments, for example, which is not really feasible without the use of a prior.
+# THE lfcshrinkage is not Affecting the p values at all, but its just shrinking the log2 fold change and calculating a new standard error for it 
+# https://support.bioconductor.org/p/95695/
+
+# Notes on setting up coefficients for apeglm, https://support.bioconductor.org/p/115435/ , https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#extended-section-on-shrinkage-estimators
+# Although apeglm cannot be used with contrast, we note that many designs can be easily rearranged such that what was a contrast becomes its own coefficient.
+# In this case, the dispersion does not have to be estimated again, as the designs are equivalent, up to the meaning of the coefficients. 
+# Instead, one need only run nbinomWaldTest to re-estimate MLE coefficients – these are necessary for apeglm – and then run lfcShrink specifying 
+# the coefficient of interest in resultsNames(dds)
+# The user would for example, either change the levels of dds$condition or replace the design using design(dds)<-, then run nbinomWaldTest followed by lfcShrink
+
+# For each LFCshrink I can pass to it my res object for each so that I can keep my alpha setting at 0.05. Doing this procedure will 
+# keep the p-values and padj from the results() call, and simply update the LFCs so they are posterior estimates.
+
+## DECISION: USE SAME RES OBJECT TO KEEP ALPHA ADJUSTMENT, and use LFCShrink apeglm
+
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC <- lfcShrink(hemo_Pmar_dds_deseq, coef="condition_Pmar_GDC_vs_Pmar" , type= "apeglm", res=hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar)
+summary(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC)
+  #out of 42050 with nonzero total read count
+  #adjusted p-value < 0.05
+  #LFC > 0 (up)       : 695, 1.7%
+  #LFC < 0 (down)     : 501, 1.2%
+  #outliers [1]       : 3222, 7.7%
+  #low counts [2]     : 6515, 15%
+  #(mean count < 4)
+  #[1] see 'cooksCutoff' argument of ?results
+  #[2] see 'independentFiltering' argument of ?results
+
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC <- lfcShrink(hemo_Pmar_dds_deseq, coef="condition_Pmar_ZVAD_vs_Pmar", type= "apeglm", res=hemo_Pmar_dds_deseq_res_Pmar_ZVAD_Pmar)
+summary(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC)
+  #out of 42050 with nonzero total read count
+  #adjusted p-value < 0.05
+  #LFC > 0 (up)       : 344, 0.82%
+  #LFC < 0 (down)     : 220, 0.52%
+  #outliers [1]       : 3222, 7.7%
+  #low counts [2]     : 7319, 17%
+  #(mean count < 4)
+  #[1] see 'cooksCutoff' argument of ?results
+  #[2] see 'independentFiltering' argument of ?results
 
 ## EXPLORATORY PLOTTING OF RESULTS 
 ## MA Plotting
-#plotMA(Zhang_dds_deseq_res_LFC, ylim = c(-5, 5))
-## Histogram of P values 
-# exclude genes with very small counts to avoid spikes and plot using the LFCshrinkage
-#hist(Zhang_dds_deseq_res_LFC$padj[Zhang_dds_deseq_res_LFC$baseMean > 1], breaks = 0:20/20,
-#   col = "grey50", border = "white")
+plotMA(hemo_dds_deseq_res_Pmar_LFC, ylim = c(-5, 5))
+plotMA(hemo_dds_deseq_res_Pmar_ZVAD_LFC, ylim = c(-5, 5))
+plotMA(hemo_dds_deseq_res_Pmar_GDC_LFC, ylim = c(-5, 5))
+plotMA(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC, ylim = c(-5, 5))
+plotMA(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC, ylim = c(-5, 5))
+
+# these plots all have genes with the same level of expression
 
 ### Subsetting Significant Genes by padj < 0.05
 # again, only working with the LFCshrinkage adjusted log fold changes, and with the BH adjusted p-value
 # first make sure to make the rownames with the transcript ID as a new column, then make it a dataframe for filtering
-Zhang_dds_deseq_res_V_alg1_LFC_sig <- subset(Zhang_dds_deseq_res_V_alg1_LFC, padj < 0.05)
-Zhang_dds_deseq_res_V_alg1_LFC_sig $transcript_id <- row.names(Zhang_dds_deseq_res_V_alg1_LFC_sig )
-Zhang_dds_deseq_res_V_alg1_LFC_sig  <- as.data.frame(Zhang_dds_deseq_res_V_alg1_LFC_sig )
-nrow(Zhang_dds_deseq_res_V_alg1_LFC_sig )  #1322
+hemo_dds_deseq_res_Pmar_LFC_sig <- subset(hemo_dds_deseq_res_Pmar_LFC, padj < 0.05)
+hemo_dds_deseq_res_Pmar_LFC_sig $ID<- row.names(hemo_dds_deseq_res_Pmar_LFC_sig )
+hemo_dds_deseq_res_Pmar_LFC_sig  <- as.data.frame(hemo_dds_deseq_res_Pmar_LFC_sig )
+nrow(hemo_dds_deseq_res_Pmar_LFC_sig )  #518
 
-Zhang_dds_deseq_res_V_tub_LFC_sig <- subset(Zhang_dds_deseq_res_V_tub_LFC, padj < 0.05)
-Zhang_dds_deseq_res_V_tub_LFC_sig  $transcript_id <- row.names(Zhang_dds_deseq_res_V_tub_LFC_sig  )
-Zhang_dds_deseq_res_V_tub_LFC_sig   <- as.data.frame(Zhang_dds_deseq_res_V_tub_LFC_sig )
-nrow(Zhang_dds_deseq_res_V_tub_LFC_sig  )  #882
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig <- subset(hemo_dds_deseq_res_Pmar_ZVAD_LFC, padj < 0.05)
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig$ID <- row.names(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig  )
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig   <- as.data.frame(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig )
+nrow(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig  )  #822
 
-Zhang_dds_deseq_res_LFC_LPS_sig <- subset(Zhang_dds_deseq_res_LFC_LPS, padj < 0.05)
-Zhang_dds_deseq_res_LFC_LPS_sig $transcript_id <- row.names(Zhang_dds_deseq_res_LFC_LPS_sig )
-Zhang_dds_deseq_res_LFC_LPS_sig  <- as.data.frame(Zhang_dds_deseq_res_LFC_LPS_sig)
-nrow(Zhang_dds_deseq_res_LFC_LPS_sig)  #833
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig <- subset(hemo_dds_deseq_res_Pmar_GDC_LFC, padj < 0.05)
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig $ID <- row.names(hemo_dds_deseq_res_Pmar_GDC_LFC_sig )
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig  <- as.data.frame(hemo_dds_deseq_res_Pmar_GDC_LFC_sig)
+nrow(hemo_dds_deseq_res_Pmar_GDC_LFC_sig)  #1577
+
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig <- subset(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC, padj < 0.05)
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig $ID <- row.names(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig )
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig  <- as.data.frame(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig)
+nrow(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig)  #564
+
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig <- subset(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC, padj < 0.05)
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig $ID <- row.names(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig )
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig  <- as.data.frame(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig)
+nrow(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig)  #1196
 
 ### GENE CLUSTERING ANALYSIS HEATMAPS  
 # Extract genes with the highest variance across samples for each comparison using either vst or rlog transformed data
@@ -296,122 +381,117 @@ nrow(Zhang_dds_deseq_res_LFC_LPS_sig)  #833
 # anno <- as.data.frame(colData(vsd)[, c("cell","dex")])
 # pheatmap(mat, annotation_col = anno)
 
-topVarGenes_Zhang_dds_rlog <-  head(order(rowVars(assay(Zhang_dds_rlog )), decreasing = TRUE), 100)
-family_Zhang_mat <- assay(Zhang_dds_rlog)[topVarGenes_Zhang_dds_rlog,]
-family_Zhang_mat <- family_Zhang_mat - rowMeans(family_Zhang_mat)
-family_Zhang_anno <- as.data.frame(colData(Zhang_dds_rlog)[, c("condition","group_by_sim")])
-family_Zhang_heatmap <- pheatmap(family_Zhang_mat , annotation_col = family_Zhang_anno)
-head(family_Zhang_mat)
-# With MSTRG removed, the control PBS and control control cluster together, then the LPS, M lut and V alg1 cluster
-# and the other Vibrio challenges cluster 
+topVarGenes_hemo_dds_rlog <-  head(order(rowVars(assay(hemo_dds_rlog )), decreasing = TRUE), 100)
+family_hemo_mat <- assay(hemo_dds_rlog)[topVarGenes_hemo_dds_rlog,]
+family_hemo_mat <- family_hemo_mat - rowMeans(family_hemo_mat)
+family_hemo_anno <- as.data.frame(colData(hemo_dds_rlog)[, c("condition")])
+rownames(family_hemo_anno) <- colnames(family_hemo_mat)
+family_hemo_heatmap <- pheatmap(family_hemo_mat , annotation_col = family_hemo_anno)
+head(family_hemo_mat)
 
 # reorder annotation table to match ordering in heatmap 
-family_Zhang_heatmap_reorder <-rownames(family_Zhang_mat[family_Zhang_heatmap$tree_row[["order"]],])
+family_hemo_heatmap_reorder <-rownames(family_hemo_mat[family_hemo_heatmap$tree_row[["order"]],])
 # annotate the row.names
-family_Zhang_mat_prot <- as.data.frame(family_Zhang_heatmap_reorder)
-colnames(family_Zhang_mat_prot)[1] <- "transcript_id"
-family_Zhang_mat_prot_annot <- left_join(family_Zhang_mat_prot, select(C_gig_rtracklayer_transcripts, transcript_id, product, gene), by = "transcript_id")
-
-# Gene clustering heatmap with only apoptosis genes #
-# vector C_gig_apop transcript IDs
-C_gig_rtracklayer_apop_product_final_transcript_id <- as.vector(C_gig_rtracklayer_apop_product_final$transcript_id)
-# Search original Zhang_counts for apoptosis genes and do rlog on just these
-Zhang_counts_apop <- Zhang_counts[row.names(Zhang_counts) %in% C_gig_rtracklayer_apop_product_final_transcript_id,]
-nrow(Zhang_counts_apop) #833
-head(Zhang_counts_apop)
-
-Zhang_counts_apop_dds <- DESeqDataSetFromMatrix(countData = Zhang_counts_apop,
-                                                colData = Zhang_coldata,
-                                                design = ~time + group_by_sim) # add time to control for injection and time effect
-# Prefiltering the data and running rlog
-Zhang_counts_apop_dds <- Zhang_counts_apop_dds[ rowSums(counts(Zhang_counts_apop_dds)) > 10, ]
-Zhang_counts_apop_rlog <- rlog(Zhang_counts_apop_dds, blind=TRUE)
-
-## PCA plot of rlog transformed counts for apoptosis
-plotPCA(Zhang_counts_apop_rlog , intgroup=c("group_by_sim", "condition"))
-
-# heatmap of all apoptosis genes 
-Zhang_counts_apop_assay <-  assay(Zhang_counts_apop_rlog)[,]
-Zhang_counts_apop_assay_mat <- Zhang_counts_apop_assay - rowMeans(Zhang_counts_apop_assay)
-Zhang_counts_apop_assay_anno <- as.data.frame(colData(Zhang_counts_apop_rlog )[, c("condition","group_by_sim")])
-Zhang_counts_apop_assay_heatmap <- pheatmap(Zhang_counts_apop_assay_mat  , annotation_col = Zhang_counts_apop_assay_anno)
-head(Zhang_counts_apop_assay_mat )
-# control and PBS grouping, V_aes and V_ alg2 grouping, V_ang V alg 1 and V tub clustering
-
-# heatmap of most variable apoptosis genes (this selects genes with the greatest variance in the sample)
-topVarGenes_Zhang_counts_apop_assay <-  head(order(rowVars(assay(Zhang_counts_apop_rlog)), decreasing = TRUE), 100) 
-top_Var_Zhang_counts_apop_assay_mat<- assay(Zhang_counts_apop_rlog )[topVarGenes_Zhang_counts_apop_assay,]
-top_Var_Zhang_counts_apop_assay_mat <- top_Var_Zhang_counts_apop_assay_mat - rowMeans(top_Var_Zhang_counts_apop_assay_mat)
-top_Var_Zhang_counts_apop_assay_anno <- as.data.frame(colData(Zhang_counts_apop_rlog )[, c("condition","group_by_sim")])
-top_Var_Zhang_counts_apop_assay_heatmap <- pheatmap(top_Var_Zhang_counts_apop_assay_mat  , annotation_col = top_Var_Zhang_counts_apop_assay_anno)
-head(top_Var_Zhang_counts_apop_assay_mat )
-# same grouping as above with top 200, top 100 changes grouping M lut LPS V alg1 and V alg2 group together in a cluster, while V tub, V ang and V aes group with control
-
-# annotate the top 100 most variable genes  
-# reorder annotation table to match ordering in heatmap 
-top_Var_Zhang_counts_apop_assay_heatmap_reorder <-rownames(top_Var_Zhang_counts_apop_assay_mat[top_Var_Zhang_counts_apop_assay_heatmap $tree_row[["order"]],])
-# annotate the row.names
-top_Var_Zhang_counts_apop_assay_prot <- as.data.frame(top_Var_Zhang_counts_apop_assay_heatmap_reorder)
-colnames(top_Var_Zhang_counts_apop_assay_prot)[1] <- "transcript_id"
-top_Var_Zhang_counts_apop_assay_prot_annot <- left_join(top_Var_Zhang_counts_apop_assay_prot, select(C_gig_rtracklayer_transcripts, transcript_id, product, gene), by = "transcript_id")
-#isolate interesting clusters
+family_hemo_mat_prot <- as.data.frame(family_hemo_heatmap_reorder)
+colnames(family_hemo_mat_prot)[1] <- "ID"
+family_hemo_mat_prot_annot <- left_join(family_hemo_mat_prot, select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
 
 ### Extract list of significant Apoptosis Genes (not less than or greater than 1 LFC) using merge
-Zhang_dds_deseq_res_V_alg1_LFC_sig_APOP <- merge(Zhang_dds_deseq_res_V_alg1_LFC_sig, C_gig_rtracklayer_apop_product_final, by = "transcript_id")
-Zhang_dds_deseq_res_V_alg1_LFC_sig_APOP_arranged <- arrange(Zhang_dds_deseq_res_V_alg1_LFC_sig_APOP , -log2FoldChange) 
-nrow(Zhang_dds_deseq_res_V_alg1_LFC_sig_APOP) #26
 
-Zhang_dds_deseq_res_V_tub_LFC_sig_APOP <- merge(Zhang_dds_deseq_res_V_tub_LFC_sig , C_gig_rtracklayer_apop_product_final, by = "transcript_id")
-Zhang_dds_deseq_res_V_tub_LFC_sig_APOP_arranged <- arrange(Zhang_dds_deseq_res_V_tub_LFC_sig_APOP  , -log2FoldChange) 
-nrow(Zhang_dds_deseq_res_V_tub_LFC_sig_APOP) # 18
+# Pmar vs control
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP <- merge(hemo_dds_deseq_res_Pmar_LFC_sig, C_vir_rtracklayer_apop_product_final, by = "ID")
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP_arranged <- arrange(hemo_dds_deseq_res_Pmar_LFC_sig_APOP , -log2FoldChange) 
+nrow(hemo_dds_deseq_res_Pmar_LFC_sig_APOP) #15
 
-Zhang_dds_deseq_res_LFC_LPS_sig_APOP <- merge(Zhang_dds_deseq_res_LFC_LPS_sig, C_gig_rtracklayer_apop_product_final, by = "transcript_id")
-Zhang_dds_deseq_res_LFC_LPS_sig_APOP_arranged <- arrange(Zhang_dds_deseq_res_LFC_LPS_sig_APOP , -log2FoldChange) 
-nrow(Zhang_dds_deseq_res_LFC_LPS_sig_APOP )  #20
+# pmar ZVAD vs control
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP <- merge(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig , C_vir_rtracklayer_apop_product_final, by = "ID")
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_arranged <- arrange(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP  , -log2FoldChange) 
+nrow(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP) # 21
+
+# pmar GDC vs control
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP <- merge(hemo_dds_deseq_res_Pmar_GDC_LFC_sig , C_vir_rtracklayer_apop_product_final, by = "ID")
+hemo_dds_deseq_res_Pmar_GDC_LFC_LFC_sig_APOP_arranged <- arrange(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP  , -log2FoldChange) 
+nrow(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP) # 62
+
+# pmar GDC vs Pmar
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP <- merge(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig , C_vir_rtracklayer_apop_product_final, by = "ID")
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_arranged <- arrange(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP  , -log2FoldChange) 
+nrow(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP) # 53
+
+# pmar ZVAD vs Pmar
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP <- merge(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig , C_vir_rtracklayer_apop_product_final, by = "ID")
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_arranged <- arrange(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP  , -log2FoldChange) 
+nrow(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP) # 15
 
 # Compare apoptosis genes between group_by_sim groups
-Zhang_dds_deseq_res_V_alg1_LFC_sig_APOP$group_by_sim <- "V_aes_V_alg1_V_alg2"
-Zhang_dds_deseq_res_V_tub_LFC_sig_APOP$group_by_sim <- "V_tub_V_ang"
-Zhang_dds_deseq_res_LFC_LPS_sig_APOP$group_by_sim <- "LPS_M_lut"
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP$condition <- "Pmar_vs_control"
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP$condition <- "Pmar_ZVAD_vs_control"
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP$condition <- "Pmar_GDC_vs_control"
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP$condition <- "Pmar_ZVAD_vs_Pmar"
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP$condition <- "Pmar_GDC_vs_Pmar"
 
 # combine data frames 
-Zhang_upset_all_sig_APOP <- rbind(Zhang_dds_deseq_res_V_alg1_LFC_sig_APOP[,c("product","group_by_sim","log2FoldChange")],
-                                  Zhang_dds_deseq_res_V_tub_LFC_sig_APOP[,c("product","group_by_sim","log2FoldChange")],
-                                  Zhang_dds_deseq_res_LFC_LPS_sig_APOP[,c("product","group_by_sim","log2FoldChange")])
-
-Zhang_upset_all_sig_APOP_joined <- full_join( Zhang_dds_deseq_res_V_alg1_LFC_sig_APOP[,c("product","group_by_sim")], Zhang_dds_deseq_res_V_tub_LFC_sig_APOP[,c("product","group_by_sim")], by ="product")
-Zhang_upset_all_sig_APOP_joined <- full_join(Zhang_upset_all_sig_APOP_joined , Zhang_dds_deseq_res_LFC_LPS_sig_APOP[,c("product","group_by_sim")], by ="product")
-Zhang_upset_all_sig_APOP_joined <- na.omit(Zhang_upset_all_sig_APOP_joined)
-nrow(Zhang_upset_all_sig_APOP_joined) # 13 shared between all
+hemo_upset_all_sig_APOP <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_APOP[,c("product","condition","log2FoldChange")],
+                                 hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP[,c("product","condition","log2FoldChange")],
+                                 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP[,c("product","condition","log2FoldChange")],
+                                 hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP[,c("product","condition","log2FoldChange")],
+                                 hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP[,c("product","condition","log2FoldChange")])
 
 # Convert into wide format using reshape
-Zhang_upset_all_sig_APOP_tally <- Zhang_upset_all_sig_APOP %>% group_by(product) %>% tally() 
-Zhang_upset_all_sig_APOP_upset <- Zhang_upset_all_sig_APOP %>% group_by(product) %>% mutate(value=1) %>% spread(group_by_sim, value, fill =0 )
-Zhang_upset_all_sig_APOP_upset <- as.matrix(Zhang_upset_all_sig_APOP_upset)
+hemo_upset_all_sig_APOP_tally <- hemo_upset_all_sig_APOP %>% group_by(product) %>% tally() 
+hemo_upset_all_sig_APOP_upset <- hemo_upset_all_sig_APOP %>% group_by(product) %>% mutate(value=1) %>% spread(condition, value, fill =0 )
+hemo_upset_all_sig_APOP_upset <- as.matrix(hemo_upset_all_sig_APOP_upset)
 
 # Make plot
-Zhang_full_LFC_plot <- ggplot(Zhang_upset_all_sig_APOP, aes(x=product,y=log2FoldChange, fill=group_by_sim )) + geom_col(position="dodge") + 
+hemo_full_LFC_plot <- ggplot(hemo_upset_all_sig_APOP, aes(x=product,y=log2FoldChange, fill=condition )) + geom_col(position="dodge") + 
   theme(axis.text.x = element_text(angle = 75, hjust = 1)) + coord_flip()
 
-Zhang_dds_deseq_res_V_alg1_APOP_plot <- ggplot(Zhang_dds_deseq_res_V_alg1_LFC_sig_APOP, aes(x=product, y = log2FoldChange, fill=log2FoldChange)) + geom_col(position="dodge") +
-  coord_flip() + scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + ggtitle("Zhang V. alg, V. aes vs Control") +
+# plot of control vs P. mar plots
+hemo_full_LFC_plot_control_Pmar <- hemo_upset_all_sig_APOP %>% filter(condition == "Pmar_vs_control" | condition == "Pmar_ZVAD_vs_Pmar" | condition =="Pmar_GDC_vs_Pmar") %>%
+  ggplot(., aes(x=product,y=log2FoldChange, fill=condition )) + geom_col(position="dodge") +
+  theme(axis.text.x = element_text(angle = 75, hjust = 1)) + coord_flip()
+
+# plot of control vs P. mar
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP_plot <- ggplot(hemo_dds_deseq_res_Pmar_LFC_sig_APOP, aes(x=product, y = log2FoldChange, fill=log2FoldChange)) + geom_col(position="dodge") +
+  coord_flip() + scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") +  ggtitle("P.mar. vs control")  +
   ylab("Log2 Fold Change")
-Zhang_dds_deseq_res_V_tub_APOP_plot <- ggplot(Zhang_dds_deseq_res_V_tub_LFC_sig_APOP, aes(x=product, y = log2FoldChange, fill=log2FoldChange)) + geom_col(position="dodge") +
-  coord_flip() + scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + ggtitle("V. tub V. ang vs Control") +
+
+# plot of Pmar ZVAD vs control
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_plot <- ggplot(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP, aes(x=product, y = log2FoldChange, fill=log2FoldChange)) + geom_col(position="dodge") +
+  coord_flip() + scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + ggtitle("P.mar + ZVAD vs control") +
   ylab("Log2 Fold Change")
-Zhang_dds_deseq_res_LPS_APOP_plot <- ggplot(Zhang_dds_deseq_res_LFC_LPS_sig_APOP, aes(x=product, y = log2FoldChange, fill=log2FoldChange)) + geom_col(position="dodge") +
-  coord_flip() + scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + ggtitle("Zhang LPS and M Lut LFC vs Control") +
+
+# plot of Pmar GDC vs control 
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_plot <- ggplot(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP, aes(x=product, y = log2FoldChange, fill=log2FoldChange)) + geom_col(position="dodge") +
+  coord_flip() + scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + ggtitle("P.mar + GDC vs control") +
   ylab("Log2 Fold Change")
 
-ggarrange(Zhang_dds_deseq_res_V_alg1_APOP_plot , Zhang_dds_deseq_res_V_tub_APOP_plot,Zhang_dds_deseq_res_LPS_APOP_plot)
+# plot of Pmar ZVAD vs P.mar
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_plot <- ggplot(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP, aes(x=product, y = log2FoldChange, fill=log2FoldChange)) + geom_col(position="dodge") +
+  coord_flip() + scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + ggtitle("P.mar + ZVAD vs P.mar") +
+  ylab("Log2 Fold Change")
 
-## Extract IAP and GIMAP specific manually curated protein lists
-Zhang_dds_deseq_res_V_alg1_LFC_sig_IAP <- merge(Zhang_dds_deseq_res_V_alg1_LFC_sig, BIR_XP_gff_CG_uniq_XP_XM, by = "transcript_id")
-Zhang_dds_deseq_res_V_alg1_LFC_sig_GIMAP <- merge(Zhang_dds_deseq_res_V_alg1_LFC_sig, AIG1_XP_ALL_gff_GIMAP_CG_uniq_XP_XM, by = "transcript_id")
+# plot of Pmar GDC vs P.mar 
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_plot <- ggplot(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP, aes(x=product, y = log2FoldChange, fill=log2FoldChange)) + geom_col(position="dodge") +
+  coord_flip() + scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + ggtitle("P.mar + GDC vs P.mar") +
+  ylab("Log2 Fold Change")
 
-Zhang_dds_deseq_res_V_tub_LFC_sig_IAP <- merge(Zhang_dds_deseq_res_V_tub_LFC_sig , BIR_XP_gff_CG_uniq_XP_XM, by = "transcript_id")
-Zhang_dds_deseq_res_V_tub_LFC_sig_GIMAP <- merge(Zhang_dds_deseq_res_V_tub_LFC_sig , AIG1_XP_ALL_gff_GIMAP_CG_uniq_XP_XM, by = "transcript_id")
+ggarrange(hemo_dds_deseq_res_Pmar_LFC_sig_APOP_plot, hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_plot , hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_plot )
+ggarrange(hemo_dds_deseq_res_Pmar_LFC_sig_APOP_plot, hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_plot, hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_plot)
 
-Zhang_dds_deseq_res_LFC_LPS_sig_IAP <- merge(Zhang_dds_deseq_res_LFC_LPS_sig, BIR_XP_gff_CG_uniq_XP_XM, by = "transcript_id")
-Zhang_dds_deseq_res_LFC_LPS_sig_GIMAP <- merge(Zhang_dds_deseq_res_LFC_LPS_sig, AIG1_XP_ALL_gff_GIMAP_CG_uniq_XP_XM, by = "transcript_id")
+## Extract IAP specific manually curated protein lists
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP <- merge(hemo_dds_deseq_res_Pmar_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID")
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_IAP <- merge(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID")
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP <- merge(hemo_dds_deseq_res_Pmar_GDC_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID")
+
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP <- merge(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID")
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP <- merge(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID")
+
+# Join with domain info by protein id
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6])
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6])
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6])
+
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6])
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP_dm <- left_join(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6])
 
