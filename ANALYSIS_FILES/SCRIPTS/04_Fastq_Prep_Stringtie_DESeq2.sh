@@ -2,8 +2,8 @@
 #SBATCH -t 1000:00:00
 #SBATCH --nodes=1
 #SBATCH --export=NONE
-#SBATCH	-o /data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/SCRIPTS/SCRIPT_out_error_files/Prep_DESeq2_out_redo_3_15_2021
-#SBATCH	-e /data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/SCRIPTS/SCRIPT_out_error_files/Prep_DESeq2_error_redo_3_15_2021
+#SBATCH	-o /data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/SCRIPTS/SCRIPT_out_error_files/Prep_DESeq2_out_3_15_2021
+#SBATCH	-e /data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/SCRIPTS/SCRIPT_out_error_files/Prep_DESeq2_error_3_15_2021
 
 # This script converts Stringtie output into format for use with DESeq2.
 # Generates two CSV files containing the count matrices for genes and transcripts, using the coverage values found in the output of stringtie -e
