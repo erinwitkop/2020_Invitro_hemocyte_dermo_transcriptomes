@@ -396,6 +396,9 @@ family_hemo_mat_prot <- as.data.frame(family_hemo_heatmap_reorder)
 colnames(family_hemo_mat_prot)[1] <- "ID"
 family_hemo_mat_prot_annot <- left_join(family_hemo_mat_prot, select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
 
+
+
+
 ### Extract list of significant Apoptosis Genes (not less than or greater than 1 LFC) using merge
 
 # Pmar vs control
@@ -494,4 +497,97 @@ hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_
 
 hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6])
 hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP_dm <- left_join(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6])
+
+## Plot with IAP domain information
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP_dm
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_IAP_dm
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP_dm
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP_dm
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP_dm
+
+
+# plot of control vs P. mar
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP_plot_IAP <- hemo_dds_deseq_res_Pmar_LFC_sig_APOP %>% left_join(., hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP_dm[,c("ID","Domain_Name")]) %>%
+ggplot(., aes(x=product, y = log2FoldChange, fill=Domain_Name)) + 
+  geom_col(position="dodge") + 
+  #facet_grid(.~Domain_Name) +
+  coord_flip() + 
+ # scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") +  
+  ggtitle("P.mar. vs control")  +
+  ylab("Log2 Fold Change")
+
+# plot of Pmar ZVAD vs control
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_plot_IAP <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP %>% left_join(., hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_IAP_dm[,c("ID","Domain_Name")]) %>%
+  ggplot(., aes(x=product, y = log2FoldChange, fill=Domain_Name)) + geom_col(position="dodge") +
+  #facet_grid(.~Domain_Name) +
+  coord_flip() +
+  #scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + 
+  ggtitle("P.mar + ZVAD vs control") +
+  ylab("Log2 Fold Change")
+
+# plot of Pmar GDC vs control 
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_plot_IAP <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP %>% left_join(., hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP_dm[,c("ID","Domain_Name")]) %>%
+  ggplot(., aes(x=product, y = log2FoldChange, fill=Domain_Name)) + 
+  geom_col(position="dodge") +
+  #facet_grid(.~Domain_Name) +
+  coord_flip() + 
+  #scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + 
+  ggtitle("P.mar + GDC vs control") +
+  ylab("Log2 Fold Change")
+
+# plot of Pmar ZVAD vs P.mar
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_plot_IAP <- hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP %>% left_join(., hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP_dm[,c("ID","Domain_Name")]) %>%
+  ggplot(., aes(x=product, y = log2FoldChange, fill=Domain_Name)) + 
+  geom_col(position="dodge") +
+  coord_flip() + 
+  #scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + 
+  ggtitle("P.mar + ZVAD vs P.mar") +
+  ylab("Log2 Fold Change")
+
+# plot of Pmar GDC vs P.mar 
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_plot_IAP <- hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP %>% left_join(., hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP_dm[,c("ID","Domain_Name")]) %>%
+  ggplot(., aes(x=product, y = log2FoldChange, fill=Domain_Name)) + geom_col(position="dodge") +
+  coord_flip() + 
+  #scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + 
+  ggtitle("P.mar + GDC vs P.mar") +
+  ylab("Log2 Fold Change")
+
+### Assess non-apoptotic differentially expressed genes in each and over 1 
+
+hemo_dds_deseq_res_Pmar_LFC_sig_ID  <- merge(hemo_dds_deseq_res_Pmar_LFC_sig , C_vir_rtracklayer_transcripts, by = "ID") 
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID <- merge(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig, C_vir_rtracklayer_transcripts, by = "ID")
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID <- merge(hemo_dds_deseq_res_Pmar_GDC_LFC_sig, C_vir_rtracklayer_transcripts, by = "ID")
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID <- merge(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig, C_vir_rtracklayer_transcripts, by = "ID")
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID <- merge(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig, C_vir_rtracklayer_transcripts, by = "ID")
+
+# filter to be those greater than 1 or less than -1
+hemo_dds_deseq_res_Pmar_LFC_sig_ID_1  <- merge(hemo_dds_deseq_res_Pmar_LFC_sig , C_vir_rtracklayer_transcripts, by = "ID") %>% filter(log2FoldChange >= 1 | log2FoldChange <= -1)
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID_1 <- merge(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig, C_vir_rtracklayer_transcripts, by = "ID") %>% filter(log2FoldChange >= 1 | log2FoldChange <= -1)
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID_1 <- merge(hemo_dds_deseq_res_Pmar_GDC_LFC_sig, C_vir_rtracklayer_transcripts, by = "ID") %>% filter(log2FoldChange >= 1 | log2FoldChange <= -1)
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID_1 <- merge(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig, C_vir_rtracklayer_transcripts, by = "ID") %>% filter(log2FoldChange >= 1 | log2FoldChange <= -1)
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID_1 <- merge(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig, C_vir_rtracklayer_transcripts, by = "ID") %>% filter(log2FoldChange >= 1 | log2FoldChange <= -1)
+
+# explore genes changing more than 1 fold
+ggplot(hemo_dds_deseq_res_Pmar_LFC_sig_ID_1, aes(x = product, y = log2FoldChange)) + geom_col(position = "dodge") + coord_flip()
+
+ggplot(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID_1, aes(x = product, y = log2FoldChange)) + geom_col(position = "dodge") + coord_flip()
+
+ggplot(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID_1, aes(x = product, y = log2FoldChange)) + geom_col(position = "dodge") + coord_flip()
+
+ggplot(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID_1, aes(x = product, y = log2FoldChange)) + geom_col(position = "dodge") + coord_flip()
+
+ggplot(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID_1, aes(x = product, y = log2FoldChange)) + geom_col(position = "dodge") + coord_flip()
+
+### Run Interproscan to get GO terms for all those significant transcript IDs
+
+# concatenate all transcript ID lists so I can create a lookup list in terminal
+hemo_dds_deseq_sig_list <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_ID,
+                                hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID,
+                                hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID,
+                                hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID,
+                                hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID) %>% distinct(transcript_id)
+# export
+
+
+
 
