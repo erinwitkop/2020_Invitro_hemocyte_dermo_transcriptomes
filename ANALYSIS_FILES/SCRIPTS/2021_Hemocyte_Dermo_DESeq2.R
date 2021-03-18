@@ -36,6 +36,9 @@ library(data.table)
 Apoptosis_frames <- load(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/C_gig_C_vir_apoptosis_products.RData")
 annotations <- load(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/C_gig_C_vir_annotations.RData")
 
+Perkinsus_rtracklayer <- readGFF("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/GCF_000006405.1_JCVI_PMG_1.0_genomic.gff")
+Perkinsus_rtracklayer <- as.data.frame(Perkinsus_rtracklayer)
+
 # C_vir_rtracklayer_transcripts
 C_vir_rtracklayer_transcripts <- C_vir_rtracklayer %>% filter(grepl("rna",ID))
 
@@ -505,7 +508,6 @@ hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP_dm
 hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP_dm
 hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP_dm
 
-
 # plot of control vs P. mar
 hemo_dds_deseq_res_Pmar_LFC_sig_APOP_plot_IAP <- hemo_dds_deseq_res_Pmar_LFC_sig_APOP %>% left_join(., hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP_dm[,c("ID","Domain_Name")]) %>%
 ggplot(., aes(x=product, y = log2FoldChange, fill=Domain_Name)) + 
@@ -516,6 +518,10 @@ ggplot(., aes(x=product, y = log2FoldChange, fill=Domain_Name)) +
   ggtitle("P.mar. vs control")  +
   ylab("Log2 Fold Change")
 
+ggsave(hemo_dds_deseq_res_Pmar_LFC_sig_APOP_plot_IAP,  file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES/hemo_dds_deseq_res_Pmar_LFC_sig_APOP_plot_IAP_PLOT",
+       device = "tiff",
+       height = 8, width = 8)
+
 # plot of Pmar ZVAD vs control
 hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_plot_IAP <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP %>% left_join(., hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_IAP_dm[,c("ID","Domain_Name")]) %>%
   ggplot(., aes(x=product, y = log2FoldChange, fill=Domain_Name)) + geom_col(position="dodge") +
@@ -524,6 +530,10 @@ hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_plot_IAP <- hemo_dds_deseq_res_Pmar_ZV
   #scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + 
   ggtitle("P.mar + ZVAD vs control") +
   ylab("Log2 Fold Change")
+
+ggsave(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_plot_IAP,  file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES/hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_plot_IAP_PLOT",
+       device = "tiff",
+       height = 8, width = 8)
 
 # plot of Pmar GDC vs control 
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_plot_IAP <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP %>% left_join(., hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP_dm[,c("ID","Domain_Name")]) %>%
@@ -535,6 +545,10 @@ hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_plot_IAP <- hemo_dds_deseq_res_Pmar_GDC
   ggtitle("P.mar + GDC vs control") +
   ylab("Log2 Fold Change")
 
+ggsave(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_plot_IAP,  file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES/hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_plot_IAP_PLOT",
+       device = "tiff",
+       height = 8, width = 10)
+
 # plot of Pmar ZVAD vs P.mar
 hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_plot_IAP <- hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP %>% left_join(., hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP_dm[,c("ID","Domain_Name")]) %>%
   ggplot(., aes(x=product, y = log2FoldChange, fill=Domain_Name)) + 
@@ -544,6 +558,10 @@ hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_plot_IAP <- hemo_dds_deseq_res_Pm
   ggtitle("P.mar + ZVAD vs P.mar") +
   ylab("Log2 Fold Change")
 
+ggsave(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_plot_IAP,  file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES/hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_plot_IAP_PLOT",
+       device = "tiff",
+       height = 8, width = 8)
+
 # plot of Pmar GDC vs P.mar 
 hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_plot_IAP <- hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP %>% left_join(., hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP_dm[,c("ID","Domain_Name")]) %>%
   ggplot(., aes(x=product, y = log2FoldChange, fill=Domain_Name)) + geom_col(position="dodge") +
@@ -551,6 +569,10 @@ hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_plot_IAP <- hemo_Pmar_dds_des
   #scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + 
   ggtitle("P.mar + GDC vs P.mar") +
   ylab("Log2 Fold Change")
+
+ggsave(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_plot_IAP,  file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES/hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_plot_IAP_PLOT",
+       device = "tiff",
+       height = 8, width = 10)
 
 ### Assess non-apoptotic differentially expressed genes in each and over 1 
 
@@ -581,12 +603,219 @@ ggplot(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID_1, aes(x = product, y = 
 ### Run Interproscan to get GO terms for all those significant transcript IDs
 
 # concatenate all transcript ID lists so I can create a lookup list in terminal
-hemo_dds_deseq_sig_list <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_ID,
+hemo_dds_deseq_sig_XP <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_ID,
                                 hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID,
                                 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID,
                                 hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID,
-                                hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID) %>% distinct(transcript_id)
-# export
+                                hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID) %>% distinct(ID) %>%
+                                dplyr::rename(Parent = ID)
+hemo_dds_deseq_sig_XP <- as.data.frame(hemo_dds_deseq_sig_XP)
+# join protein_id by searching for the transcript ID in the parent column
+C_vir_rtracklayer_XP <- C_vir_rtracklayer %>% filter(!is.na(protein_id))
+C_vir_rtracklayer_XP$Parent <- as.character(C_vir_rtracklayer_XP$Parent)
+hemo_dds_deseq_sig_XP_df <- left_join(hemo_dds_deseq_sig_XP, unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) %>% filter(!is.na(protein_id))
+
+# NA's due to XR proteins from non-coding RNA
+
+# export protein IDs to lookup in bluewaves
+write.table(hemo_dds_deseq_sig_XP_df$protein_id, file = "hemo_dds_deseq_sig_XP_df_lookup.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+#### PERKINSUS TRANSCRIPTOME ANALYSIS ####
+
+## LOAD DATA
+perk_counts <- read.csv("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/Dermo_2021_transcript_count_matrix.csv", header=TRUE,
+                        row.names = "transcript_id")
+colnames(perk_counts)[1:12] <-  c("1_Dermo_GDC_R1_001",  "1_Dermo_ZVAD_R1_001", "1_Dermo_R1_001"     , "1_control_R1_001" ,   "2_Dermo_GDC_R1_001" , "2_Dermo_ZVAD_R1_001" ,"2_Dermo_R1_001",     
+                                  "2_control_R1_001"  ,  "3_Dermo_GDC_R1_001" , "3_Dermo_ZVAD_R1_001", "3_Dermo_R1_001"   ,   "3_control_R1_001"   )
+head(perk_counts)
+colnames(perk_counts)
+
+# remove MSTRG novel transcript lines (can assess these later)
+perk_counts <- perk_counts[!grepl("MSTRG", row.names(perk_counts)),]
+
+# Cute the "rna-" from the beginning of rownames
+remove_rna = function(x){
+  return(gsub("rna-","",x))
+}
+row.names(perk_counts) <- remove_rna(row.names(perk_counts))
+head(perk_counts)
+
+#Load in sample metadata
+perk_coldata <- read.csv("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/Hemo_Pmar_coldata.csv", row.names = 1 )
+View(perk_coldata)  
+nrow(perk_coldata) 
+
+# Make sure the columns of the count matrix and rows of the column data (sample metadata) are in the same order. 
+perk_coldata <- perk_coldata[colnames(perk_counts),]  
+
+all(rownames(perk_coldata) %in% colnames(perk_counts))  #Should return TRUE
+# returns TRUE
+all(colnames(perk_counts) %in% rownames(perk_coldata))  
+# returns TRUE
+all(rownames(perk_coldata) == colnames(perk_counts))    # should return TRUE
+# returns TRUE
+
+# remove the control samples (since no Perkinsus was added here!)
+perk_coldata <- perk_coldata %>% filter(condition != "control")
+perk_coldata$condition <- droplevels(perk_coldata$condition)
+perk_counts <- perk_counts[,c(1:3,5:7,9:11)]
+
+### DATA QC PCA PLOT 
+# rlog transform data is recommended over vst for small data sets 
+# PCA plots of data (https://bioinformatics-core-shared-training.github.io/cruk-summer-school-2018/RNASeq2018/html/02_Preprocessing_Data.nb.html#count-distribution-boxplots)
+perk_counts_matrix <- as.matrix(perk_counts)
+perk_rlog_counts <- rlog(perk_counts_matrix, blind =TRUE)
+
+# run PCA
+pcperk <- prcomp(t(perk_rlog_counts))
+# plot PCA
+autoplot(pcperk)
+
+# Lets add colour to look at the clustering for Status
+autoplot(pcperk,
+         data = perk_coldata, 
+         colour="condition", 
+         size=5) 
+# little clustering by condition
+
+autoplot(pcperk,
+         data = as.data.frame(perk_coldata), 
+         colour="pool", # clustering by pool 
+         size=5) 
+
+# clustering mostly by pool, but PC1 and PC2 only explain about 30% of the total sample variation
+
+## MAKE DESEQ DATA SET FROM MATRIX
+# This object specifies the count data and metadata you will work with. The design piece is critical.
+# Correct for batch effects if necessary in this original formula: see this thread https://support.bioconductor.org/p/121408/
+# do not correct counts using the removeBatchEffects from limma based on thread above 
+
+## Creating three here so I can compare the results
+perk_dds <- DESeqDataSetFromMatrix(countData = perk_counts,
+                                   colData = perk_coldata,
+                                   design = ~condition) # only compare by condition
+
+## Prefiltering the data
+# Data prefiltering helps decrease the size of the data set and get rid of
+# rows with no data or very minimal data (<10). Apply a minimal filtering here as more stringent filtering will be applied later
+perk_dds <- perk_dds[ rowSums(counts(perk_dds)) > 10, ]
+
+## Check levels 
+# It is prefered in R that the first level of a factor be the reference level for comparison
+# (e.g. control, or untreated samples), so we can relevel the factor like so
+# Check factor levels, set it so that comparison group is the first
+levels(perk_coldata$condition)  # Pmar is currently listed first, so this looks good 
+
+## DATA TRANSFORMATION AND VISUALIZATION
+# Assess sample clustering after setting initial formula for comparison
+perk_dds_rlog <- rlog(perk_dds, blind = TRUE) # keep blind = true before deseq function has been run
+
+## PCA plot visualization of individuals in the family 
+plotPCA(perk_dds_rlog, intgroup=c("condition")) # a bit more clustering by condition now 
+
+### DIFFERENTIAL EXPRESSION ANALYSIS
+# run pipeline with single command because the formula has already been specified
+# Steps: estimation of size factors (controlling for differences in the sequencing depth of the samples), 
+# the estimation of dispersion values for each gene, 
+# and fitting a generalized linear model.
+perk_dds_deseq <- DESeq(perk_dds) 
+
+## Check the resultsNames object of each to look at the available coefficients for use in lfcShrink command
+resultsNames(perk_dds_deseq)
+
+## BUILD THE RESULTS OBJECT
+# Examining the results object, change alpha to p <0.05, looking at object metadata
+# use mcols to look at metadata for each table
+perk_dds_deseq_res_Pmar_GDC <- results(perk_dds_deseq, alpha=0.05, name= "condition_Pmar_GDC_vs_Pmar" )
+perk_dds_deseq_res_Pmar_ZVAD <- results(perk_dds_deseq, alpha=0.05, name= "condition_Pmar_ZVAD_vs_Pmar")
+
+head(perk_dds_deseq_res_Pmar_GDC) # condition Pmar GDC vs control
+head(perk_dds_deseq_res_Pmar_ZVAD) # condition Pmar ZVAD vs control 
+
+### Perform LFC Shrinkage with apeglm
+## NOTES 
+# Before plotting we need to apply an LFC shrinkage, set the coef as the specific comparison in the ResultsNames function of the deseq object
+# Issue that the specific comparisons I set in my results formulas are not available in the ResultsNames coef list.
+
+# NOTES from Michael love on Lfcshrinkage (https://support.bioconductor.org/p/77461/): 
+# https://support.bioconductor.org/p/110307/ # very helpful distinction between lfcestimate and lfc shrinkage
+# The difference between results() and lfcShrink() is that the former does not provide fold change shrinkage. 
+# The latter function calls results() internally to create the p-value and adjusted p-value columns, 
+# which provide inference on the maximum likelihood LFC. The shrunken fold changes are useful for ranking genes by 
+# effect size and for visualization.
+# The shrinkage is generally useful, which is why it is enabled by default. Full methods are described in the DESeq2 paper (see DESeq2 citation),
+# but in short, it looks at the largest fold changes that are not due to low counts and uses these to inform a prior distribution. 
+# So the large fold changes from genes with lots of statistical information are not shrunk, while the imprecise fold changes are shrunk. 
+# This allows you to compare all estimated LFC across experiments, for example, which is not really feasible without the use of a prior.
+# THE lfcshrinkage is not Affecting the p values at all, but its just shrinking the log2 fold change and calculating a new standard error for it 
+# https://support.bioconductor.org/p/95695/
+
+# Notes on setting up coefficients for apeglm, https://support.bioconductor.org/p/115435/ , https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#extended-section-on-shrinkage-estimators
+# Although apeglm cannot be used with contrast, we note that many designs can be easily rearranged such that what was a contrast becomes its own coefficient.
+# In this case, the dispersion does not have to be estimated again, as the designs are equivalent, up to the meaning of the coefficients. 
+# Instead, one need only run nbinomWaldTest to re-estimate MLE coefficients – these are necessary for apeglm – and then run lfcShrink specifying 
+# the coefficient of interest in resultsNames(dds)
+# The user would for example, either change the levels of dds$condition or replace the design using design(dds)<-, then run nbinomWaldTest followed by lfcShrink
+
+# For each LFCshrink I can pass to it my res object for each so that I can keep my alpha setting at 0.05. Doing this procedure will 
+# keep the p-values and padj from the results() call, and simply update the LFCs so they are posterior estimates.
+
+## DECISION: USE SAME RES OBJECT TO KEEP ALPHA ADJUSTMENT, and use LFCShrink apeglm
+
+perk_dds_deseq_res_Pmar_GDC_LFC <- lfcShrink(perk_dds_deseq, coef="condition_Pmar_GDC_vs_Pmar" , type= "apeglm", res=perk_dds_deseq_res_Pmar_GDC)
+summary(perk_dds_deseq_res_Pmar_GDC_LFC)
+#out of 16842 with nonzero total read count
+#adjusted p-value < 0.05
+#LFC > 0 (up)       : 20, 0.12%
+#LFC < 0 (down)     : 19, 0.11%
+#outliers [1]       : 252, 1.5%
+#low counts [2]     : 5537, 33%
+#(mean count < 8)
+#[1] see 'cooksCutoff' argument of ?results
+#[2] see 'independentFiltering' argument of ?results
+
+perk_dds_deseq_res_Pmar_ZVAD_LFC <- lfcShrink(perk_dds_deseq, coef="condition_Pmar_ZVAD_vs_Pmar", type= "apeglm", res=perk_dds_deseq_res_Pmar_ZVAD)
+summary(perk_dds_deseq_res_Pmar_ZVAD_LFC)
+#out of 16842 with nonzero total read count
+#adjusted p-value < 0.05
+#LFC > 0 (up)       : 19, 0.11%
+#LFC < 0 (down)     : 27, 0.16%
+#outliers [1]       : 252, 1.5%
+#low counts [2]     : 2939, 17%
+#(mean count < 3)
+#[1] see 'cooksCutoff' argument of ?results
+#[2] see 'independentFiltering' argument of ?results
+
+### Subsetting Significant Genes by padj < 0.05
+# again, only working with the LFCshrinkage adjusted log fold changes, and with the BH adjusted p-value
+# first make sure to make the rownames with the transcript ID as a new column, then make it a dataframe for filtering
+
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig <- subset(perk_dds_deseq_res_Pmar_ZVAD_LFC, padj < 0.05)
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig$transcript_id <- row.names(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig  )
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig   <- as.data.frame(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig )
+nrow(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig  )  #46
+
+perk_dds_deseq_res_Pmar_GDC_LFC_sig <- subset(perk_dds_deseq_res_Pmar_GDC_LFC, padj < 0.05)
+perk_dds_deseq_res_Pmar_GDC_LFC_sig $transcript_id <- row.names(perk_dds_deseq_res_Pmar_GDC_LFC_sig )
+perk_dds_deseq_res_Pmar_GDC_LFC_sig  <- as.data.frame(perk_dds_deseq_res_Pmar_GDC_LFC_sig)
+nrow(perk_dds_deseq_res_Pmar_GDC_LFC_sig)  #39
+
+# Annotate these genes
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot <- merge(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig, unique(select(Perkinsus_rtracklayer, transcript_id, product)))
+
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot <- merge(perk_dds_deseq_res_Pmar_GDC_LFC_sig, unique(select(Perkinsus_rtracklayer,transcript_id, product)))
+
+perk_dds_deseq_res_Pmar_GDC_ZVAD_LFC_sig_annot_comb <- intersect(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[,c("transcript_id","product")], perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[,c("transcript_id","product")])
+
+# overall, little change from control in terms of Perkinsus expression. Which means that these inhibitors didn't really affect the parasite
+# both treatments are significantly differentially expressing the same genes. 
+    # This could indicate perhaps PCR bias in the Perkinsus genes that were sequenced, or that treatments caused little change
+    # (which is good considering we only wanted the inhibitors to affect the hemocytes)
+
+# plot LFC 
+ggplot(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot, aes(x= product, y = log2FoldChange)) + geom_col() + coord_flip()
+
+ggplot(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot, aes(x= product, y = log2FoldChange)) + geom_col() + coord_flip()
 
 
 
