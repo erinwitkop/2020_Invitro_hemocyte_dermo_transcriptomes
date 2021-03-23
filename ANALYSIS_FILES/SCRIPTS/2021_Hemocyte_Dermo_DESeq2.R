@@ -31,6 +31,7 @@ library(viridis)
 library(extrafont)
 library(limma)
 library(data.table)
+library(topGO)
 
 #### LOADING SAVED GENOME, APOPTOSIS NAMES, IAP XP LISTS ####
 Apoptosis_frames <- load(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/C_gig_C_vir_apoptosis_products.RData")
@@ -374,6 +375,7 @@ hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig $ID <- row.names(hemo_Pmar_dds_des
 hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig  <- as.data.frame(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig)
 nrow(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig)  #1196
 
+
 ### GENE CLUSTERING ANALYSIS HEATMAPS  
 # Extract genes with the highest variance across samples for each comparison using either vst or rlog transformed data
 # This heatmap rather than plotting absolute expression strength plot the amount by which each gene deviates in a specific sample from the gene’s average across all samples. 
@@ -399,8 +401,43 @@ family_hemo_mat_prot <- as.data.frame(family_hemo_heatmap_reorder)
 colnames(family_hemo_mat_prot)[1] <- "ID"
 family_hemo_mat_prot_annot <- left_join(family_hemo_mat_prot, select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
 
+### Volcano plots of significant genes
+# compute significance 
+hemo_dds_deseq_res_Pmar_LFC_sig_volcano <- hemo_dds_deseq_res_Pmar_LFC_sig
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig
 
+hemo_dds_deseq_res_Pmar_LFC_sig_volcano$log10 <- -log10(hemo_dds_deseq_res_Pmar_LFC_sig$padj)
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano$log10 <- -log10(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig$padj)
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano$log10 <- -log10(hemo_dds_deseq_res_Pmar_GDC_LFC_sig$padj)
 
+hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot <- ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_LFC_sig_volcano),
+                                                       aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() + 
+  labs(y = "-log10(adjusted p-value)")
+
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_plot <- ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano), 
+                                                            aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() +
+  labs(y = "-log10(adjusted p-value)")
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_plot <- ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano), 
+                                                           aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() +
+  labs(y = "-log10(adjusted p-value)")
+
+# annot all 
+hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot <- hemo_dds_deseq_res_Pmar_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
+  left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene, transcript_id), by = "ID")
+
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
+  left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene,transcript_id), by = "ID")
+
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
+  left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene,transcript_id), by = "ID")
+
+# annote those greater than 5
+hemo_dds_deseq_res_Pmar_LFC_sig_volcano_5_annot <- hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 5.0 | log2FoldChange <= -5.0)
+
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_5_annot <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 5.0 | log2FoldChange <= -5.0)
+
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_5_annot <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 5.0 | log2FoldChange <= -5.0)
 
 ### Extract list of significant Apoptosis Genes (not less than or greater than 1 LFC) using merge
 
@@ -486,20 +523,20 @@ ggarrange(hemo_dds_deseq_res_Pmar_LFC_sig_APOP_plot, hemo_dds_deseq_res_Pmar_ZVA
 ggarrange(hemo_dds_deseq_res_Pmar_LFC_sig_APOP_plot, hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_plot, hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_plot)
 
 ## Extract IAP specific manually curated protein lists
-hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP <- merge(hemo_dds_deseq_res_Pmar_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID")
-hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_IAP <- merge(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID")
-hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP <- merge(hemo_dds_deseq_res_Pmar_GDC_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID")
-
-hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP <- merge(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID")
-hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP <- merge(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID")
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP <- merge(hemo_dds_deseq_res_Pmar_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID") %>% distinct(ID, .keep_all = TRUE)
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_IAP <- merge(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID") %>% distinct(ID, .keep_all = TRUE)
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP <- merge(hemo_dds_deseq_res_Pmar_GDC_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID") %>% distinct(ID, .keep_all = TRUE)
+ 
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP <- merge(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID") %>% distinct(ID, .keep_all = TRUE)
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP <- merge(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig, BIR_XP_gff_CV_uniq_XP_XM, by = "ID") %>% distinct(ID, .keep_all = TRUE)
 
 # Join with domain info by protein id
-hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6])
-hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6])
-hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6])
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6]) %>% distinct(ID, .keep_all = TRUE)
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6]) %>% distinct(ID, .keep_all = TRUE)
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6]) %>% distinct(ID, .keep_all = TRUE)
 
-hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6])
-hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP_dm <- left_join(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6])
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP_dm <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6]) %>% distinct(ID, .keep_all = TRUE)
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP_dm <- left_join(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP, IAP_domain_structure_no_dup_rm[,-6]) %>% distinct(ID, .keep_all = TRUE)
 
 ## Plot with IAP domain information
 hemo_dds_deseq_res_Pmar_LFC_sig_APOP_IAP_dm
@@ -574,8 +611,179 @@ ggsave(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_plot_IAP,  file = "/Us
        device = "tiff",
        height = 8, width = 10)
 
-### Assess non-apoptotic differentially expressed genes in each and over 1 
+## Upset plot heatmap of significant apoptosis expression across all treatments 
 
+# combine all dataframes
+C_vir_hemo_comb <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_APOP,
+                         hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP,
+                         hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP) %>% mutate(transcript_product = paste(product, transcript_id)) %>%
+  dplyr::select(transcript_product, condition, log2FoldChange)
+C_vir_hemo_comb_spread <- spread(C_vir_hemo_comb, condition, log2FoldChange, fill = 0)
+C_vir_hemo_comb_spread <- column_to_rownames(C_vir_hemo_comb_spread , var = "transcript_product") 
+C_vir_hemo_comb_spread_mat <- as.matrix(C_vir_hemo_comb_spread)
+
+C_vir_labels =c( "P. mar + GDC vs\nControl", "P. mar vs\nControl", "P. mar + ZVAD vs\nControl")
+# create named vector to hold column names
+C_vir_column_labels = structure(paste0(C_vir_labels), names = paste0(colnames(C_vir_hemo_comb_spread_mat)))
+
+pdf("./FIGURES/C_vir_hemo_comb_spread_mat.pdf", width = 12, height = 10)
+C_vir_heatmap <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_spread_mat, border = TRUE, 
+                        #column_title = ComplexHeatmap::gt_render("*C. virginica* Experimental Group"), 
+                        column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                        row_title = "Apoptosis Transcript and Product Name", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                        row_dend_width = unit(2, "cm"),
+                        column_labels = C_vir_column_labels[colnames(C_vir_hemo_comb_spread_mat)],
+                        # apply split by k-meams clustering to highlight groups
+                        row_km = 3, column_km = 2, row_names_gp = gpar(fontsize = 8),
+                        column_names_gp = gpar(fontsize = 10),
+                        heatmap_legend_param = list(title = "Log2 Fold Change"))
+ComplexHeatmap::draw(C_vir_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+dev.off()
+
+### Upset plot of significant LFCs > 1
+
+hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot_1 <- hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 1.0 | log2FoldChange <= -1.0) %>%
+  filter(!is.na(product)) %>% mutate(condition = "control")
+
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot_1 <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot %>% 
+  filter(log2FoldChange >= 1.0 | log2FoldChange <= -1.0) %>% 
+  filter(!is.na(product)) %>% mutate(condition = "Pmar_ZVAD")
+
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot_1 <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot %>% 
+  filter(log2FoldChange >= 1.0 | log2FoldChange <= -1.0) %>%
+  filter(!is.na(product)) %>% mutate(condition = "Pmar_GDC")
+
+
+C_vir_hemo_1_comb <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot_1,
+                           hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot_1,
+                           hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot_1) %>% mutate(transcript_product = paste(product, transcript_id)) %>%
+  dplyr::select(transcript_product, condition, log2FoldChange)
+C_vir_hemo_1_comb_spread <- spread(C_vir_hemo_1_comb, condition, log2FoldChange, fill = 0)
+C_vir_hemo_1_comb_spread <- column_to_rownames(C_vir_hemo_1_comb_spread , var = "transcript_product") 
+C_vir_hemo_1_comb_spread_mat <- as.matrix(C_vir_hemo_1_comb_spread)
+
+C_vir_1_labels =c( "P. mar + GDC vs\nControl", "P. mar vs\nControl", "P. mar + ZVAD vs\nControl")
+# create named vector to hold column names
+C_vir_1_column_labels = structure(paste0(C_vir_1_labels), names = paste0(colnames(C_vir_hemo_1_comb_spread_mat)))
+
+pdf("./FIGURES/C_vir_hemo_1_comb_spread_mat.pdf", width = 12, height = 10)
+C_vir_heatmap <- ComplexHeatmap::Heatmap(C_vir_hemo_1_comb_spread_mat, border = TRUE, 
+                                         #column_title = ComplexHeatmap::gt_render("*C. virginica* Experimental Group"), 
+                                         column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_title = "Transcript and Product Name LFC > abs(1)", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_dend_width = unit(2, "cm"),
+                                         column_labels = C_vir_1_column_labels[colnames(C_vir_hemo_1_comb_spread_mat)],
+                                         # apply split by k-meams clustering to highlight groups
+                                         row_km = 4, column_km = 2, 
+                                         row_names_gp = gpar(fontsize = 2),
+                                         column_names_gp = gpar(fontsize = 10),
+                                         heatmap_legend_param = list(title = "Log2 Fold Change"))
+ComplexHeatmap::draw(C_vir_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+dev.off()
+
+pdf("./FIGURES/C_vir_hemo_1_comb_spread_mat_tall.pdf", width = 12, height = 20)
+C_vir_heatmap <- ComplexHeatmap::Heatmap(C_vir_hemo_1_comb_spread_mat, border = TRUE, 
+                                         #column_title = ComplexHeatmap::gt_render("*C. virginica* Experimental Group"), 
+                                         column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_title = "Transcript and Product Name LFC > abs(1)", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_dend_width = unit(2, "cm"),
+                                         column_labels = C_vir_1_column_labels[colnames(C_vir_hemo_1_comb_spread_mat)],
+                                         # apply split by k-meams clustering to highlight groups
+                                         row_km = 4, column_km = 2, 
+                                         row_names_gp = gpar(fontsize = 2),
+                                         column_names_gp = gpar(fontsize = 10),
+                                         heatmap_legend_param = list(title = "Log2 Fold Change"))
+ComplexHeatmap::draw(C_vir_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+dev.off()
+
+
+## Compare lists of apoptosis transcripts between the inhibitor vs control and inhibitor vs parasite lists 
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP$DEG_comp <- "vs_control"
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP$DEG_comp <- "vs_control"
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP$DEG_comp <- "vs_control"
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP$DEG_comp <- "vs_pmar"
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP$DEG_comp <- "vs_pmar"
+
+# compare GDC 
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_shared <- full_join(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP[,c("ID","log2FoldChange",
+                                                                    "transcript_id","gene","product","DEG_comp")],
+                                                                     hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP[,c("ID","log2FoldChange",
+                                                                     "transcript_id","gene","product","DEG_comp")], 
+                                                                    by = c("ID", "transcript_id","gene","product")) %>% filter(!is.na(DEG_comp.x) & !is.na(DEG_comp.y))
+
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_unique_vs_control <- left_join(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP[,c("ID","log2FoldChange",
+                                                                    "transcript_id","gene","product","DEG_comp")],
+                                                                    hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP[,c("ID","log2FoldChange",
+                                                                    "transcript_id","gene","product","DEG_comp")], 
+                                                                    by = c("ID", "transcript_id","gene","product")) %>%
+                                                                    filter(is.na(log2FoldChange.y)) %>% distinct(ID, .keep_all = TRUE)
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_unique_vs_Pmar <- left_join( hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP[,c("ID","log2FoldChange",
+                                                                              "transcript_id","gene","product","DEG_comp")],
+                                                                          hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP[,c("ID","log2FoldChange",
+                                                                              "transcript_id","gene","product","DEG_comp")], 
+                                                                               by = c("ID", "transcript_id","gene","product")) %>%
+                                                                              filter(is.na(log2FoldChange.y)) %>% distinct(ID, .keep_all = TRUE)
+# repeat for ZVAD
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_shared <- full_join(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP[,c("ID","log2FoldChange",
+                                                                    "transcript_id","gene","product","DEG_comp")],
+                                                                    hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP[,c("ID","log2FoldChange",
+                                                                    "transcript_id","gene","product","DEG_comp")], 
+                                                                     by = c("ID", "transcript_id","gene","product")) %>% filter(!is.na(DEG_comp.x) & !is.na(DEG_comp.y))
+
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_unique_vs_control <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP[,c("ID","log2FoldChange",
+                                                                               "transcript_id","gene","product","DEG_comp")],
+                                                                               hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP[,c("ID","log2FoldChange",
+                                                                                "transcript_id","gene","product","DEG_comp")], 
+                                                                               by = c("ID", "transcript_id","gene","product")) %>%
+                                                                              filter(is.na(log2FoldChange.y)) %>% distinct(ID, .keep_all = TRUE)
+
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP_unique_vs_Pmar <- left_join( hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_APOP[,c("ID","log2FoldChange",
+                                                                                       "transcript_id","gene","product","DEG_comp")],
+                                                                                       hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP[,c("ID","log2FoldChange",
+                                                                                      "transcript_id","gene","product","DEG_comp")], 
+                                                                                       by = c("ID", "transcript_id","gene","product")) %>%
+                                                                                      filter(is.na(log2FoldChange.y)) %>% distinct(ID, .keep_all = TRUE)
+
+
+
+# Plot these shared or unique DEGs
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_shared_vs_control <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_shared[,1:6] %>% 
+  dplyr::rename(log2FoldChange = log2FoldChange.x, DEG_comp = DEG_comp.x)
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_shared_vs_pmar <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_shared[,c(1,3:5,7,8)] %>% 
+  dplyr::rename(log2FoldChange = log2FoldChange.y, DEG_comp = DEG_comp.y)
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_shared_join <- rbind(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_shared_vs_control,hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_shared_vs_pmar)
+
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_shared_plot <-  hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_shared_join %>%
+  left_join(., hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_IAP_dm[,c("ID","Domain_Name")]) %>%
+  ggplot(., aes(x=product, y = log2FoldChange, fill=Domain_Name)) + 
+  geom_col(position="dodge") +
+  facet_grid(.~DEG_comp) +
+  coord_flip() + 
+  #scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + 
+  ggtitle("P.mar + GDC vs control or P.mar + GDC vs P.mar") +
+  ylab("Log2 Fold Change")
+
+ggsave(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_shared_plot,  file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES/hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_shared_plot_PLOT",
+       device = "tiff",
+       height = 8, width = 12)
+
+#GDC unique vs control not including the parasite 
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_unique_vs_control_no_pm <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_unique_vs_control[!(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_unique_vs_control$ID %in% hemo_dds_deseq_res_Pmar_LFC_sig_APOP$ID),]
+
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_unique_vs_control_no_pm_plot <-  hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_unique_vs_control_no_pm %>%
+  left_join(., hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_IAP_dm[,c("ID","Domain_Name")]) %>%
+  ggplot(., aes(x=product, y = log2FoldChange.x, fill=Domain_Name)) + 
+  geom_col(position="dodge") +
+  coord_flip() + 
+  #scale_fill_gradient2(low="purple",mid = "grey", high="darkgreen") + 
+  ggtitle("P.mar + GDC vs control without parasite alone shared") +
+  ylab("Log2 Fold Change")
+
+ggsave(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_unique_vs_control_no_pm_plot ,  file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES/hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_unique_vs_control_no_pm_PLOT",
+       device = "tiff",
+       height = 8, width = 12)
+
+### Assess non-apoptotic differentially expressed genes in each and over 1 
 hemo_dds_deseq_res_Pmar_LFC_sig_ID  <- merge(hemo_dds_deseq_res_Pmar_LFC_sig , C_vir_rtracklayer_transcripts, by = "ID") 
 hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID <- merge(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig, C_vir_rtracklayer_transcripts, by = "ID")
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID <- merge(hemo_dds_deseq_res_Pmar_GDC_LFC_sig, C_vir_rtracklayer_transcripts, by = "ID")
@@ -619,6 +827,59 @@ hemo_dds_deseq_sig_XP_df <- left_join(hemo_dds_deseq_sig_XP, unique(C_vir_rtrack
 
 # export protein IDs to lookup in bluewaves
 write.table(hemo_dds_deseq_sig_XP_df$protein_id, file = "hemo_dds_deseq_sig_XP_df_lookup.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+## Get gene universe of all the expressed genes in each experiment! Need to have the GO in this full list in order to do enrichment 
+
+hemo_counts_universe <- as.data.frame(row.names(hemo_dds)) # use this data frame with the extras already removed
+colnames(hemo_counts_universe)[1] <- "Parent" 
+hemo_counts_universe_XP <- left_join(hemo_counts_universe, unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")]))  %>% filter(!is.na(protein_id))
+nrow(hemo_counts_universe_XP) # 41475
+
+# export into files with 5000 in each 
+write.table(hemo_counts_universe_XP[1:5000, "protein_id"], file = "hemo_counts_universe_XP_5000.txt",  row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(hemo_counts_universe_XP[5001:10000, "protein_id"], file = "hemo_counts_universe_XP_10000.txt",  row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(hemo_counts_universe_XP[10001:15000, "protein_id"], file = "hemo_counts_universe_XP_15000.txt",  row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(hemo_counts_universe_XP[15001:20000, "protein_id"], file = "hemo_counts_universe_XP_20000.txt",  row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(hemo_counts_universe_XP[20001:25000, "protein_id"], file = "hemo_counts_universe_XP_25000.txt",  row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(hemo_counts_universe_XP[25001:30000, "protein_id"], file = "hemo_counts_universe_XP_30000.txt",  row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(hemo_counts_universe_XP[30001:35000, "protein_id"], file = "hemo_counts_universe_XP_35000.txt",  row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(hemo_counts_universe_XP[35001:40000, "protein_id"], file = "hemo_counts_universe_XP_40000.txt",  row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(hemo_counts_universe_XP[40001:41475, "protein_id"], file = "hemo_counts_universe_XP_41475.txt",  row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+
+#### HEMOCYTE GO ANALYSIS ####
+
+GO_sig_terms <- rtracklayer::readGFF("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/hemo_dds_deseq_sig_XP_df_lookup_seq.fa_1.gff3")
+GO_sig_terms <- as.data.frame(GO_sig_terms)
+
+GO_sig_terms_found <- GO_sig_terms %>% filter(Ontology_term != "character(0)") %>% dplyr::rename(protein_id = seqid) 
+
+# join with GO terms for each list
+hemo_dds_deseq_res_Pmar_LFC_sig_ID <- hemo_dds_deseq_res_Pmar_LFC_sig_ID %>% dplyr::rename(Parent_gene = Parent, Parent = ID) %>% dplyr::select(-protein_id)
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID %>% dplyr::rename(Parent_gene = Parent, Parent = ID) %>% dplyr::select(-protein_id)
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID %>% dplyr::rename(Parent_gene = Parent, Parent = ID) %>% dplyr::select(-protein_id)
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID <- hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID %>% dplyr::rename(Parent_gene = Parent, Parent = ID) %>% dplyr::select(-protein_id)
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID <- hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID %>% dplyr::rename(Parent_gene = Parent, Parent = ID) %>% dplyr::select(-protein_id)
+
+hemo_dds_deseq_res_Pmar_LFC_sig_ID$Parent <-  as.character(hemo_dds_deseq_res_Pmar_LFC_sig_ID$Parent)
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID$Parent <-  as.character(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID$Parent)
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID$Parent <-  as.character(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID$Parent)
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID$Parent <-  as.character(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID$Parent)
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID$Parent <-  as.character(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID$Parent)
+
+hemo_dds_deseq_res_Pmar_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_LFC_sig_ID, unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) 
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID, unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) 
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID, unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) 
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID, unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) 
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID_GO <- left_join(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID, unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) 
+
+hemo_dds_deseq_res_Pmar_LFC_sig_ID_GO  <- left_join(hemo_dds_deseq_res_Pmar_LFC_sig_ID_GO, GO_sig_terms_found[,c("protein_id","Ontology_term")])
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID_GO, GO_sig_terms_found[,c("protein_id","Ontology_term")])
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID_GO, GO_sig_terms_found[,c("protein_id","Ontology_term")])
+hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID_GO, GO_sig_terms_found[,c("protein_id","Ontology_term")])
+hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID_GO <- left_join(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID_GO, GO_sig_terms_found[,c("protein_id","Ontology_term")])
+
+## Perform GO enrichment 
 
 #### PERKINSUS TRANSCRIPTOME ANALYSIS ####
 
@@ -801,9 +1062,13 @@ perk_dds_deseq_res_Pmar_GDC_LFC_sig  <- as.data.frame(perk_dds_deseq_res_Pmar_GD
 nrow(perk_dds_deseq_res_Pmar_GDC_LFC_sig)  #39
 
 # Annotate these genes
-perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot <- merge(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig, unique(select(Perkinsus_rtracklayer, transcript_id, product)))
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot <- merge(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig, unique(dplyr::select(Perkinsus_rtracklayer, transcript_id, product))) %>% 
+  mutate(product = case_when(product == "conserved hypothetical protein" | product == "hypothetical protein" ~ paste(product, transcript_id, sep = "-"),
+                             product != "conserved hypothetical protein" | product != "hypothetical protein" ~ product))
 
-perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot <- merge(perk_dds_deseq_res_Pmar_GDC_LFC_sig, unique(select(Perkinsus_rtracklayer,transcript_id, product)))
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot <- merge(perk_dds_deseq_res_Pmar_GDC_LFC_sig, unique(dplyr::select(Perkinsus_rtracklayer,transcript_id, product))) %>% 
+  mutate(product = case_when(product == "conserved hypothetical protein" | product == "hypothetical protein" ~ paste(product, transcript_id, sep = "-"),
+                             product != "conserved hypothetical protein" | product != "hypothetical protein" ~ product))
 
 perk_dds_deseq_res_Pmar_GDC_ZVAD_LFC_sig_annot_comb <- intersect(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[,c("transcript_id","product")], perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[,c("transcript_id","product")])
 
@@ -813,10 +1078,45 @@ perk_dds_deseq_res_Pmar_GDC_ZVAD_LFC_sig_annot_comb <- intersect(perk_dds_deseq_
     # (which is good considering we only wanted the inhibitors to affect the hemocytes)
 
 # plot LFC 
-ggplot(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot, aes(x= product, y = log2FoldChange)) + geom_col() + coord_flip()
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_plot <- ggplot(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot, aes(x= product, y = log2FoldChange)) + 
+  geom_col() + coord_flip() + ggtitle("P. mar. ZVAD\n vs P. mar control")
 
-ggplot(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot, aes(x= product, y = log2FoldChange)) + geom_col() + coord_flip()
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_plot <- ggplot(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot, aes(x= product, y = log2FoldChange)) +
+  geom_col() + coord_flip() + ggtitle("P. mar. GDC\n vs P. mar control")
 
+combined_Pmar <- ggarrange(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_plot, perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_plot)
 
+ggsave(combined_Pmar, device = "tiff",
+       width = 12, height = 7,
+       file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/combined_Pmar_plot")
 
+## Perkinsus expression upset plot 
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$condition <- "P_mar_ZVAD_vs_Pmar"
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$condition <- "P_mar_GDC_vs_Pmar"
 
+# combine all dataframes
+Perk_comb <- rbind(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot,
+                   perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot) %>%
+  dplyr::select(product, condition, log2FoldChange)
+Perk_comb_spread <- spread(Perk_comb, condition, log2FoldChange, fill = 0)
+Perk_comb_spread <- column_to_rownames(Perk_comb_spread , var = "product") 
+Perk_comb_spread_mat <- as.matrix(Perk_comb_spread)
+
+Perk_labels =c( "P. mar + GDC vs\nP. mar Control", "P. mar + ZVAD vs\nP. mar Control")
+# create named vector to hold column names
+Perk_column_labels = structure(paste0(Perk_labels), names = paste0(colnames(Perk_comb_spread_mat)))
+
+pdf("./FIGURES/Perk_spread_mat.pdf", width = 8, height = 8)
+Perk_heatmap <- ComplexHeatmap::Heatmap(Perk_comb_spread_mat, border = TRUE, 
+                        column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                        row_title = "Transcript and Product Name", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                        row_dend_width = unit(2, "cm"),
+                        column_labels = Perk_column_labels[colnames(Perk_comb_spread_mat)],
+                        # apply split by k-meams clustering to highlight groups
+                        #row_km = 3, column_km = 2, 
+                        row_names_gp = gpar(fontsize = 8),
+                        column_names_gp = gpar(fontsize = 8),
+                        heatmap_legend_param = list(title = "Log2 Fold Change"))
+ComplexHeatmap::draw(Perk_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 40), "mm")) #bottom, left, top, right paddings
+
+dev.off()
