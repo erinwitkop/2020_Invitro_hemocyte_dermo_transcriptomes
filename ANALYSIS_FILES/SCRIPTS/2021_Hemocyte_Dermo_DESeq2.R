@@ -102,16 +102,20 @@ pchemo <- prcomp(t(hemo_rlog_counts))
 autoplot(pchemo)
 
 # Lets add colour to look at the clustering for Status
+pdf("./FIGURES/pchemo_condition.pdf", height = 5, width = 5)
 autoplot(pchemo,
          data = hemo_coldata, 
          colour="condition", 
-         size=5) 
+         size=5) + ggtitle("Hemocyte expression")
+dev.off()
 # little clustering by condition
 
+pdf("./FIGURES/pchemo_pool.pdf", height = 5, width = 5)
 autoplot(pchemo,
-         data = as.data.frame(hemo_coldata), 
-         colour="pool", # clustering by pool 
-         size=5) 
+         data = hemo_coldata, 
+         colour="pool", 
+         size=5) + ggtitle("Hemocyte expression")
+dev.off()
 # PC1 and PC2 don't explain much of the variation, which means that the Pool effect is not too large 
 
 ## MAKE DESEQ DATA SET FROM MATRIX
@@ -411,16 +415,25 @@ hemo_dds_deseq_res_Pmar_LFC_sig_volcano$log10 <- -log10(hemo_dds_deseq_res_Pmar_
 hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano$log10 <- -log10(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig$padj)
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano$log10 <- -log10(hemo_dds_deseq_res_Pmar_GDC_LFC_sig$padj)
 
+# plot the volcano plots
 hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot <- ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_LFC_sig_volcano),
                                                        aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() + 
-  labs(y = "-log10(adjusted p-value)")
+  labs(y = "-log10(adjusted p-value)", title = "P.mar vs. control hemocytes")
 
 hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_plot <- ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano), 
                                                             aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() +
-  labs(y = "-log10(adjusted p-value)")
+  labs(y = "-log10(adjusted p-value)", title = "P.mar + ZVAD vs. control hemocytes")
+
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_plot <- ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano), 
                                                            aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() +
-  labs(y = "-log10(adjusted p-value)")
+  labs(y = "-log10(adjusted p-value)", title = "P.mar + GDC vs. control hemocytes")
+
+hemo_volcano <- ggarrange(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot, 
+          hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_plot,
+          hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_plot)
+
+ggsave(hemo_volcano, file = "./FIGURES/hemo_volcano_plot", device = "tiff", height = 10, width = 10)
+
 
 # annot all 
 hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot <- hemo_dds_deseq_res_Pmar_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
@@ -431,6 +444,8 @@ hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot <- hemo_dds_deseq_res_Pmar_ZV
 
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
   left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene,transcript_id), by = "ID")
+
+
 
 # annote those greater than 5
 hemo_dds_deseq_res_Pmar_LFC_sig_volcano_5_annot <- hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 5.0 | log2FoldChange <= -5.0)
@@ -933,16 +948,20 @@ pcperk <- prcomp(t(perk_rlog_counts))
 autoplot(pcperk)
 
 # Lets add colour to look at the clustering for Status
+pdf("./FIGURES/pcperk_condition.pdf",height = 5, width = 5)
 autoplot(pcperk,
          data = perk_coldata, 
          colour="condition", 
-         size=5) 
+         size=5) + ggtitle("Perkinsus expression")
+dev.off()
 # little clustering by condition
 
+pdf("./FIGURES/pcperk_pool.pdf",height = 5, width = 5)
 autoplot(pcperk,
          data = as.data.frame(perk_coldata), 
          colour="pool", # clustering by pool 
-         size=5) 
+         size=5) + ggtitle("Perkinsus expression")
+dev.off()
 
 # clustering mostly by pool, but PC1 and PC2 only explain about 30% of the total sample variation
 
@@ -1120,3 +1139,24 @@ Perk_heatmap <- ComplexHeatmap::Heatmap(Perk_comb_spread_mat, border = TRUE,
 ComplexHeatmap::draw(Perk_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 40), "mm")) #bottom, left, top, right paddings
 
 dev.off()
+
+
+### Volcano plots of significant genes
+# compute significance 
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$log10 <- -log10(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$padj)
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$log10 <- -log10(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$padj)
+
+# plot the volcano plots
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_volcano_plot <- ggplot(data = as.data.frame(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot),
+                                                       aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() + 
+  labs(y = "-log10(adjusted p-value)", title = "P.mar + ZVAD vs.\ncontrol P. mar")
+
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_volcano_plot <- ggplot(data = as.data.frame(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot), 
+                                                            aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() +
+  labs(y = "-log10(adjusted p-value)", title = "P.mar + GDC vs.\ncontrol P. mar")
+
+
+perk_volcano <- ggarrange(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_volcano_plot, 
+                          perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_volcano_plot)
+
+ggsave(perk_volcano, file = "./FIGURES/perk_volcano_plot", device = "tiff", height = 3, width = 5)
