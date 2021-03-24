@@ -118,6 +118,29 @@ autoplot(pchemo,
 dev.off()
 # PC1 and PC2 don't explain much of the variation, which means that the Pool effect is not too large 
 
+## Plot total reads in each sample
+hemo_counts_total <- colSums(hemo_counts)
+hemo_counts_total <- as.data.frame(hemo_counts_total)
+hemo_counts_total <- hemo_counts_total %>% mutate(sample_name = rownames(.)) %>% 
+  mutate(condition= case_when(
+    grepl("GDC", sample_name) ~"GDC",
+    grepl("ZVAD", sample_name) ~"ZVAD",
+    grepl("control",sample_name)~"control",
+    TRUE~"Dermo"))
+hemo_counts_total$sample_name <- factor(hemo_counts_total$sample_name, 
+                                        levels = c("1_control_R1_001","2_control_R1_001","3_control_R1_001",
+                                             "1_Dermo_R1_001", "2_Dermo_R1_001","3_Dermo_R1_001",
+                                                   "1_Dermo_GDC_R1_001",  "2_Dermo_GDC_R1_001","3_Dermo_GDC_R1_001" ,
+                                                   "1_Dermo_ZVAD_R1_001","2_Dermo_ZVAD_R1_001",  "3_Dermo_ZVAD_R1_001" ))
+
+hemo_counts_total_plot <- ggplot(hemo_counts_total, aes(x=sample_name, y = hemo_counts_total, fill = condition)) + 
+  geom_col() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggsave(hemo_counts_total_plot, file = "./FIGURES/hemo_counts_total_plot.tiff", device = "tiff",
+       height=5, width = 5)
+
+
 ## MAKE DESEQ DATA SET FROM MATRIX
 # This object specifies the count data and metadata you will work with. The design piece is critical.
 # Correct for batch effects if necessary in this original formula: see this thread https://support.bioconductor.org/p/121408/
@@ -145,6 +168,8 @@ hemo_dds_rlog <- rlog(hemo_dds, blind = TRUE) # keep blind = true before deseq f
 
 ## PCA plot visualization of individuals in the family 
 plotPCA(hemo_dds_rlog, intgroup=c("condition")) # a bit more clustering by condition now 
+
+head(assay(hemo_dds_rlog),3)
 
 ### DIFFERENTIAL EXPRESSION ANALYSIS
 # run pipeline with single command because the formula has already been specified
@@ -379,7 +404,6 @@ hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig $ID <- row.names(hemo_Pmar_dds_des
 hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig  <- as.data.frame(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig)
 nrow(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig)  #1196
 
-
 ### GENE CLUSTERING ANALYSIS HEATMAPS  
 # Extract genes with the highest variance across samples for each comparison using either vst or rlog transformed data
 # This heatmap rather than plotting absolute expression strength plot the amount by which each gene deviates in a specific sample from the gene’s average across all samples. 
@@ -444,8 +468,6 @@ hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot <- hemo_dds_deseq_res_Pmar_ZV
 
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
   left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene,transcript_id), by = "ID")
-
-
 
 # annote those greater than 5
 hemo_dds_deseq_res_Pmar_LFC_sig_volcano_5_annot <- hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 5.0 | log2FoldChange <= -5.0)
@@ -626,7 +648,7 @@ ggsave(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_plot_IAP,  file = "/Us
        device = "tiff",
        height = 8, width = 10)
 
-## Upset plot heatmap of significant apoptosis expression across all treatments 
+### Upset plot heatmap of significant apoptosis expression across all treatments  ####
 
 # combine all dataframes
 C_vir_hemo_comb <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_APOP,
@@ -653,6 +675,32 @@ C_vir_heatmap <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_spread_mat, border = TR
                         column_names_gp = gpar(fontsize = 10),
                         heatmap_legend_param = list(title = "Log2 Fold Change"))
 ComplexHeatmap::draw(C_vir_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+dev.off()
+
+
+## Plot apoptosis transcformed counts across each sample ####
+# example codes from RNAseq workflow: https://www.bioconductor.org/packages/devel/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#other-comparisons
+
+C_vir_hemo_comb_ID <-  rbind(hemo_dds_deseq_res_Pmar_LFC_sig_APOP,
+                             hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP,
+                             hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP) %>% dplyr::pull(., ID)
+class(C_vir_hemo_comb_ID)
+
+# find rownames matching these IDs
+apop_hemo_mat <- assay(hemo_dds_rlog)[C_vir_hemo_comb_ID,]
+apop_hemo_mat <- as.data.frame(apop_hemo_mat) %>% mutate(ID = rownames(.)) %>% 
+  left_join(., C_vir_rtracklayer_apop_product_final[,c("ID","product","transcript_id")], by = "ID") %>% filter(!is.na(product)) %>%
+  mutate(transcript_product = paste(product, transcript_id, sep = "-")) %>% dplyr::select(-ID,-product, -transcript_id)
+rownames(apop_hemo_mat) <- apop_hemo_mat$transcript_product
+apop_hemo_mat <- apop_hemo_mat[,-13]
+apop_hemo_mat <- as.matrix(apop_hemo_mat)  
+
+apop_hemo_anno <- as.data.frame(colData(hemo_dds_rlog)[, c("condition")])
+rownames(apop_hemo_anno) <- colnames(apop_hemo_mat)
+colnames(apop_hemo_anno)[1] <- "Condition"
+
+pdf("./FIGURES/C_vir_apop_hemo_mat.pdf", width = 12, height = 15)
+pheatmap(apop_hemo_mat , annotation_col = apop_hemo_anno)
 dev.off()
 
 ### Upset plot of significant LFCs > 1
@@ -823,7 +871,7 @@ ggplot(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID_1, aes(x = product, y = log2
 
 ggplot(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID_1, aes(x = product, y = log2FoldChange)) + geom_col(position = "dodge") + coord_flip()
 
-### Run Interproscan to get GO terms for all those significant transcript IDs
+### Run Interproscan to get GO terms for all those significant transcript IDs ####
 
 # concatenate all transcript ID lists so I can create a lookup list in terminal
 hemo_dds_deseq_sig_XP <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_ID,
@@ -964,6 +1012,26 @@ autoplot(pcperk,
 dev.off()
 
 # clustering mostly by pool, but PC1 and PC2 only explain about 30% of the total sample variation
+
+## Plot total reads in each sample
+perk_counts_total <- colSums(perk_counts)
+perk_counts_total <- as.data.frame(perk_counts_total)
+perk_counts_total <- perk_counts_total %>% mutate(sample_name = rownames(.)) %>% 
+  mutate(condition= case_when(
+    grepl("GDC", sample_name) ~"GDC",
+    grepl("ZVAD", sample_name) ~"ZVAD",
+    TRUE~"Dermo"))
+perk_counts_total$sample_name <- factor(perk_counts_total$sample_name, 
+                                        levels = c("1_Dermo_R1_001", "2_Dermo_R1_001","3_Dermo_R1_001",
+                                                   "1_Dermo_GDC_R1_001",  "2_Dermo_GDC_R1_001","3_Dermo_GDC_R1_001" ,
+                                                    "1_Dermo_ZVAD_R1_001","2_Dermo_ZVAD_R1_001",  "3_Dermo_ZVAD_R1_001" ))
+
+perk_counts_total_plot <- ggplot(perk_counts_total, aes(x=sample_name, y = perk_counts_total, fill = condition)) + 
+  geom_col() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggsave(perk_counts_total_plot, file = "./FIGURES/perk_counts_total_plot.tiff", device = "tiff",
+       height=5, width = 5)
 
 ## MAKE DESEQ DATA SET FROM MATRIX
 # This object specifies the count data and metadata you will work with. The design piece is critical.
