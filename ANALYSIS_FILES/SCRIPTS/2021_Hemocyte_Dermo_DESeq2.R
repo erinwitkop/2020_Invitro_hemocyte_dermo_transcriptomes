@@ -32,6 +32,8 @@ library(extrafont)
 library(limma)
 library(data.table)
 library(topGO)
+library(GOSim)
+library(GO.db)
 
 #### LOADING SAVED GENOME, APOPTOSIS NAMES, IAP XP LISTS ####
 Apoptosis_frames <- load(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/C_gig_C_vir_apoptosis_products.RData")
@@ -699,7 +701,7 @@ apop_hemo_anno <- as.data.frame(colData(hemo_dds_rlog)[, c("condition")])
 rownames(apop_hemo_anno) <- colnames(apop_hemo_mat)
 colnames(apop_hemo_anno)[1] <- "Condition"
 
-pdf("./FIGURES/C_vir_apop_hemo_mat.pdf", width = 12, height = 15)
+pdf("./FIGURES/C_vir_apop_hemo_mat1.pdf", width = 12, height = 12)
 pheatmap(apop_hemo_mat , annotation_col = apop_hemo_anno)
 dev.off()
 
@@ -917,30 +919,76 @@ GO_sig_terms <- as.data.frame(GO_sig_terms)
 
 GO_sig_terms_found <- GO_sig_terms %>% filter(Ontology_term != "character(0)") %>% dplyr::rename(protein_id = seqid) 
 
-# join with GO terms for each list
-hemo_dds_deseq_res_Pmar_LFC_sig_ID <- hemo_dds_deseq_res_Pmar_LFC_sig_ID %>% dplyr::rename(Parent_gene = Parent, Parent = ID) %>% dplyr::select(-protein_id)
-hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID %>% dplyr::rename(Parent_gene = Parent, Parent = ID) %>% dplyr::select(-protein_id)
-hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID %>% dplyr::rename(Parent_gene = Parent, Parent = ID) %>% dplyr::select(-protein_id)
-hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID <- hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID %>% dplyr::rename(Parent_gene = Parent, Parent = ID) %>% dplyr::select(-protein_id)
-hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID <- hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID %>% dplyr::rename(Parent_gene = Parent, Parent = ID) %>% dplyr::select(-protein_id)
+# upload GO universe, every Interproscan line with GO term
+GO_universe <-  rtracklayer::readGFF("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/hemo_universe_all.GO.gff3")
+GO_universe <- as.data.frame(GO_universe)
+nrow(GO_universe) # 164675 lines 
 
-hemo_dds_deseq_res_Pmar_LFC_sig_ID$Parent <-  as.character(hemo_dds_deseq_res_Pmar_LFC_sig_ID$Parent)
-hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID$Parent <-  as.character(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID$Parent)
-hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID$Parent <-  as.character(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID$Parent)
-hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID$Parent <-  as.character(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID$Parent)
-hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID$Parent <-  as.character(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID$Parent)
+# get list of gene identifiers and gene significance values, focusing just on the GDC vs control and ZVAD vs control 
+hemo_dds_deseq_res_Pmar_LFC_sig_gene_list <- hemo_dds_deseq_res_Pmar_LFC_sig_ID %>% dplyr::select(ID, padj) %>% dplyr::rename(transcript_id = ID)
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID %>% dplyr::select(ID, padj) %>% dplyr::rename(transcript_id = ID)
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID %>% dplyr::select(ID, padj) %>% dplyr::rename(transcript_id = ID)
 
-hemo_dds_deseq_res_Pmar_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_LFC_sig_ID, unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) 
-hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID, unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) 
-hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID, unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) 
-hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID, unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) 
-hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID_GO <- left_join(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID, unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) 
+## get gene universe list of GO terms and GO identifiers 
+# first join with the rna ID
+GO_universe_rna <- GO_universe %>% dplyr::rename(protein_id = seqid) %>% left_join(., unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) %>% dplyr::rename(transcript_id = Parent)
 
-hemo_dds_deseq_res_Pmar_LFC_sig_ID_GO  <- left_join(hemo_dds_deseq_res_Pmar_LFC_sig_ID_GO, GO_sig_terms_found[,c("protein_id","Ontology_term")])
-hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID_GO, GO_sig_terms_found[,c("protein_id","Ontology_term")])
-hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID_GO, GO_sig_terms_found[,c("protein_id","Ontology_term")])
-hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID_GO <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_Pmar_LFC_sig_ID_GO, GO_sig_terms_found[,c("protein_id","Ontology_term")])
-hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID_GO <- left_join(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_ID_GO, GO_sig_terms_found[,c("protein_id","Ontology_term")])
+# parse out the GO terms so you can annotate them to find BP, CC, or MF using GO.db
+GO_universe_rna_found <- GO_universe_rna %>% filter(Ontology_term != "character(0)") %>% distinct(Ontology_term, protein_id, .keep_all = TRUE)
+nrow(GO_universe_rna_found)
+class(GO_universe_rna_found$Ontology_term) # AsIs
+
+GO_universe_rna_found$Ontology_term <- unlist(as.character(GO_universe_rna_found$Ontology_term))
+class(GO_universe_rna_found$Ontology_term)
+GO_universe_rna_found$Ontology_term <- gsub('\\\"', "", GO_universe_rna_found$Ontology_term, fixed = TRUE)
+GO_universe_rna_found$Ontology_term <- gsub('\"', "", GO_universe_rna_found$Ontology_term, fixed = TRUE)
+GO_universe_rna_found$Ontology_term <- gsub('c(', "", GO_universe_rna_found$Ontology_term, fixed = TRUE)
+GO_universe_rna_found$Ontology_term <- gsub(')', "", GO_universe_rna_found$Ontology_term, fixed = TRUE)
+GO_universe_rna_found$Ontology_term <- gsub(' ', "", GO_universe_rna_found$Ontology_term, fixed = TRUE)
+
+View(GO_universe_rna_found)
+
+# separate each GO term into individual rows for GO info joining
+GO_universe_rna_found_sep <- GO_universe_rna_found %>%  separate_rows(Ontology_term, 1, sep = ",") %>% dplyr::rename(go_id = Ontology_term)
+
+# annotate each GO term
+# get full GO list from GO.db
+GOTERM_df <- as.data.frame(GOTERM) 
+# remove duplicated go_id column
+GOTERM_df <- GOTERM_df[,-2]
+
+GO_universe_rna_found_sep_GO <- left_join(GO_universe_rna_found_sep, GOTERM_df)
+
+# keep only BP terms in the universe list to start with
+GO_universe_rna_found_sep_GO_BP <- GO_universe_rna_found_sep_GO %>% filter(Ontology == "BP") %>%
+  # remove synonym and secondary columns
+  dplyr::select(-Synonym, -Secondary) %>% distinct(protein_id, signature_desc, go_id, .keep_all = TRUE)
+
+nrow(GO_universe_rna_found_sep_GO_BP) # 19706
+
+# also make a MF dataframe
+GO_universe_rna_found_sep_GO_MF <- GO_universe_rna_found_sep_GO %>% filter(Ontology == "MF") %>%
+  # remove synonym and secondary columns
+  dplyr::select(-Synonym, -Secondary) %>% distinct(protein_id, signature_desc, go_id, .keep_all = TRUE)
+
+nrow(GO_universe_rna_found_sep_GO_MF) # 40176 # MF has the most annotations going to proceed with using the MF list for the GO enrichment 
+
+# also make a CC dataframe
+GO_universe_rna_found_sep_GO_CC <- GO_universe_rna_found_sep_GO %>% filter(Ontology == "CC") %>%
+  # remove synonym and secondary columns
+  dplyr::select(-Synonym, -Secondary) %>% distinct(protein_id, signature_desc, go_id, .keep_all = TRUE)
+
+nrow(GO_universe_rna_found_sep_GO_CC) # 9293
+
+# are all of my significant genes in this list?
+nrow(hemo_dds_deseq_res_Pmar_LFC_sig_gene_list) # 513
+
+left_join(hemo_dds_deseq_res_Pmar_LFC_sig_gene_list, GO_universe_rna_found_sep_GO_MF) %>% filter(!is.na(go_id)) %>% distinct(transcript_id, .keep_all = TRUE ) %>%  View()
+
+hemo_dds_deseq_res_Pmar_LFC_sig_gene_list[hemo_dds_deseq_res_Pmar_LFC_sig_gene_list$transcript_id %in% GO_universe_rna_found_sep_GO_BP$transcript_id,] # 512
+
+setdiff(hemo_dds_deseq_res_Pmar_LFC_sig_gene_list$transcript_id , GO_universe_rna_found_sep_GO_BP$transcript_id)
+hemo_dds_deseq_res_Pmar_LFC_sig_gene_list[!hemo_dds_deseq_res_Pmar_LFC_sig_gene_list$transcript_id %in% GO_universe_rna_found_sep_GO_BP$transcript_id,]
 
 ## Perform GO enrichment 
 
@@ -1177,7 +1225,7 @@ ggsave(combined_Pmar, device = "tiff",
        width = 12, height = 7,
        file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/combined_Pmar_plot")
 
-## Perkinsus expression upset plot 
+## Perkinsus expression upset plot ####
 perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$condition <- "P_mar_ZVAD_vs_Pmar"
 perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$condition <- "P_mar_GDC_vs_Pmar"
 
@@ -1208,8 +1256,33 @@ ComplexHeatmap::draw(Perk_heatmap, heatmap_legend_side = "left", padding = unit(
 
 dev.off()
 
+## Plot transcformed counts across each sample ####
+# example codes from RNAseq workflow: https://www.bioconductor.org/packages/devel/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#other-comparisons
 
-### Volcano plots of significant genes
+perk_comb_ID <-  rbind(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot,
+                       perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot) %>% dplyr::pull(., transcript_id)
+class(perk_comb_ID)
+
+# find rownames matching these IDs
+perk_mat <- assay(perk_dds_rlog)[perk_comb_ID,]
+perk_mat <- as.data.frame(perk_mat) %>% mutate(transcript_id = rownames(.)) %>% 
+  left_join(., unique(Perkinsus_rtracklayer[,c("product","transcript_id")]), by = "transcript_id") %>% filter(!is.na(product)) %>%
+  mutate(transcript_product = paste(product, transcript_id, sep = "-")) %>% dplyr::select(-product, -transcript_id)
+rownames(perk_mat) <- perk_mat$transcript_product
+perk_mat <- perk_mat[,-10]
+perk_mat <- as.matrix(perk_mat)  
+
+perk_anno <- as.data.frame(colData(perk_dds_rlog)[, c("condition")])
+rownames(perk_anno) <- colnames(perk_mat)
+colnames(perk_anno)[1] <- "Condition"
+
+pdf("./FIGURES/perk_mat1.pdf", width = 12, height = 12)
+pheatmap(perk_mat , annotation_col = perk_anno)
+dev.off()
+
+
+
+### Volcano plots of significant genes ####
 # compute significance 
 perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$log10 <- -log10(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$padj)
 perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$log10 <- -log10(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$padj)
@@ -1217,14 +1290,138 @@ perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$log10 <- -log10(perk_dds_deseq_res_Pma
 # plot the volcano plots
 perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_volcano_plot <- ggplot(data = as.data.frame(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot),
                                                        aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() + 
-  labs(y = "-log10(adjusted p-value)", title = "P.mar + ZVAD vs.\ncontrol P. mar")
+  labs(y = "-log10(adjusted p-value)", title = "P.mar + ZVAD vs.\ncontrol P. mar") + xlim(-10,15)
 
 perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_volcano_plot <- ggplot(data = as.data.frame(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot), 
                                                             aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() +
-  labs(y = "-log10(adjusted p-value)", title = "P.mar + GDC vs.\ncontrol P. mar")
+  labs(y = "-log10(adjusted p-value)", title = "P.mar + GDC vs.\ncontrol P. mar") + xlim(-10,15)
 
 
 perk_volcano <- ggarrange(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_volcano_plot, 
                           perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_volcano_plot)
 
 ggsave(perk_volcano, file = "./FIGURES/perk_volcano_plot", device = "tiff", height = 3, width = 5)
+
+#### Export protein lists to run Interproscan ####
+
+# concatenate all transcript ID lists so I can create a lookup list in terminal
+perk_comb_ID_df <- as.data.frame(perk_comb_ID) %>% dplyr::rename(Parent = perk_comb_ID)
+
+Perkinsus_rtracklayer_XP <- Perkinsus_rtracklayer %>% filter(!is.na(protein_id)) %>% tidyr::separate(Parent, into = c("rna","Parent"),sep = "-")
+perk_comb_ID_sig_XP_df <- left_join(perk_comb_ID_df, unique(Perkinsus_rtracklayer_XP[,c("Parent","protein_id")])) %>% filter(!is.na(protein_id))
+
+# NA's due to XR proteins from non-coding RNA
+
+# export protein IDs to lookup in bluewaves
+write.table(perk_comb_ID_sig_XP_df$protein_id, file = "perk_comb_ID_sig_XP_df_lookup.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+
+#### Perkinsus GO term analysis ####
+Perk_GO_sig_terms <- rtracklayer::readGFF("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/perk_comb_ID_sig_XP_df_lookup.fa_1.gff3")
+Perk_Interpro_sig_terms <- rtracklayer::readGFF("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/perk_comb_ID_sig_XP_df_lookup.fa.gff3")
+Perk_GO_sig_terms <- as.data.frame(Perk_GO_sig_terms)
+Perk_Interpro_sig_terms <- as.data.frame(Perk_Interpro_sig_terms)
+  
+# Only need to analyze the GO terms list Perk_GO_sig_terms
+
+# get the GO terms for each protein 
+Perk_GO_sig_terms_found <- Perk_GO_sig_terms %>% filter(Ontology_term != "character(0)") %>% dplyr::rename(protein_id = seqid) %>% distinct(Ontology_term, protein_id, .keep_all = TRUE)
+class(Perk_GO_sig_terms_found$Ontology_term) # AsIs
+
+Perk_GO_sig_terms_found$Ontology_term <- unlist(as.character(Perk_GO_sig_terms_found$Ontology_term))
+class(Perk_GO_sig_terms_found$Ontology_term)
+Perk_GO_sig_terms_found$Ontology_term <- gsub('\\\"', "", Perk_GO_sig_terms_found$Ontology_term, fixed = TRUE)
+Perk_GO_sig_terms_found$Ontology_term <- gsub('\"', "", Perk_GO_sig_terms_found$Ontology_term, fixed = TRUE)
+Perk_GO_sig_terms_found$Ontology_term <- gsub('c(', "", Perk_GO_sig_terms_found$Ontology_term, fixed = TRUE)
+Perk_GO_sig_terms_found$Ontology_term <- gsub(')', "", Perk_GO_sig_terms_found$Ontology_term, fixed = TRUE)
+Perk_GO_sig_terms_found$Ontology_term <- gsub(' ', "", Perk_GO_sig_terms_found$Ontology_term, fixed = TRUE)
+
+View(Perk_GO_sig_terms_found)
+
+# separate each GO term into 
+Perk_GO_sig_terms_found_sep <- Perk_GO_sig_terms_found %>%  separate_rows(Ontology_term, 1, sep = ",") 
+
+# Look up GO terms and use REVIGO to plot by frequency (note this is not an enrichment analysis..just looking at overall frequency)
+Perk_GO_sig_terms_found_sep_GO <- Perk_GO_sig_terms_found_sep %>% dplyr::select(Ontology_term)
+Perk_GO_sig_terms_found_sep_GO_count <- Perk_GO_sig_terms_found_sep_GO %>% group_by(Ontology_term) %>% count()
+# ran REVIGO saying "higher value is better"
+# visualized plot by value
+
+# Match Molecular process GO terms to their proteins 
+P_marinus_MF <- read.csv("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/MF_REVIGO_P_marinus.csv")
+P_marinus_MF <- P_marinus_MF %>% dplyr::rename(Ontology_term = TermID) %>% dplyr::rename(Ontology_desc = Name)
+P_marinus_MF$Ontology_desc <- as.character(P_marinus_MF$Ontology_desc)
+
+Perk_GO_sig_terms_found_sep_MF <- left_join(Perk_GO_sig_terms_found_sep,P_marinus_MF[, c("Ontology_desc", "Ontology_term")])
+
+# get list of distinct protein and GO MF IDs 
+Perk_GO_sig_terms_found_sep_MF_uniq <- Perk_GO_sig_terms_found_sep_MF %>% distinct(protein_id, Ontology_term, Ontology_desc) %>% filter(!is.na(Ontology_desc))
+
+# join with parent to get XMs
+Perk_GO_sig_terms_found_sep_MF_uniq_XM <- Perk_GO_sig_terms_found_sep_MF_uniq %>% dplyr::rename(Name = protein_id) %>% 
+  left_join(., unique(Perkinsus_rtracklayer_XP[,c("Name","Parent")])) %>% dplyr::rename(protein_id = Name, transcript_id = Parent)
+
+# Join back with LFC and plot 
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_GO <- left_join(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot,Perk_GO_sig_terms_found_sep_MF_uniq_XM)
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_GO <- left_join(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot , Perk_GO_sig_terms_found_sep_MF_uniq_XM)
+
+# Plot each list in REVIGO
+View(unique(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_GO$Ontology_term))
+View(unique(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_GO$Ontology_term))
+
+# plot LFC 
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_GO_plot <- ggplot(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_GO, aes(x= Ontology_desc, y = log2FoldChange)) + 
+  geom_col() + coord_flip() + ggtitle("P. mar. ZVAD\n vs P. mar control")
+
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_GO_plot <- ggplot(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_GO, aes(x= Ontology_desc, y = log2FoldChange)) + 
+  geom_col() + coord_flip() + ggtitle("P. mar. GDC\n vs P. mar control")
+
+# Not very informative! 
+
+# Join instead with Interproscan annotations 
+Perk_GO_sig_terms_found_sep_MF_XM <-  Perk_GO_sig_terms_found_sep_MF %>% distinct(protein_id, as.character(Dbxref), as.character(signature_desc)) %>% dplyr::rename(Name = protein_id) %>% 
+  left_join(., unique(Perkinsus_rtracklayer_XP[,c("Name","Parent")])) %>% dplyr::rename(protein_id = Name, transcript_id = Parent)
+
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro <- left_join(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot,Perk_GO_sig_terms_found_sep_MF_XM) %>% left_join(., Perk_GO_sig_terms_found_sep_MF_uniq_XM)
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro <- left_join(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot, Perk_GO_sig_terms_found_sep_MF_XM)  %>% left_join(., Perk_GO_sig_terms_found_sep_MF_uniq_XM)
+
+# simplify to one line per protein
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro_uniq <- perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro %>% distinct(protein_id, Ontology_term, .keep_all = TRUE) %>% distinct(protein_id, .keep_all = TRUE )
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_uniq <- perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro %>% distinct(protein_id, Ontology_term, .keep_all = TRUE)%>% distinct(protein_id, .keep_all = TRUE )
+
+# rename columns
+colnames(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro_uniq)[11:12] <- c("Dbxref","signature_desc")
+colnames(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_uniq )[11:12] <- c("Dbxref","signature_desc")
+
+# create combined annotation with product name, Interpro, and GO term for proteins
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro_uniq_comb <- perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro_uniq  %>% mutate(comb_product = paste(product,signature_desc, Ontology_desc, sep = "-"))
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_uniq_comb <- perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_uniq %>% mutate(comb_product = paste(product,signature_desc,Ontology_desc, sep = "-"))
+
+## Remake expression upset plot but replacing hypothetical proteins with any interesting Interproscan terms
+
+# combine dataframes
+Perk_comb_GO <- rbind(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro_uniq_comb ,
+                      perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_uniq_comb) %>%
+  dplyr::select(comb_product, condition, log2FoldChange)
+Perk_comb_spread_GO <- spread(Perk_comb_GO, condition, log2FoldChange, fill = 0)
+Perk_comb_spread_GO <- column_to_rownames(Perk_comb_spread_GO , var = "comb_product") 
+Perk_comb_spread_GO_mat <- as.matrix(Perk_comb_spread_GO)
+
+Perk_labels =c( "P. mar + GDC vs\nP. mar Control", "P. mar + ZVAD vs\nP. mar Control")
+# create named vector to hold column names
+Perk_column_labels = structure(paste0(Perk_labels), names = paste0(colnames(Perk_comb_spread_mat)))
+
+pdf("./FIGURES/Perk_spread_GO_mat.pdf", width = 10, height = 8)
+Perk_heatmap_GO <- ComplexHeatmap::Heatmap(Perk_comb_spread_GO_mat, border = TRUE, 
+                                        column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                        row_title = "Transcript and Product Name", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                        row_dend_width = unit(2, "cm"),
+                                        column_labels = Perk_column_labels[colnames(Perk_comb_spread_mat)],
+                                        # apply split by k-meams clustering to highlight groups
+                                        #row_km = 3, column_km = 2, 
+                                        row_names_gp = gpar(fontsize = 7),
+                                        column_names_gp = gpar(fontsize = 8),
+                                        heatmap_legend_param = list(title = "Log2 Fold Change"))
+ComplexHeatmap::draw(Perk_heatmap_GO, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+
+dev.off()
