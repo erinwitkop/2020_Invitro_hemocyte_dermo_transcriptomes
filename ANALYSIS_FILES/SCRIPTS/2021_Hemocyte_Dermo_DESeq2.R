@@ -1020,33 +1020,20 @@ Pmar_ZVAD_control_summary <- summary(attributes(Pmar_ZVAD_control_Fisher_Weight)
 Pmar_GDC_control_summary <- summary(attributes(Pmar_GDC_control_Fisher_Weight)$score <= 0.05)
 # 44 significant
   
-  
 #print out the top significant results
 Pmar_control_Res <- GenTable(Pmar_control_GOdata, topgoFisher = Pmar_control_Fisher_Weight, orderBy = "topgoFisher", topNodes = 18)
 Pmar_ZVAD_control_Res <- GenTable(Pmar_ZVAD_control_GOdata, topgoFisher = Pmar_ZVAD_control_Fisher_Weight, orderBy = "topgoFisher", topNodes = 29)
 Pmar_GDC_control_Res <- GenTable(Pmar_GDC_control_GOdata, topgoFisher = Pmar_GDC_control_Fisher_Weight, orderBy = "topgoFisher", topNodes = 44)
 
+write.csv(Pmar_control_Res , file = "Pmar_control_Res_GO.csv")
+write.csv(Pmar_ZVAD_control_Res , file = "Pmar_ZVAD_control_Res_GO.csv")
+write.csv(Pmar_GDC_control_Res , file = "Pmar_GDC_control_Res_GO.csv")
 
-# print a graph (to a pdf file) with the top 'numsignif' results from weight01 analysis:
-printGraph(OsHV1_GOdata, OsHV1Fisher_weight, firstSigNodes = OsHV1_numsignif, useInfo = "all", pdfSW = TRUE)
-#rename your graph! 
+# Plot results in REVIGO
 
-#Find top significant nodes 
-OsHV1_topRes <- GenTable(OsHV1_GOdata, classicFisher = OsHV1Fisher, orderBy = "resultFisher", ranksOf = "classicFisher", topNodes = 20)
-write.csv(OsHV1_topRes, file= "OsHV1_topGO_topSignificantNodes.csv")
+# are there common significant terms across all? 
 
-# print out the genes that are annotated with the significantly enriched GO terms:
-OsHV1_terms <- OsHV1_numsignif_Res$GO.ID
-OsHV1_genes <- genesInTerm(OsHV1_GOdata, OsHV1_terms)
-for (i in 1:length(OsHV1_terms))
-{
-  OsHV1_GOterm <- OsHV1_terms[i]
-  OsHV1genesforterm <- OsHV1_genes[OsHV1_GOterm][[1]] 
-  OsHV1_factor <- OsHV1genesforterm %in% OsHV1_geneofInterest # find the genes that are in the list of genes of interest
-  OsHV1genesforterm2 <- OsHV1genesforterm[OsHV1_factor == TRUE] 
-  OsHV1genesforterm2 <- paste(OsHV1genesforterm2, collapse=',')
-  print(paste("Term",OsHV1_GOterm,"transcripts:",OsHV1genesforterm2))
-}
+
 
 
 #### PERKINSUS TRANSCRIPTOME ANALYSIS ####
@@ -1482,3 +1469,5 @@ Perk_heatmap_GO <- ComplexHeatmap::Heatmap(Perk_comb_spread_GO_mat, border = TRU
 ComplexHeatmap::draw(Perk_heatmap_GO, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
 
 dev.off()
+
+#### PCA ANALYSIS ####
