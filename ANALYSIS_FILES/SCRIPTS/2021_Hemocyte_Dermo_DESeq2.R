@@ -944,53 +944,110 @@ GO_universe_rna_found$Ontology_term <- gsub('\\\"', "", GO_universe_rna_found$On
 GO_universe_rna_found$Ontology_term <- gsub('\"', "", GO_universe_rna_found$Ontology_term, fixed = TRUE)
 GO_universe_rna_found$Ontology_term <- gsub('c(', "", GO_universe_rna_found$Ontology_term, fixed = TRUE)
 GO_universe_rna_found$Ontology_term <- gsub(')', "", GO_universe_rna_found$Ontology_term, fixed = TRUE)
-GO_universe_rna_found$Ontology_term <- gsub(' ', "", GO_universe_rna_found$Ontology_term, fixed = TRUE)
 
 View(GO_universe_rna_found)
 
-# separate each GO term into individual rows for GO info joining
-GO_universe_rna_found_sep <- GO_universe_rna_found %>%  separate_rows(Ontology_term, 1, sep = ",") %>% dplyr::rename(go_id = Ontology_term)
+# format dataframe for use in topGO for custom annotations
+GO_universe_rna_found_geneID2GO <- GO_universe_rna_found %>% dplyr::select(transcript_id, Ontology_term)
+# export as text file to get tab separate file and then re-load using read mappings function
+write.table(GO_universe_rna_found_geneID2GO, file = "GO_universe_rna_found_geneID2GO.txt", sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+GO_universe_rna_found_geneID2GO_mapping <-  readMappings(file= "GO_universe_rna_found_geneID2GO.txt")
 
-# annotate each GO term
-# get full GO list from GO.db
-GOTERM_df <- as.data.frame(GOTERM) 
-# remove duplicated go_id column
-GOTERM_df <- GOTERM_df[,-2]
+# join GO terms for reference later and only keep the list of sig genes in each group that have a GO term
+hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_GO <- left_join(hemo_dds_deseq_res_Pmar_LFC_sig_gene_list, GO_universe_rna_found) %>% filter(!is.na(Ontology_term)) %>% distinct(transcript_id, .keep_all = TRUE)
+nrow(hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_GO) # 328
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list_GO <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list, GO_universe_rna_found) %>% filter(!is.na(Ontology_term)) %>% distinct(transcript_id, .keep_all = TRUE)
+nrow(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list_GO) # 537
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list_GO <- left_join(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list, GO_universe_rna_found) %>% filter(!is.na(Ontology_term)) %>% distinct(transcript_id, .keep_all = TRUE)
+nrow(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list_GO) # 925
 
-GO_universe_rna_found_sep_GO <- left_join(GO_universe_rna_found_sep, GOTERM_df)
+# get those sig LFCs with a GO term and put in correct format for topGO
+geneNames <- names(GO_universe_rna_found_geneID2GO_mapping)
+head(geneNames)
 
-# keep only BP terms in the universe list to start with
-GO_universe_rna_found_sep_GO_BP <- GO_universe_rna_found_sep_GO %>% filter(Ontology == "BP") %>%
-  # remove synonym and secondary columns
-  dplyr::select(-Synonym, -Secondary) %>% distinct(protein_id, signature_desc, go_id, .keep_all = TRUE)
+hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_GO_only <- as.factor(hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_GO$transcript_id)
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list_GO_only <-  as.factor(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list_GO$transcript_id)
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list_GO_only <-  as.factor(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list_GO$transcript_id)
 
-nrow(GO_universe_rna_found_sep_GO_BP) # 19706
+hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_factor <- factor(as.integer(geneNames %in% hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_GO_only))
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list_factor <- factor(as.integer(geneNames %in% hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list_GO_only))
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list_factor <- factor(as.integer(geneNames %in% hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list_GO_only))
 
-# also make a MF dataframe
-GO_universe_rna_found_sep_GO_MF <- GO_universe_rna_found_sep_GO %>% filter(Ontology == "MF") %>%
-  # remove synonym and secondary columns
-  dplyr::select(-Synonym, -Secondary) %>% distinct(protein_id, signature_desc, go_id, .keep_all = TRUE)
+names(hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_factor)   <- geneNames
+names(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list_factor) <- geneNames
+names(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list_factor)  <- geneNames
 
-nrow(GO_universe_rna_found_sep_GO_MF) # 40176 # MF has the most annotations going to proceed with using the MF list for the GO enrichment 
+### Make topGO data object 
+Pmar_control_GOdata <- new("topGOdata", description = "Pmar vs control Gene Enrichment", 
+                           # I want to test MF
+                           ontology = "MF",
+                           # define here the genes of interest
+                    allGenes = hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_factor,
+                    nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 
-# also make a CC dataframe
-GO_universe_rna_found_sep_GO_CC <- GO_universe_rna_found_sep_GO %>% filter(Ontology == "CC") %>%
-  # remove synonym and secondary columns
-  dplyr::select(-Synonym, -Secondary) %>% distinct(protein_id, signature_desc, go_id, .keep_all = TRUE)
+Pmar_ZVAD_control_GOdata <- new("topGOdata", description = "Pmar vs control Gene Enrichment", 
+                           # I want to test MF
+                           ontology = "MF",
+                           # define here the genes of interest
+                           allGenes = hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list_factor,
+                           nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 
-nrow(GO_universe_rna_found_sep_GO_CC) # 9293
+Pmar_GDC_control_GOdata <- new("topGOdata", description = "Pmar vs control Gene Enrichment", 
+                                # I want to test MF
+                                ontology = "MF",
+                                # define here the genes of interest
+                                allGenes = hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list_factor,
+                                nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 
-# are all of my significant genes in this list?
-nrow(hemo_dds_deseq_res_Pmar_LFC_sig_gene_list) # 513
+#nodeSize=used to prune the GO hierarchy from the terms which have less than 1 annotated genes
+#annFUN.gene2GO = this function is used when the annotations are provided as a gene-to-GOs mapping.
 
-left_join(hemo_dds_deseq_res_Pmar_LFC_sig_gene_list, GO_universe_rna_found_sep_GO_MF) %>% filter(!is.na(go_id)) %>% distinct(transcript_id, .keep_all = TRUE ) %>%  View()
+### Perform Encrichment tests 
+Pmar_control_Fisher_Weight <- runTest(Pmar_control_GOdata, algorithm = "weight01", statistic = "fisher")
+Pmar_ZVAD_control_Fisher_Weight <- runTest(Pmar_ZVAD_control_GOdata, algorithm = "weight01", statistic = "fisher")
+Pmar_GDC_control_Fisher_Weight <- runTest(Pmar_GDC_control_GOdata, algorithm = "weight01", statistic = "fisher")
 
-hemo_dds_deseq_res_Pmar_LFC_sig_gene_list[hemo_dds_deseq_res_Pmar_LFC_sig_gene_list$transcript_id %in% GO_universe_rna_found_sep_GO_BP$transcript_id,] # 512
 
-setdiff(hemo_dds_deseq_res_Pmar_LFC_sig_gene_list$transcript_id , GO_universe_rna_found_sep_GO_BP$transcript_id)
-hemo_dds_deseq_res_Pmar_LFC_sig_gene_list[!hemo_dds_deseq_res_Pmar_LFC_sig_gene_list$transcript_id %in% GO_universe_rna_found_sep_GO_BP$transcript_id,]
+## Analyze enrichment test results 
 
-## Perform GO enrichment 
+# see how many results we get where weight01 gives a P-value <= 0.05:
+Pmar_control_summary <- summary(attributes(Pmar_control_Fisher_Weight)$score <= 0.05)
+# 18 significant
+
+Pmar_ZVAD_control_summary <- summary(attributes(Pmar_ZVAD_control_Fisher_Weight)$score <= 0.05)
+# 29 significant
+
+Pmar_GDC_control_summary <- summary(attributes(Pmar_GDC_control_Fisher_Weight)$score <= 0.05)
+# 44 significant
+  
+  
+#print out the top significant results
+Pmar_control_Res <- GenTable(Pmar_control_GOdata, topgoFisher = Pmar_control_Fisher_Weight, orderBy = "topgoFisher", topNodes = 18)
+Pmar_ZVAD_control_Res <- GenTable(Pmar_ZVAD_control_GOdata, topgoFisher = Pmar_ZVAD_control_Fisher_Weight, orderBy = "topgoFisher", topNodes = 29)
+Pmar_GDC_control_Res <- GenTable(Pmar_GDC_control_GOdata, topgoFisher = Pmar_GDC_control_Fisher_Weight, orderBy = "topgoFisher", topNodes = 44)
+
+
+# print a graph (to a pdf file) with the top 'numsignif' results from weight01 analysis:
+printGraph(OsHV1_GOdata, OsHV1Fisher_weight, firstSigNodes = OsHV1_numsignif, useInfo = "all", pdfSW = TRUE)
+#rename your graph! 
+
+#Find top significant nodes 
+OsHV1_topRes <- GenTable(OsHV1_GOdata, classicFisher = OsHV1Fisher, orderBy = "resultFisher", ranksOf = "classicFisher", topNodes = 20)
+write.csv(OsHV1_topRes, file= "OsHV1_topGO_topSignificantNodes.csv")
+
+# print out the genes that are annotated with the significantly enriched GO terms:
+OsHV1_terms <- OsHV1_numsignif_Res$GO.ID
+OsHV1_genes <- genesInTerm(OsHV1_GOdata, OsHV1_terms)
+for (i in 1:length(OsHV1_terms))
+{
+  OsHV1_GOterm <- OsHV1_terms[i]
+  OsHV1genesforterm <- OsHV1_genes[OsHV1_GOterm][[1]] 
+  OsHV1_factor <- OsHV1genesforterm %in% OsHV1_geneofInterest # find the genes that are in the list of genes of interest
+  OsHV1genesforterm2 <- OsHV1genesforterm[OsHV1_factor == TRUE] 
+  OsHV1genesforterm2 <- paste(OsHV1genesforterm2, collapse=',')
+  print(paste("Term",OsHV1_GOterm,"transcripts:",OsHV1genesforterm2))
+}
+
 
 #### PERKINSUS TRANSCRIPTOME ANALYSIS ####
 
