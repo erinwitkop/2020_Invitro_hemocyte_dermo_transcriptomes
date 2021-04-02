@@ -34,6 +34,8 @@ library(data.table)
 library(topGO)
 library(GOSim)
 library(GO.db)
+library(PCAtools)
+
 
 #### LOADING SAVED GENOME, APOPTOSIS NAMES, IAP XP LISTS ####
 Apoptosis_frames <- load(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/C_gig_C_vir_apoptosis_products.RData")
@@ -406,6 +408,14 @@ hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig $ID <- row.names(hemo_Pmar_dds_des
 hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig  <- as.data.frame(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig)
 nrow(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig)  #1196
 
+# Annotate all the significant proteins in each 
+
+hemo_dds_deseq_res_Pmar_LFC_sig_all_annot <- left_join(hemo_dds_deseq_res_Pmar_LFC_sig,dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
+
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_all_annot <- left_join(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig,dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
+
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_all_annot <- left_join(hemo_dds_deseq_res_Pmar_GDC_LFC_sig,dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
+
 ### GENE CLUSTERING ANALYSIS HEATMAPS  
 # Extract genes with the highest variance across samples for each comparison using either vst or rlog transformed data
 # This heatmap rather than plotting absolute expression strength plot the amount by which each gene deviates in a specific sample from the gene’s average across all samples. 
@@ -429,7 +439,7 @@ family_hemo_heatmap_reorder <-rownames(family_hemo_mat[family_hemo_heatmap$tree_
 # annotate the row.names
 family_hemo_mat_prot <- as.data.frame(family_hemo_heatmap_reorder)
 colnames(family_hemo_mat_prot)[1] <- "ID"
-family_hemo_mat_prot_annot <- left_join(family_hemo_mat_prot, select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
+family_hemo_mat_prot_annot <- left_join(family_hemo_mat_prot, dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
 
 ### Volcano plots of significant genes
 # compute significance 
@@ -679,7 +689,6 @@ C_vir_heatmap <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_spread_mat, border = TR
 ComplexHeatmap::draw(C_vir_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
 dev.off()
 
-
 ## Plot apoptosis transcformed counts across each sample ####
 # example codes from RNAseq workflow: https://www.bioconductor.org/packages/devel/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#other-comparisons
 
@@ -914,6 +923,8 @@ write.table(hemo_counts_universe_XP[40001:41475, "protein_id"], file = "hemo_cou
 
 #### HEMOCYTE GO ANALYSIS ####
 
+# topGO tutorial: https://bioconductor.org/packages/release/bioc/vignettes/topGO/inst/doc/topGO.pdf
+
 GO_sig_terms <- rtracklayer::readGFF("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/hemo_dds_deseq_sig_XP_df_lookup_seq.fa_1.gff3")
 GO_sig_terms <- as.data.frame(GO_sig_terms)
 
@@ -1032,9 +1043,6 @@ write.csv(Pmar_GDC_control_Res , file = "Pmar_GDC_control_Res_GO.csv")
 # Plot results in REVIGO
 
 # are there common significant terms across all? 
-
-
-
 
 #### PERKINSUS TRANSCRIPTOME ANALYSIS ####
 
@@ -1256,6 +1264,9 @@ perk_dds_deseq_res_Pmar_GDC_ZVAD_LFC_sig_annot_comb <- intersect(perk_dds_deseq_
     # This could indicate perhaps PCR bias in the Perkinsus genes that were sequenced, or that treatments caused little change
     # (which is good considering we only wanted the inhibitors to affect the hemocytes)
 
+# Join with these their Interproscan results
+perk_dds_deseq_res_Pmar_GDC_ZVAD_LFC_sig_annot_comb_Interpro <-  left_join(perk_dds_deseq_res_Pmar_GDC_ZVAD_LFC_sig_annot_comb, Perk_Interpro_GO_terms_XP, by = "transcript_id")
+
 # plot LFC 
 perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_plot <- ggplot(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot, aes(x= product, y = log2FoldChange)) + 
   geom_col() + coord_flip() + ggtitle("P. mar. ZVAD\n vs P. mar control")
@@ -1324,8 +1335,6 @@ pdf("./FIGURES/perk_mat1.pdf", width = 12, height = 12)
 pheatmap(perk_mat , annotation_col = perk_anno)
 dev.off()
 
-
-
 ### Volcano plots of significant genes ####
 # compute significance 
 perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$log10 <- -log10(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$padj)
@@ -1346,6 +1355,26 @@ perk_volcano <- ggarrange(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_volcano_plo
 
 ggsave(perk_volcano, file = "./FIGURES/perk_volcano_plot", device = "tiff", height = 3, width = 5)
 
+
+#### Heatmaps of the genes with the most variable expression patterns ####
+
+topVarGenes_perk_dds_rlog <-  head(order(rowVars(assay(perk_dds_rlog )), decreasing = TRUE), 100)
+family_perk_mat <- assay(perk_dds_rlog)[topVarGenes_perk_dds_rlog,]
+family_perk_mat <- family_perk_mat - rowMeans(family_perk_mat)
+family_perk_anno <- as.data.frame(colData(perk_dds_rlog)[, c("condition")])
+rownames(family_perk_anno) <- colnames(family_perk_mat)
+family_perk_heatmap <- pheatmap(family_perk_mat , annotation_col = family_perk_anno)
+head(family_perk_mat)
+
+# reorder annotation table to match ordering in heatmap 
+family_perk_heatmap_reorder <-rownames(family_perk_mat[family_perk_heatmap$tree_row[["order"]],])
+# annotate the row.names
+family_perk_mat_prot <- as.data.frame(family_perk_heatmap_reorder)
+colnames(family_perk_mat_prot)[1] <- "Parent"
+family_perk_mat_prot_annot <- left_join(family_perk_mat_prot, dplyr::select(Perkinsus_rtracklayer_XP, Parent, product), by = "Parent") %>% distinct(Parent,product)
+
+# the results of this are not very informative!
+
 #### Export protein lists to run Interproscan ####
 
 # concatenate all transcript ID lists so I can create a lookup list in terminal
@@ -1359,8 +1388,28 @@ perk_comb_ID_sig_XP_df <- left_join(perk_comb_ID_df, unique(Perkinsus_rtracklaye
 # export protein IDs to lookup in bluewaves
 write.table(perk_comb_ID_sig_XP_df$protein_id, file = "perk_comb_ID_sig_XP_df_lookup.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
 
+# Also export the full list of transcripts to run in Interproscan 
+
+perk_dds_rlog_mat_XP <- as.data.frame(assay(perk_dds_rlog)) %>% mutate(Parent = rownames(.)) %>%
+  left_join(., unique(Perkinsus_rtracklayer_XP[,c("Parent","Name")])) %>% dplyr::select(Name) %>% filter(!is.na(Name))
+
+# export protein IDs to lookup in bluewaves
+write.table(perk_dds_rlog_mat_XP$Name, file = "perk_dds_rlog_mat_XP_lookup.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
+
 
 #### Perkinsus GO term analysis ####
+
+# Download all Interproscan and GO terms for the full Perkinsus transcriptome 
+# removed the lines with sequence and no Interproscan information before loading
+Perk_Interpro_GO_terms <- rtracklayer::readGFF("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/perk_dds_rlog_mat_XP_lookup_split_all.XP.gff3")
+Perk_Interpro_GO_terms <- as.data.frame(Perk_Interpro_GO_terms)
+nrow(Perk_Interpro_GO_terms)
+
+# Join with XM terms
+Perk_Interpro_GO_terms_XP <- Perk_Interpro_GO_terms %>% dplyr::rename(protein_id = seqid) %>%
+  left_join(., unique(Perkinsus_rtracklayer_XP[,c("Parent","protein_id","product")])) %>% dplyr::rename(transcript_id = Parent) %>% mutate(transcript_id_product = paste(product, transcript_id, sep = "-"))
+
+# Download all GO and Interproscan terms for the significant DEGs
 Perk_GO_sig_terms <- rtracklayer::readGFF("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/perk_comb_ID_sig_XP_df_lookup.fa_1.gff3")
 Perk_Interpro_sig_terms <- rtracklayer::readGFF("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/perk_comb_ID_sig_XP_df_lookup.fa.gff3")
 Perk_GO_sig_terms <- as.data.frame(Perk_GO_sig_terms)
@@ -1471,3 +1520,1061 @@ ComplexHeatmap::draw(Perk_heatmap_GO, heatmap_legend_side = "left", padding = un
 dev.off()
 
 #### PCA ANALYSIS ####
+
+# helpful PCA plot tutorial
+#https://bioconductor.org/packages/release/bioc/vignettes/PCAtools/inst/doc/PCAtools.html
+
+# Load phenotype data
+
+load("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/COMBINED_ANALYSIS/R_ANALYSIS/PCA_pheno_2020.RData")
+PCA_pheno_2020
+
+# set the sample names to be the same as the count data names for each pool and treatment 
+colnames(hemo_counts)
+#[1] "1_Dermo_GDC_R1_001"  "1_Dermo_ZVAD_R1_001" "1_Dermo_R1_001"      "1_control_R1_001"    "2_Dermo_GDC_R1_001"  "2_Dermo_ZVAD_R1_001"
+#[7] "2_Dermo_R1_001"      "2_control_R1_001"    "3_Dermo_GDC_R1_001"  "3_Dermo_ZVAD_R1_001" "3_Dermo_R1_001"      "3_control_R1_001"   
+
+# mutate treatment and Pool ID
+PCA_pheno_2020_all <- PCA_pheno_2020 %>% 
+  # remove the beads data
+  filter(Treat != "BEADS_LPS") %>%
+  mutate(ID = case_when(
+  ID == "Pool1" ~ "1",
+  ID == "Pool2" ~ "2",
+  ID == "Pool3" ~ "3",
+  TRUE ~ NA_character_)) %>%
+  mutate(Treat = case_when(
+    Treat == "Control_hemo" ~ "control_R1_001",
+    Treat == "Dermo_GDC" ~ "Dermo_GDC_R1_001",
+    Treat == "Dermo_ZVAD" ~ "Dermo_ZVAD_R1_001",
+    Treat == "Dermo" ~ "Dermo_R1_001",
+    TRUE ~ NA_character_)) %>% mutate(Sample_Name = paste(ID,Treat, sep = "_"))
+
+#### HEMOCYTE APOPTOSIS EXPRESSION PCA ###
+
+# Use the matrix generated in the hemocyte section to plot apoptosis transcript expression
+colnames(apop_hemo_mat)
+
+# separate phenotype data into two groups, one with control data and one without
+PCA_pheno_2020_control <- PCA_pheno_2020_all %>% dplyr::select(-contains("hemo_perk")) 
+PCA_pheno_2020_perk <- PCA_pheno_2020_all %>% filter(!grepl("control",Treat)) 
+
+# make metadata table with just ID and treat
+PCA_pheno_2020_control_metadata <- PCA_pheno_2020_control %>% # set rownames to sample name and then remove
+  column_to_rownames(., var = "Sample_Name") %>% dplyr::select(ID,Treat) 
+PCA_pheno_2020_perk_metadata <- PCA_pheno_2020_control %>% # set rownames to sample name and then remove
+  column_to_rownames(., var = "Sample_Name") %>% dplyr::select(ID,Treat) 
+  
+## Hemocyte Apoptosis PCA including Control samples
+
+# put metatdata in same order as expression matrix 
+PCA_pheno_2020_control_metadata <- PCA_pheno_2020_control_metadata[colnames(apop_hemo_mat),]
+
+# check sample name match between metadata and expression data
+all(colnames(apop_hemo_mat) == rownames(PCA_pheno_2020_control_metadata)) # TRUE
+
+## Join together expression data and phenotype data all into one dataframe
+# transpose the metadata table so that the ID column is the 
+PCA_pheno_2020_control_trans <- PCA_pheno_2020_control %>% column_to_rownames(., var = "Sample_Name") %>% dplyr::select(-ID)
+class(PCA_pheno_2020_control_trans$Percent_of_this_plot_arcsine_APOP_hemo_alone)
+PCA_pheno_2020_control_transpose <- transpose(PCA_pheno_2020_control_trans)
+rownames(PCA_pheno_2020_control_transpose) <- colnames(PCA_pheno_2020_control_trans)
+colnames(PCA_pheno_2020_control_transpose) <- rownames(PCA_pheno_2020_control_trans)
+#remove top row
+PCA_pheno_2020_control_transpose <- PCA_pheno_2020_control_transpose[-1,]
+# put in correct order
+PCA_pheno_2020_control_transpose <- PCA_pheno_2020_control_transpose[,colnames(apop_hemo_mat)]
+PCA_pheno_2020_control_transpose_mat <- data.matrix(PCA_pheno_2020_control_transpose)
+
+# bind together the apop_hemo_mat and this matrix for all the samples
+all(colnames(apop_hemo_mat) == colnames(PCA_pheno_2020_control_transpose)) # TRUE first make sure samples are in the same order
+apop_hemo_mat_pheno <- rbind(apop_hemo_mat,PCA_pheno_2020_control_transpose)
+class(apop_hemo_mat_pheno)
+apop_hemo_mat_pheno <- data.matrix(apop_hemo_mat_pheno)
+class(apop_hemo_mat_pheno)
+
+## compute PCAs, remove lower 10% of variables based on variance
+
+# PCA hemo apop expression plus phenotype
+hemo_apop_control_pca <- pca(apop_hemo_mat_pheno , metadata = PCA_pheno_2020_control_metadata) 
+# PCA phenotype only
+pheno_pca <- pca(PCA_pheno_2020_control_transpose_mat, metadata = PCA_pheno_2020_control_metadata) 
+# PCA with just the expression data for hemocytes
+hemo_apop_control_pca_no_pheno <- pca(apop_hemo_mat , metadata = PCA_pheno_2020_control_metadata) 
+
+## Plot hemocyte apoptosis plus the phenotype data
+# scree plot
+hemo_apop_control_pca_scree <- screeplot(hemo_apop_control_pca,
+          components = getComponents(hemo_apop_control_pca, 1:12))
+
+# biplot
+hemo_apop_control_pca_biplot <- biplot(hemo_apop_control_pca, 
+       showLoadings = TRUE, 
+       ntopLoadings = 20, title = "Biplot of Top 20 Loadings") 
+
+hemo_apop_control_pca_biplot <- hemo_apop_control_pca_biplot + theme(plot.margin = unit(c(0, 0, 0, 0), "null"))
+       
+# about 70% of the variation explained when apoptosis expression and cell death phenotypes 
+  # PC1 explains the difference between the GDC plot and the control and Dermo/ZVAD
+  # PC2 explains the difference between control samples and Dermo2ZVAD which is an outlier, and the dermo and ZVAD samples
+  # ZVAD and Dermo samples always cluster and the GDC samples always cluster, and the controls cluster
+
+# plot loadings
+# For each PC of interest, ‘plotloadings’ determines the variables falling within the top/bottom 5% of the loadings range, 
+  # and then creates a final consensus list of these. These variables are then plotted.
+  # loadings describe how much each variable contributes to a particular principal component. 
+  # Large loadings (positive or negative) indicate that a particular variable has a strong relationship to a particular principal component. 
+  # The sign of a loading indicates whether a variable and a principal component are positively or negatively correlated.
+hemo_apop_control_pca_loadings <- plotloadings(hemo_apop_control_pca,
+             components = getComponents(hemo_apop_control_pca, c(1,2)), # makes point sizes proportional to the loadings
+             rangeRetain = 0.1,
+             labSize = 3.0,
+             absolute = FALSE,
+             title = 'Loadings plot of Top 10% variables',
+             shape = 23, shapeSizeRange = c(1, 5),
+             col = c('limegreen', 'black', 'red'),
+             drawConnectors = TRUE)
+
+# Plot all hemo plus pheno data together
+hemo_apop_control_pca_multiplot <- cowplot::plot_grid(hemo_apop_control_pca_biplot,  hemo_apop_control_pca_loadings,
+                                                      nrow=2, labels = "AUTO", axis = "h",align = "h")
+
+
+ggsave(plot = hemo_apop_control_pca_multiplot, device = "tiff", filename = "hemo_apop_control_pca_multiplot.tiff",
+       path = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES",
+       height = 20, width = 20)
+
+
+# plot just phenotypes no expression data
+biplot(pheno_pca, showLoadings = TRUE) 
+  # GDC phenotypes cluster closely, while the Dermo and ZVAD are mostly mixed, and then the control samples are more distinguished
+
+
+# plot just the apoptosis expression and no phenotypes
+biplot(hemo_apop_control_pca_no_pheno, 
+       #showLoadings = TRUE, 
+       ntopLoadings = 20)
+  # about 50% of variation explained..having the phenotype data added explains more of the variance in the model
+  # again we have the GDC clustering, control clustering, and the Dermo and ZVAD clustering
+
+plotloadings(hemo_apop_control_pca_no_pheno,
+             components = getComponents(hemo_apop_control_pca_no_pheno, c(1,2)), # makes point sizes proportional to the loadings
+             rangeRetain = 0.1,
+             labSize = 2.0,
+             absolute = FALSE,
+             title = 'Loadings plot',
+             subtitle = 'PCs 1 and 2',
+             caption = 'Top 10% variables',
+             shape = 23, shapeSizeRange = c(1, 5),
+             col = c('limegreen', 'black', 'red'),
+             drawConnectors = TRUE)
+
+
+## Hemocyte apoptosis with just Dermo samples
+# put metatdata in same order as expression matrix 
+# remove control samples from apop_hemo_mat
+apop_hemo_mat_perk <- as.data.frame(apop_hemo_mat) %>% dplyr::select(-contains("control"))
+PCA_pheno_2020_perk_metadata <- PCA_pheno_2020_perk_metadata[colnames(apop_hemo_mat_perk),]
+
+# check sample name match between metadata and expression data
+all(colnames(apop_hemo_mat_perk) == rownames(PCA_pheno_2020_perk_metadata)) # TRUE
+
+## Join together expression data and phenotype data all into one dataframe
+# transpose the metadata table so that the ID column is the 
+PCA_pheno_2020_perk_trans <- PCA_pheno_2020_perk %>% column_to_rownames(., var = "Sample_Name") %>% dplyr::select(-ID)
+class(PCA_pheno_2020_perk_trans$Percent_of_this_plot_arcsine_APOP_hemo_alone)
+
+PCA_pheno_2020_perk_transpose <- transpose(PCA_pheno_2020_perk_trans)
+rownames(PCA_pheno_2020_perk_transpose) <- colnames(PCA_pheno_2020_perk_trans)
+colnames(PCA_pheno_2020_perk_transpose) <- rownames(PCA_pheno_2020_perk_trans)
+#remove top row
+PCA_pheno_2020_perk_transpose <- PCA_pheno_2020_perk_transpose[-1,]
+# put in correct order
+PCA_pheno_2020_perk_transpose <- PCA_pheno_2020_perk_transpose[,colnames(apop_hemo_mat_perk)]
+PCA_pheno_2020_perk_transpose_mat <- data.matrix(PCA_pheno_2020_perk_transpose)
+
+# bind together the apop_hemo_mat and this matrix for all the samples
+all(colnames(apop_hemo_mat_perk) == colnames(PCA_pheno_2020_perk_transpose)) # TRUE first make sure samples are in the same order
+apop_hemo_mat_pheno_perk <- rbind(apop_hemo_mat_perk,PCA_pheno_2020_perk_transpose)
+class(apop_hemo_mat_pheno_perk)
+apop_hemo_mat_pheno_perk <- data.matrix(apop_hemo_mat_pheno)
+class(apop_hemo_mat_pheno_perk)
+
+## compute PCAs
+# PCA with apoptosis phenotype and gene expression
+hemo_apop_perk_pca <- pca(apop_hemo_mat_pheno_perk , metadata = PCA_pheno_2020_perk_metadata) 
+# only phenotype
+pheno_pca_perk <- pca(PCA_pheno_2020_perk_transpose_mat, metadata = PCA_pheno_2020_perk_metadata) 
+# only apoptosis expression
+hemo_apop_perk_pca_no_pheno <- pca(apop_hemo_mat_perk, metadata = PCA_pheno_2020_perk_metadata)
+
+## plot Hemocyte expression plus phenotype
+
+screeplot(hemo_apop_perk_pca, components = getComponents(hemo_apop_perk_pca, 1:20))
+
+# biplot
+hemo_apop_perk_pca_bipplot <- biplot(hemo_apop_perk_pca, ntopLoadings = 20, showLoadings = TRUE,
+                             title = "Top 20 Loadings") # about 70% of the variation explained when apoptosis expression and cell death phenotypes 
+# with controls removed, PC1 explains more of the variation while PC2 explains slightly less
+# PC1 explains the difference between ZVAD and control , and the GDC samples.. so it really segregates the response to GDC
+# PC2 really only separates the GDC and Dermo/ZVAD from one ZVAD sample
+
+# plot loadings
+# For each PC of interest, ‘plotloadings’ determines the variables falling within the top/bottom 5% of the loadings range, 
+# and then creates a final consensus list of these. These variables are then plotted.
+# loadings describe how much each variable contributes to a particular principal component. 
+# Large loadings (positive or negative) indicate that a particular variable has a strong relationship to a particular principal component. 
+# The sign of a loading indicates whether a variable and a principal component are positively or negatively correlated.
+hemo_apop_perk_pca_loadings <- plotloadings(hemo_apop_perk_pca,
+             components = getComponents(hemo_apop_perk_pca, c(1,2)), # makes point sizes proportional to the loadings
+             rangeRetain = 0.1,
+             labSize = 3.0,
+             absolute = FALSE,
+             title = 'Loadings plot of Top 10% variables',
+             shape = 23, shapeSizeRange = c(1, 5),
+             col = c('limegreen', 'black', 'red'),
+             drawConnectors = TRUE)
+
+# only need to pay attention to the PC1 transcripts that segregate
+#for PC1 the mitochondrial response is strongly negatively correlated with PC1
+# anything in the negatives here are more correlated with the GDC response
+  # only caspase 8 and the mitochondrial phenotype are correlated with the GDC at a level of top 10% of variables
+
+# Plot all hemo plus pheno data together
+hemo_apop_perk_pca_multiplot <- cowplot::plot_grid(hemo_apop_perk_pca_bipplot,  hemo_apop_perk_pca_loadings,
+                                                      nrow=2, labels = "AUTO", axis = "h",align = "h")
+
+ggsave(plot = hemo_apop_perk_pca_multiplot, device = "tiff", filename = "hemo_apop_perk_pca_multiplot.tiff",
+       path = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES",
+       height = 20, width = 20)
+
+
+## plot just the phenotypes
+
+biplot(pheno_pca_perk, showLoadings = TRUE)
+# the firs two principal components explain almost all the variance..with the mitochondrial assay and the apoptosis assay results being
+# strongly negatively correlated. GDC sample still cluster strongly and the dermo only and ZVAD cluster together
+
+#### PERKKINSUS EXPRESSION PCA ####
+
+# Use the phenotype data and metadata tables that were supset for just the Perkinsus data above 
+PCA_pheno_2020_perk
+PCA_pheno_2020_perk_metadata
+
+# get full counts matrix from all perkinsus data
+perk_dds_rlog_mat <- assay(perk_dds_rlog)
+
+# make the product name the rownames so I can interpret the biplots better
+perk_dds_rlog_mat <- as.data.frame(perk_dds_rlog_mat) %>% mutate(Parent = rownames(.)) %>%
+  left_join(., unique(Perkinsus_rtracklayer_XP[,c("product","Parent")])) %>% mutate(transcript_id_product = paste(product, Parent, sep = "-")) %>%
+    column_to_rownames(., var = "transcript_id_product") %>% dplyr::select(-product, - Parent)
+perk_dds_rlog_mat <- as.matrix(perk_dds_rlog_mat)
+colnames(perk_dds_rlog_mat)
+
+# check sample name match between metadata and expression data
+all(colnames(perk_dds_rlog_mat) == rownames(PCA_pheno_2020_perk_metadata)) # TRUE
+
+# bind together the perk_dds_rlog_mat and the previously transposed data for just the perkinsus samples
+all(colnames(perk_dds_rlog_mat) == colnames(PCA_pheno_2020_perk_transpose)) # TRUE first make sure samples are in the same order
+
+perk_dds_rlog_mat_pheno_perk <- rbind(perk_dds_rlog_mat,PCA_pheno_2020_perk_transpose)
+class(perk_dds_rlog_mat_pheno_perk)
+perk_dds_rlog_mat_pheno_perk <- data.matrix(perk_dds_rlog_mat_pheno_perk)
+class(perk_dds_rlog_mat_pheno_perk)
+
+## compute PCAs
+# PCA with apoptosis phenotype and gene expression
+perk_dds_rlog_mat_pheno_perk_pca <- pca(perk_dds_rlog_mat_pheno_perk, metadata = PCA_pheno_2020_perk_metadata) 
+
+# only perkinsus expression
+perk_dds_rlog_mat_pheno_perk_no_pheno <- pca(perk_dds_rlog_mat, metadata = PCA_pheno_2020_perk_metadata)
+
+## plot Perkinsus expression plus phenotype
+
+#plot PCs as screeplot
+perk_dds_rlog_mat_pheno_perk_pca_scree <- screeplot(perk_dds_rlog_mat_pheno_perk_pca, components = getComponents(perk_dds_rlog_mat_pheno_perk_pca, 1:20))
+  # variation is spread on a lot of PCs
+
+# biplot
+perk_dds_rlog_mat_pheno_perk_pca_bipplot_1_2 <- biplot(perk_dds_rlog_mat_pheno_perk_pca, ntopLoadings = 25, showLoadings = TRUE,
+                                     title = "Top 25 Loadings", x="PC1",y="PC2") 
+# PCs 1 and 2 explain only about 30% of the total variation. Not great clustering 
+perk_dds_rlog_mat_pheno_perk_pca_bipplot_1_3 <- biplot(perk_dds_rlog_mat_pheno_perk_pca, ntopLoadings = 20, showLoadings = TRUE,
+                                                   title = "Top 20 Loadings", x="PC1",y="PC3") 
+
+# plot as pairings plot to view all PCs
+perk_dds_rlog_mat_pheno_perk_pca_pairs_Treat <- pairsplot(perk_dds_rlog_mat_pheno_perk_pca, colby = "Treat")
+  # PCs 1,2, and 3 explain most of the variation and have some grouping by treatment
+perk_dds_rlog_mat_pheno_perk_pca_pairs_ID <- pairsplot(perk_dds_rlog_mat_pheno_perk_pca, colby = "ID")
+
+# plot loadings
+# For each PC of interest, ‘plotloadings’ determines the variables falling within the top/bottom 5% of the loadings range, 
+# and then creates a final consensus list of these. These variables are then plotted.
+# loadings describe how much each variable contributes to a particular principal component. 
+# Large loadings (positive or negative) indicate that a particular variable has a strong relationship to a particular principal component. 
+# The sign of a loading indicates whether a variable and a principal component are positively or negatively correlated.
+perk_dds_rlog_mat_pheno_perk_pca_loadings <- plotloadings(perk_dds_rlog_mat_pheno_perk_pca,
+                                            components = getComponents(perk_dds_rlog_mat_pheno_perk_pca, c(1,2)), # makes point sizes proportional to the loadings
+                                            rangeRetain = 0.05,
+                                            labSize = 3.0,
+                                            absolute = FALSE,
+                                            title = 'Loadings plot of Top 10% variables',
+                                            shape = 23, shapeSizeRange = c(1, 5),
+                                            col = c('limegreen', 'black', 'red'),
+                                            drawConnectors = TRUE)
+
+# assess the variables from the 1% loading cutoff
+perk_PC1_2_1 <- data.frame("transcript_id_product" = c(
+                              "UDP-N-acteylglucosamine pyrophosphorylase, putative-XM_002786674.1" ,
+                              "hypothetical protein-XM_002773609.1",
+                              "calmodulin-domain protein kinase, putative-XM_002767007.1")) %>%
+                                left_join(., Perk_Interpro_GO_terms_XP)
+
+# Plot all hemo plus pheno data together
+perk_dds_rlog_mat_pheno_perk_pca_multiplot <- cowplot::plot_grid(perk_dds_rlog_mat_pheno_perk_pca_scree,  perk_dds_rlog_mat_pheno_perk_pca_bipplot_1_2,
+                                                                 nrow=2, labels = "AUTO", axis = "h",align = "h", rel_heights = c(0.3,1), rel_widths = c(0.5,1))
+
+ggsave(plot = perk_dds_rlog_mat_pheno_perk_pca_multiplot, device = "tiff", filename = "perk_dds_rlog_mat_pheno_perk_pca_multiplot.tiff",
+       path = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES",
+       height = 20, width = 20)
+
+### Examine loadings from PC1 and PC2 
+perk_dds_rlog_mat_pheno_perk_pca_loadings <- perk_dds_rlog_mat_pheno_perk_pca$loadings %>% rownames_to_column(., var = "transcript_id_product")
+
+## Examine PC1 loadings
+# sort by the top absolute value loadings in PC1
+perk_dds_rlog_mat_pheno_perk_pca_loadings_PC1 <- perk_dds_rlog_mat_pheno_perk_pca_loadings[order(abs(perk_dds_rlog_mat_pheno_perk_pca_loadings$PC1), decreasing = TRUE),]
+
+# analyze top 25 
+perk_dds_rlog_mat_pheno_perk_pca_loadings_PC1_50 <- perk_dds_rlog_mat_pheno_perk_pca_loadings_PC1[1:50,]
+
+# join with the Interproscan information
+perk_dds_rlog_mat_pheno_perk_pca_loadings_PC1_50_Interpro <- perk_dds_rlog_mat_pheno_perk_pca_loadings_PC1_50 %>% dplyr::select(transcript_id_product, PC1,PC2) %>% 
+  left_join(., Perk_Interpro_GO_terms_XP)
+
+## Examine PC2 loadings
+# sort by the top absolute value loadings in PC2
+perk_dds_rlog_mat_pheno_perk_pca_loadings_PC2 <- perk_dds_rlog_mat_pheno_perk_pca_loadings[order(abs(perk_dds_rlog_mat_pheno_perk_pca_loadings$PC2), decreasing = TRUE),]
+
+# analyze top 25 
+perk_dds_rlog_mat_pheno_perk_pca_loadings_PC2_25 <- perk_dds_rlog_mat_pheno_perk_pca_loadings_PC2[1:25,]
+
+# join with the Interproscan information
+perk_dds_rlog_mat_pheno_perk_pca_loadings_PC2_25_Interpro <- perk_dds_rlog_mat_pheno_perk_pca_loadings_PC2_25 %>% dplyr::select(transcript_id_product, PC1,PC2) %>% 
+                                                                         left_join(., Perk_Interpro_GO_terms_XP)
+
+# review particular transcripts of interest in the raw data - why weren't some of them differentially expressed?
+
+assay(perk_dds_rlog)["XM_002780500.1",]
+
+
+#### BIPLOT SOURCE CODE ####
+#' Draw a bi-plot, comparing 2 selected principal components / eigenvectors.
+#'
+#' @param pcaobj Object of class 'pca' created by pca().
+#' @param x A principal component to plot on x-axis. All principal component
+#'   names are stored in pcaobj$label.
+#' @param y A principal component to plot on y-axis. All principal component
+#'   names are stored in pcaobj$label.
+#' @param showLoadings Logical, indicating whether or not to overlay
+#'   variable loadings.
+#' @param ntopLoadings If showLoadings == TRUE, select this many variables
+#'   based on absolute ordered variable loading for each PC in the biplot.
+#'   As a result of looking across 2 PCs, it can occur whereby greater than
+#'   this number are actually displayed.
+#' @param showLoadingsNames Logical, indicating to show variable loadings names
+#'   or not.
+#' @param colLoadingsNames If 'showLoadings == TRUE', colour of text labels.
+#' @param sizeLoadingsNames If 'showLoadings == TRUE', size of text labels.
+#' @param boxedLoadingsNames Logical, if 'showLoadings == TRUE', draw text
+#'   labels in boxes.
+#' @param fillBoxedLoadings When 'boxedLoadingsNames == TRUE', this controls
+#'   the background fill of the boxes. To control both the fill and
+#'   transparency, user can specify a value of the form
+#'   'alpha(<colour>, <alpha>)'.
+#' @param drawConnectorsLoadings If 'showLoadings == TRUE', draw line connectors
+#'   to the variable loadings arrows in order to fit more labels in the plot
+#'   space.
+#' @param widthConnectorsLoadings If 'showLoadings == TRUE', width of the line
+#'   connectors drawn to the variable loadings arrows.
+#' @param colConnectorsLoadings If 'showLoadings == TRUE', colour of the line
+#'   connectors drawn to the variable loadings arrows.
+#' @param lengthLoadingsArrowsFactor If 'showLoadings == TRUE', multiply the
+#'   internally-determined length of the variable loadings arrows by this
+#'   factor.
+#' @param colLoadingsArrows If showLoadings == TRUE, colour of the variable
+#'   loadings arrows.
+#' @param widthLoadingsArrows If showLoadings == TRUE, width of the variable
+#'   loadings arrows.
+#' @param alphaLoadingsArrow If showLoadings == TRUE, colour transparency of
+#'   the variable loadings arrows.
+#' @param colby If NULL, all points will be coloured differently. If not NULL,
+#'   value is assumed to be a column name in pcaobj$metadata relating to some
+#'   grouping/categorical variable.
+#' @param colkey Vector of name-value pairs relating to value passed to 'col',
+#'   e.g., c(A='forestgreen', B='gold').
+#' @param colLegendTitle Title of the legend for the variable specified
+#'   by 'colby'.
+#' @param singlecol If specified, all points will be shaded by this colour.
+#'   Overrides 'col'.
+#' @param shape If NULL, all points will be have the same shape. If not NULL,
+#'   value is assumed to be a column name in pcaobj$metadata relating to some
+#'   grouping/categorical variable.
+#' @param shapekey Vector of name-value pairs relating to value passed to
+#'   'shape', e.g., c(A=10, B=21).
+#' @param shapeLegendTitle Title of the legend for the variable specified
+#'   by 'shape'.
+#' @param pointSize Size of plotted points.
+#' @param legendPosition Position of legend ('top', 'bottom', 'left', 'right',
+#'   'none').
+#' @param legendLabSize Size of plot legend text.
+#' @param legendTitleSize Size of plot legend title text.
+#' @param legendIconSize Size of plot legend icons / symbols.
+#' @param encircle Logical, indicating whether to draw a polygon around
+#'   the groups specified by 'colby'.
+#' @param encircleFill Logical, if 'encircle == TRUE', this determines
+#'   whether to fill the encircled region or not.
+#' @param encircleFillKey Vector of name-value pairs relating to value passed to
+#'   'encircleFill', e.g., c(A='forestgreen', B='gold'). If NULL, the fill
+#'   is controlled by whatever has already been used for 'colby' / 'colkey'.
+#' @param encircleAlpha Alpha for purposes of controlling colour transparency of
+#'   the encircled region. Used when 'encircle == TRUE'.
+#' @param encircleLineSize Line width of the encircled line when
+#'   'encircle == TRUE'.
+#' @param encircleLineCol Colour of the encircled line when
+#'   'encircle == TRUE'.
+#' @param ellipse Logical, indicating whether to draw a stat ellipse around
+#'   the groups specified by 'colby'.
+#' @param ellipseConf Confidence intervals of the stat ellipses when
+#'   ellipse == TRUE.
+#' @param ellipseFill Logical, if 'ellipse == TRUE', this determines
+#'   whether to fill the region or not.
+#' @param ellipseFillKey Vector of name-value pairs relating to value passed to
+#'   'ellipseFill', e.g., c(A='forestgreen', B='gold'). If NULL, the fill
+#'   is controlled by whatever has already been used for 'colby' / 'colkey'.
+#' @param ellipseAlpha Alpha for purposes of controlling colour transparency of
+#'   the ellipse region. Used when 'ellipse == TRUE'.
+#' @param ellipseLineSize Line width of the ellipse line when 'ellipse == TRUE'.
+#' @param ellipseLineCol Colour of the ellipse line when 'ellipse == TRUE'.
+#' @param xlim Limits of the x-axis.
+#' @param ylim Limits of the y-axis.
+#' @param lab A vector containing labels to add to the plot. 
+#' @param labSize Size of labels.
+#' @param labhjust Horizontal adjustment of label.
+#' @param labvjust Vertical adjustment of label.
+#' @param boxedLabels Logical, draw text labels in boxes.
+#' @param selectLab A vector containing a subset of lab to plot.
+#' @param drawConnectors Logical, indicating whether or not to connect plot
+#'   labels to their corresponding points by line connectors.
+#' @param widthConnectors Line width of connectors.
+#' @param colConnectors Line colour of connectors.
+#' @param xlab Label for x-axis.
+#' @param xlabAngle Rotation angle of x-axis labels.
+#' @param xlabhjust Horizontal adjustment of x-axis labels.
+#' @param xlabvjust Vertical adjustment of x-axis labels.
+#' @param ylab Label for y-axis.
+#' @param ylabAngle Rotation angle of y-axis labels.
+#' @param ylabhjust Horizontal adjustment of y-axis labels.
+#' @param ylabvjust Vertical adjustment of y-axis labels.
+#' @param axisLabSize Size of x- and y-axis labels.
+#' @param title Plot title.
+#' @param subtitle Plot subtitle.
+#' @param caption Plot caption.
+#' @param titleLabSize Size of plot title.
+#' @param subtitleLabSize Size of plot subtitle.
+#' @param captionLabSize Size of plot caption.
+#' @param hline Draw one or more horizontal lines passing through this/these
+#'   values on y-axis. For single values, only a single numerical value is
+#'   necessary. For multiple lines, pass these as a vector, e.g., c(60,90).
+#' @param hlineType Line type for hline ('blank', 'solid', 'dashed', 'dotted',
+#'   'dotdash', 'longdash', 'twodash').
+#' @param hlineCol Colour of hline.
+#' @param hlineWidth Width of hline.
+#' @param vline Draw one or more vertical lines passing through this/these
+#'   values on x-axis. For single values, only a single numerical value is
+#'   necessary. For multiple lines, pass these as a vector, e.g., c(60,90).
+#' @param vlineType Line type for vline ('blank', 'solid', 'dashed', 'dotted',
+#'   'dotdash', 'longdash', 'twodash').
+#' @param vlineCol Colour of vline.
+#' @param vlineWidth Width of vline.
+#' @param gridlines.major Logical, indicating whether or not to draw major
+#'   gridlines.
+#' @param gridlines.minor Logical, indicating whether or not to draw minor
+#'   gridlines.
+#' @param borderWidth Width of the border on the x and y axes.
+#' @param borderColour Colour of the border on the x and y axes.
+#' @param returnPlot Logical, indicating whether or not to return the plot
+#'   object.
+#'
+#' @details Draw a bi-plot, comparing 2 selected principal components / eigenvectors.
+#'
+#' @return A \code{\link{ggplot2}} object.
+#'
+#' @author Kevin Blighe <kevin@clinicalbioinformatics.co.uk>
+#'
+#' @examples
+#'   options(scipen=10)
+#'   options(digits=6)
+#'
+#'   col <- 20
+#'   row <- 20000
+#'   mat1 <- matrix(
+#'     rexp(col*row, rate = 0.1),
+#'     ncol = col)
+#'   rownames(mat1) <- paste0('gene', 1:nrow(mat1))
+#'   colnames(mat1) <- paste0('sample', 1:ncol(mat1))
+#'
+#'   mat2 <- matrix(
+#'   rexp(col*row, rate = 0.1),
+#'     ncol = col)
+#'   rownames(mat2) <- paste0('gene', 1:nrow(mat2))
+#'   colnames(mat2) <- paste0('sample', (ncol(mat1)+1):(ncol(mat1)+ncol(mat2)))
+#'
+#'   mat <- cbind(mat1, mat2)
+#'
+#'   metadata <- data.frame(row.names = colnames(mat))
+#'   metadata$Group <- rep(NA, ncol(mat))
+#'   metadata$Group[seq(1,40,2)] <- 'A'
+#'   metadata$Group[seq(2,40,2)] <- 'B'
+#'   metadata$CRP <- sample.int(100, size=ncol(mat), replace=TRUE)
+#'   metadata$ESR <- sample.int(100, size=ncol(mat), replace=TRUE)
+#'
+#'   p <- pca(mat, metadata = metadata, removeVar = 0.1)
+#'
+#'   biplot(p)
+#'
+#'   biplot(p, colby = 'Group', shape = 'Group')
+#'
+#'   biplot(p, colby = 'Group', colkey = c(A = 'forestgreen', B = 'gold'),
+#'     legendPosition = 'right')
+#'
+#'   biplot(p, colby = 'Group', colkey = c(A='forestgreen', B='gold'),
+#'     shape = 'Group', shapekey = c(A=10, B=21), legendPosition = 'bottom')
+#'
+#' @import ggplot2
+#' @import ggrepel
+#' 
+#' @export
+biplot <- function(
+  pcaobj,
+  x = 'PC1',
+  y = 'PC2',
+  showLoadings = FALSE,
+  ntopLoadings = 5,
+  showLoadingsNames = if (showLoadings) TRUE else FALSE,
+  colLoadingsNames = 'black',
+  sizeLoadingsNames = 3,
+  boxedLoadingsNames = TRUE,
+  fillBoxedLoadings = alpha('white', 1/4),
+  drawConnectorsLoadings = TRUE,
+  widthConnectorsLoadings = 0.5,
+  colConnectorsLoadings = 'grey50',
+  lengthLoadingsArrowsFactor = 1.5,
+  colLoadingsArrows = 'black',
+  widthLoadingsArrows = 0.5,
+  alphaLoadingsArrow = 1.0,
+  colby = NULL,
+  colkey = NULL,
+  colLegendTitle = if (!is.null(colby)) colby else NULL,
+  singlecol = NULL,
+  shape = NULL,
+  shapekey = NULL,
+  shapeLegendTitle = if (!is.null(shape)) shape else NULL,
+  pointSize = 3.0,
+  legendPosition = 'none',
+  legendLabSize = 12,
+  legendTitleSize = 14,
+  legendIconSize = 5.0,
+  encircle = FALSE,
+  encircleFill = TRUE,
+  encircleFillKey = NULL,
+  encircleAlpha = 1/4,
+  encircleLineSize = 0.25,
+  encircleLineCol = NULL,
+  ellipse = FALSE,
+  ellipseConf = 0.95,
+  ellipseFill = TRUE,
+  ellipseFillKey = NULL,
+  ellipseAlpha = 1/4,
+  ellipseLineSize = 0.25,
+  ellipseLineCol = NULL,
+  xlim = if(showLoadings) c(min(pcaobj$rotated[,x]) - 5, max(pcaobj$rotated[,x]) + 5) else
+    c(min(pcaobj$rotated[,x]) - 1, max(pcaobj$rotated[,x]) + 1),
+  ylim = if(showLoadings) c(min(pcaobj$rotated[,y]) - 5, max(pcaobj$rotated[,y]) + 5) else
+    c(min(pcaobj$rotated[,y]) - 1, max(pcaobj$rotated[,y]) + 1),
+  lab = rownames(pcaobj$metadata),
+  labSize = 3.0,
+  labhjust = 1.5,
+  labvjust = 0,
+  boxedLabels = FALSE,
+  selectLab = NULL,
+  drawConnectors = TRUE,
+  widthConnectors = 0.5,
+  colConnectors = 'grey50',
+  xlab = paste0(x, ', ', round(pcaobj$variance[x], digits = 2), '% variation'),
+  xlabAngle = 0,
+  xlabhjust = 0.5,
+  xlabvjust = 0.5,
+  ylab = paste0(y, ', ', round(pcaobj$variance[y], digits = 2), '% variation'),
+  ylabAngle = 0,
+  ylabhjust = 0.5,
+  ylabvjust = 0.5,
+  axisLabSize = 16,
+  title = '',
+  subtitle = '',
+  caption = '',
+  titleLabSize = 16,
+  subtitleLabSize = 12,
+  captionLabSize = 12,
+  hline = NULL,
+  hlineType = 'longdash',
+  hlineCol = 'black',
+  hlineWidth = 0.4,
+  vline = NULL,
+  vlineType = 'longdash',
+  vlineCol = 'black',
+  vlineWidth = 0.4,
+  gridlines.major = TRUE,
+  gridlines.minor = TRUE,
+  borderWidth = 0.8,
+  borderColour = 'black',
+  returnPlot = TRUE)
+{
+  
+  labFun <- xidx <- yidx <- NULL
+  
+  # create a base theme that will later be modified
+  th <- theme_bw(base_size = 24) +
+    
+    theme(
+      legend.background = element_rect(),
+      
+      plot.title = element_text(angle = 0, size = titleLabSize,
+                                face = 'bold', vjust = 1),
+      plot.subtitle = element_text(angle = 0, size = subtitleLabSize,
+                                   face = 'plain', vjust = 1),
+      plot.caption = element_text(angle = 0, size = captionLabSize,
+                                  face = 'plain', vjust = 1),
+      
+      axis.text.x = element_text(angle = xlabAngle, size = axisLabSize,
+                                 hjust = xlabhjust, vjust = xlabvjust),
+      axis.text.y = element_text(angle = ylabAngle, size = axisLabSize,
+                                 hjust = ylabhjust, vjust = ylabvjust),
+      axis.title = element_text(size=axisLabSize),
+      
+      legend.position = legendPosition,
+      legend.key = element_blank(),
+      legend.key.size = unit(0.5, 'cm'),
+      legend.text = element_text(size = legendLabSize),
+      
+      title = element_text(size = legendLabSize),
+      legend.title = element_text(size = legendTitleSize))
+  
+  # set plot data labels (e.g. sample names)
+  plotobj <- NULL
+  plotobj$x <- pcaobj$rotated[,x]
+  plotobj$y <- pcaobj$rotated[,y]
+  if (!is.null(lab)) {
+    plotobj$lab <- lab
+  }
+  plotobj <- as.data.frame(plotobj, stringsAsFactors = FALSE)
+  
+  # If user has supplied values in selectLab, convert labels to
+  # NA and then re-set with those in selectLab
+  if (!is.null(selectLab)) {
+    if (is.null(lab)) {
+      stop(paste0('You have specified lab as NULL ',
+                  '- no labels can be selected!'))
+    } else {
+      names.new <- rep(NA, length(plotobj$lab))
+      indices <- which(plotobj$lab %in% selectLab)
+      names.new[indices] <- plotobj$lab[indices]
+      plotobj$lab <- names.new
+    }
+  }
+  
+  # decide on how to colour the points, and specify the shape of these
+  if (is.null(colby)) {
+    if (!is.null(lab)) {
+      plotobj$col <- lab
+    } else {
+      plotobj$col <- seq_len(length(pcaobj$yvars))
+    }
+  } else {
+    plotobj$col <- pcaobj$metadata[,colby]
+  }
+  if (!is.null(shape)) {
+    plotobj$shape <- pcaobj$metadata[,shape]
+  }
+  
+  # create the plot object
+  plot <- ggplot(plotobj, aes(x = x, y = y)) + th +
+    
+    guides(fill = guide_legend(),
+           shape = guide_legend(),
+           colour = guide_legend(override.aes = list(size = legendIconSize)))
+  
+  # if user specified a colour with 'singlecol', colour all points by this
+  # otherwise, colour all points differently using ggplot engine.
+  # shape of points remains independent of colouring
+  if (is.null(singlecol)) {
+    if (!is.null(shape)) {
+      plot <- plot + geom_point(aes(color = col, shape = shape),
+                                size = pointSize)
+    } else {
+      plot <- plot + geom_point(aes(color = col),
+                                size = pointSize)
+    }
+  } else if (!is.null(singlecol)) {
+    if (!is.null(shape)) {
+      plot <- plot + geom_point(aes(color = singlecol, shape = shape),
+                                size = pointSize)
+    } else {
+      plot <- plot + geom_point(aes(color = singlecol),
+                                size = pointSize)
+    }
+  }
+  
+  # sort out custom colour pairing, and custom shapes
+  if (!is.null(colkey)) {
+    plot <- plot + scale_colour_discrete('') +
+      scale_color_manual(values = colkey)
+  }
+  if (!is.null(shapekey)) {
+    plot <- plot + scale_shape_manual(values = shapekey)
+  }
+  
+  # plot loadings arrows?
+  if (showLoadings) {
+    # get top ntopLoadings to display
+    xidx <- order(abs(pcaobj$loadings[,x]), decreasing = TRUE)
+    yidx <- order(abs(pcaobj$loadings[,y]), decreasing = TRUE)
+    vars <- unique(c(
+      rownames(pcaobj$loadings)[xidx][seq_len(ntopLoadings)],
+      rownames(pcaobj$loadings)[yidx][seq_len(ntopLoadings)]))
+    
+    # get scaling parameter to match between variable loadings and rotated loadings
+    r <- min(
+      (max(pcaobj$rotated[,x]) - min(pcaobj$rotated[,x]) /
+         (max(pcaobj$loadings[,x]) - min(pcaobj$loadings[,x]))),
+      (max(pcaobj$rotated[,y]) - min(pcaobj$rotated[,y]) /
+         (max(pcaobj$loadings[,y]) - min(pcaobj$loadings[,y]))))
+    
+    plot <- plot +
+      geom_segment(data = pcaobj$loadings[vars,],
+                   aes(x = 0, y = 0,
+                       xend = pcaobj$loadings[vars,x] * r * lengthLoadingsArrowsFactor,
+                       yend = pcaobj$loadings[vars,y] * r * lengthLoadingsArrowsFactor),
+                   arrow = arrow(length = unit(1/2, 'picas'), ends = 'last'), 
+                   color = colLoadingsArrows,
+                   size = widthLoadingsArrows,
+                   alpha = alphaLoadingsArrow,
+                   show.legend = NA)
+    
+    if (showLoadingsNames) {
+      if (drawConnectorsLoadings) {
+        if (boxedLoadingsNames) {
+          plot <- plot + coord_equal() +
+            geom_label_repel(data = pcaobj$loadings[vars,], 
+                             aes(label = vars,
+                                 x = pcaobj$loadings[vars,x] * r * lengthLoadingsArrowsFactor,
+                                 y = pcaobj$loadings[vars,y] * r * lengthLoadingsArrowsFactor,
+                                 hjust = 0),
+                             color = colLoadingsNames,
+                             size = sizeLoadingsNames,
+                             fill = fillBoxedLoadings,
+                             segment.color = colConnectorsLoadings,
+                             segment.size = widthConnectorsLoadings)
+        } else {
+          plot <- plot + coord_equal() +
+            geom_text_repel(data = pcaobj$loadings[vars,], 
+                            aes(label = vars,
+                                x = pcaobj$loadings[vars,x] * r * lengthLoadingsArrowsFactor,
+                                y = pcaobj$loadings[vars,y] * r * lengthLoadingsArrowsFactor,
+                                hjust = 0),
+                            color = colLoadingsNames,
+                            size = sizeLoadingsNames,
+                            segment.color = colConnectorsLoadings,
+                            segment.size = widthConnectorsLoadings)
+        }
+      } else {
+        if (boxedLoadingsNames) {
+          plot <- plot + coord_equal() +
+            geom_label(data = pcaobj$loadings[vars,], 
+                       aes(label = vars,
+                           x = pcaobj$loadings[vars,x] * r * lengthLoadingsArrowsFactor,
+                           y = pcaobj$loadings[vars,y] * r * lengthLoadingsArrowsFactor,
+                           hjust = 0),
+                       color = colLoadingsNames,
+                       size = sizeLoadingsNames,
+                       fill = NA)
+        } else {
+          plot <- plot + coord_equal() +
+            geom_text(data = pcaobj$loadings[vars,], 
+                      aes(label = vars,
+                          x = pcaobj$loadings[vars,x] * r * lengthLoadingsArrowsFactor,
+                          y = pcaobj$loadings[vars,y] * r * lengthLoadingsArrowsFactor,
+                          hjust = 0),
+                      color = colLoadingsNames,
+                      size = sizeLoadingsNames,
+                      check_overlap = TRUE)
+        }
+      }
+    }
+  }
+  
+  # add elements to the plot for xy labeling and axis limits
+  plot <- plot + xlab(xlab) + ylab(ylab)
+  if (!is.null(xlim)) {
+    plot <- plot + xlim(xlim[1], xlim[2])
+  }
+  if (!is.null(ylim)) {
+    plot <- plot + ylim(ylim[1], ylim[2])
+  }
+  
+  # add elements to the plot for title, subtitle, caption, and legend titles
+  plot <- plot + labs(title = title, 
+                      subtitle = subtitle, caption = caption,
+                      fill = '', colour = colLegendTitle, shape = shapeLegendTitle)
+  
+  # add elements to the plot for vlines and hlines
+  if (!is.null(vline)) {
+    plot <- plot + geom_vline(xintercept = vline,
+                              linetype = vlineType,
+                              colour = vlineCol,
+                              size = vlineWidth)
+  }
+  if (!is.null(hline)) {
+    plot <- plot + geom_hline(yintercept = hline,
+                              linetype = hlineType,
+                              colour = hlineCol,
+                              size = hlineWidth)
+  }
+  
+  # border around plot
+  plot <- plot +
+    theme(panel.border = element_rect(
+      colour = borderColour,
+      fill = NA,
+      size = borderWidth))
+  
+  # gridlines
+  if (gridlines.major == TRUE) {
+    plot <- plot + theme(panel.grid.major = element_line())
+  } else {
+    plot <- plot + theme(panel.grid.major = element_blank())
+  }
+  if (gridlines.minor == TRUE) {
+    plot <- plot + theme(panel.grid.minor = element_line())
+  } else {
+    plot <- plot + theme(panel.grid.minor = element_blank())
+  }
+  
+  # labeling
+  if (boxedLabels) {
+    if (drawConnectors) {
+      labFun <- function(...) geom_label_repel(...)
+    } else {
+      labFun <- function(...) geom_label(...)
+    }
+  } else {
+    if (drawConnectors) {
+      labFun <- function(...) geom_text_repel(...)
+    } else {
+      labFun <- function(...) geom_text(...)
+    }
+  }
+  
+  if (!is.null(lab)) {
+    if (drawConnectors && is.null(selectLab)) {
+      plot <- plot + labFun(
+        data = plotobj,
+        aes(label = lab),
+        size = labSize,
+        segment.color = colConnectors,
+        segment.size = widthConnectors,
+        hjust = labhjust,
+        vjust = labvjust)
+    } else if (drawConnectors && !is.null(selectLab)) {
+      plot <- plot + labFun(
+        data=subset(plotobj,
+                    !is.na(plotobj[,'lab'])),
+        aes(label = lab),
+        size = labSize,
+        segment.color = colConnectors,
+        segment.size = widthConnectors,
+        hjust = labhjust,
+        vjust = labvjust)
+    } else if (!drawConnectors && !is.null(selectLab)) {
+      if (boxedLabels) {
+        plot <- plot + labFun(
+          data=subset(plotobj,
+                      !is.na(plotobj[,'lab'])),
+          aes(label = lab),
+          size = labSize,
+          hjust = labhjust,
+          vjust = labvjust)
+      } else {
+        plot <- plot + labFun(
+          data=subset(plotobj,
+                      !is.na(plotobj[,'lab'])),
+          aes(label = lab),
+          size = labSize,
+          check_overlap = TRUE,
+          hjust = labhjust,
+          vjust = labvjust)
+      }
+    } else if (!drawConnectors && is.null(selectLab)) {
+      if (boxedLabels) {
+        plot <- plot + labFun(
+          data = plotobj,
+          aes(label = lab),
+          size = labSize,
+          check_overlap = TRUE,
+          hjust = labhjust,
+          vjust = labvjust)
+      } else {
+        plot <- plot + labFun(
+          data = plotobj,
+          aes(label = lab),
+          size = labSize,
+          check_overlap = TRUE,
+          hjust = labhjust,
+          vjust = labvjust)
+      }
+    }
+  }
+  
+  # encircle
+  if (encircle) {
+    if (encircleFill) {
+      if (is.null(encircleLineCol)) {
+        plot <- plot +
+          ggalt::geom_encircle(
+            aes(group = col,
+                fill = col,
+                colour = col),
+            alpha = encircleAlpha,
+            size = encircleLineSize,
+            show.legend = FALSE,
+            na.rm = TRUE)
+      } else {
+        plot <- plot +
+          ggalt::geom_encircle(
+            aes(group = col,
+                fill = col),
+            colour = encircleLineCol,
+            alpha = encircleAlpha,
+            size = encircleLineSize,
+            show.legend = FALSE,
+            na.rm = TRUE)
+      }
+    } else {
+      if (is.null(encircleLineCol)) {
+        plot <- plot +
+          ggalt::geom_encircle(
+            aes(group = col,
+                colour = col),
+            fill = NA,
+            alpha = encircleAlpha,
+            size = encircleLineSize,
+            show.legend = FALSE,
+            na.rm = TRUE)
+      } else {
+        plot <- plot +
+          ggalt::geom_encircle(
+            aes(group = col),
+            colour = encircleLineCol,
+            fill = NA,
+            alpha = encircleAlpha,
+            size = encircleLineSize,
+            show.legend = FALSE,
+            na.rm = TRUE)
+      }
+    }
+    
+    if (encircleFill) {
+      if (is.null(encircleFillKey)) {
+        if (!is.null(colkey)) {
+          plot <- plot + scale_fill_manual(values = colkey)
+        }
+      } else {
+        plot <- plot + scale_fill_manual(values = encircleFillKey)
+      }
+    }
+  }
+  
+  # ellipse
+  if (ellipse) {
+    if (ellipseFill) {
+      if (is.null(ellipseLineCol)) {
+        plot <- plot +
+          stat_ellipse(
+            aes(group = col,
+                fill = col,
+                colour = col),
+            geom = 'polygon',
+            level = ellipseConf,
+            alpha = ellipseAlpha,
+            size = ellipseLineSize,
+            show.legend = FALSE,
+            na.rm = TRUE)
+      } else {
+        plot <- plot +
+          stat_ellipse(
+            aes(group = col,
+                fill = col),
+            colour = ellipseLineCol,
+            geom = 'polygon',
+            level = ellipseConf,
+            alpha = ellipseAlpha,
+            size = ellipseLineSize,
+            show.legend = FALSE,
+            na.rm = TRUE)
+      }
+    } else {
+      if (is.null(ellipseLineCol)) {
+        plot <- plot +
+          stat_ellipse(
+            aes(group = col,
+                colour = col),
+            fill = NA,
+            geom = 'polygon',
+            level = ellipseConf,
+            alpha = ellipseAlpha,
+            size = ellipseLineSize,
+            show.legend = FALSE,
+            na.rm = TRUE)
+      } else {
+        plot <- plot +
+          stat_ellipse(
+            aes(group = col),
+            colour = ellipseLineCol,
+            fill = NA,
+            geom = 'polygon',
+            level = ellipseConf,
+            alpha = ellipseAlpha,
+            size = ellipseLineSize,
+            show.legend = FALSE,
+            na.rm = TRUE)
+      }
+    }
+    
+    if (ellipseFill) {
+      if (is.null(ellipseFillKey)) {
+        if (!is.null(colkey)) {
+          plot <- plot + scale_fill_manual(values = colkey)
+        }
+      } else {
+        plot <- plot + scale_fill_manual(values = ellipseFillKey)
+      }
+    }
+  }
+  
+  # return plot?
+  if (returnPlot) {
+    return(plot)
+  } else if (!returnPlot) {
+    plot
+  }
+}
