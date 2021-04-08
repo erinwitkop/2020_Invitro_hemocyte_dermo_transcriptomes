@@ -1044,6 +1044,350 @@ write.csv(Pmar_GDC_control_Res , file = "Pmar_GDC_control_Res_GO.csv")
 
 # are there common significant terms across all? 
 
+#### HEMOCYTE TRANSCRIPTOME ANALYSIS CONTROLLING FOR POOL ####
+
+## MAKE DESEQ DATA SET FROM MATRIX
+# This object specifies the count data and metadata you will work with. The design piece is critical.
+# Correct for batch effects if necessary in this original formula: see this thread https://support.bioconductor.org/p/121408/
+# do not correct counts using the removeBatchEffects from limma based on thread above 
+hemo_coldata$pool <- as.factor(hemo_coldata$pool)
+
+## Creating three here so I can compare the results
+hemo_dds_pool <- DESeqDataSetFromMatrix(countData = hemo_counts,
+                                   colData = hemo_coldata,
+                                   design = ~pool + condition) # only compare by condition
+
+## Prefiltering the data
+# Data prefiltering helps decrease the size of the data set and get rid of
+# rows with no data or very minimal data (<10). Apply a minimal filtering here as more stringent filtering will be applied later
+hemo_dds_pool <- hemo_dds_pool[ rowSums(counts(hemo_dds_pool)) > 10, ]
+
+## Check levels 
+# It is prefered in R that the first level of a factor be the reference level for comparison
+# (e.g. control, or untreated samples), so we can relevel the factor like so
+# Check factor levels, set it so that comparison group is the first
+levels(hemo_coldata$condition)  # control is currently listed first, so this looks good 
+
+## DATA TRANSFORMATION AND VISUALIZATION
+# Assess sample clustering after setting initial formula for comparison
+hemo_dds_pool_rlog <- rlog(hemo_dds_pool, blind = TRUE) # keep blind = true before deseq function has been run
+
+## PCA plot visualization of individuals in the family 
+plotPCA(hemo_dds_pool_rlog, intgroup=c("condition")) # a bit more clustering by condition now 
+
+ggsave(file = "./FIGURES/hemo_dds_pool_rlog.tiff", device = "tiff")
+
+### DIFFERENTIAL EXPRESSION ANALYSIS
+# run pipeline with single command because the formula has already been specified
+# Steps: estimation of size factors (controlling for differences in the sequencing depth of the samples), 
+# the estimation of dispersion values for each gene, 
+# and fitting a generalized linear model.
+hemo_dds_pool_deseq <- DESeq(hemo_dds_pool) 
+
+## Check the resultsNames object of each to look at the available coefficients for use in lfcShrink command
+resultsNames(hemo_dds_pool_deseq)
+
+## BUILD THE RESULTS OBJECT
+# Examining the results object, change alpha to p <0.05, looking at object metadata
+# use mcols to look at metadata for each table
+hemo_dds_pool_deseq_res_Pmar <- results(hemo_dds_pool_deseq, alpha=0.05, name = "condition_Pmar_vs_control"   )
+hemo_dds_pool_deseq_res_Pmar_GDC <- results(hemo_dds_pool_deseq, alpha=0.05, name= "condition_Pmar_GDC_vs_control" )
+hemo_dds_pool_deseq_res_Pmar_ZVAD <- results(hemo_dds_pool_deseq, alpha=0.05, name= "condition_Pmar_ZVAD_vs_control")
+
+head(hemo_dds_pool_deseq_res_Pmar) #  condition Pmar vs control
+head(hemo_dds_pool_deseq_res_Pmar_GDC) # condition Pmar GDC vs control
+head(hemo_dds_pool_deseq_res_Pmar_ZVAD) # condition Pmar ZVAD vs control 
+
+### Perform LFC Shrinkage with apeglm
+
+## DECISION: USE SAME RES OBJECT TO KEEP ALPHA ADJUSTMENT, and use LFCShrink apeglm
+
+hemo_dds_pool_deseq_res_Pmar_LFC <- lfcShrink(hemo_dds_pool_deseq, coef="condition_Pmar_vs_control" , type= "apeglm", res=hemo_dds_pool_deseq_res_Pmar)
+# Review results object summary
+summary(hemo_dds_pool_deseq_res_Pmar_LFC)
+#out of 45323 with nonzero total read count
+#adjusted p-value < 0.05
+#LFC > 0 (up)       : 991, 2.2%
+#LFC < 0 (down)     : 1724, 3.8%
+#outliers [1]       : 0, 0%
+#low counts [2]     : 0, 0%
+#(mean count < 1)
+#[1] see 'cooksCutoff' argument of ?results
+#[2] see 'independentFiltering' argument of ?results
+
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC <- lfcShrink(hemo_dds_pool_deseq, coef="condition_Pmar_GDC_vs_control" , type= "apeglm", res=hemo_dds_pool_deseq_res_Pmar_GDC)
+summary(hemo_dds_pool_deseq_res_Pmar_GDC_LFC)
+#out of 45323 with nonzero total read count
+#adjusted p-value < 0.05
+#LFC > 0 (up)       : 1777, 3.9%
+#LFC < 0 (down)     : 2569, 5.7%
+#outliers [1]       : 0, 0%
+#low counts [2]     : 0, 0%
+#(mean count < 1)
+#[1] see 'cooksCutoff' argument of ?results
+#[2] see 'independentFiltering' argument of ?results
+
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC <- lfcShrink(hemo_dds_pool_deseq, coef="condition_Pmar_ZVAD_vs_control", type= "apeglm", res=hemo_dds_pool_deseq_res_Pmar_ZVAD)
+summary(hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC)
+#out of 45323 with nonzero total read count
+#adjusted p-value < 0.05
+#LFC > 0 (up)       : 1265, 2.8%
+#LFC < 0 (down)     : 1902, 4.2%
+#outliers [1]       : 0, 0%
+#low counts [2]     : 0, 0%
+#(mean count < 1)
+#[1] see 'cooksCutoff' argument of ?results
+#[2] see 'independentFiltering' argument of ?results
+
+### Subsetting Significant Genes by padj < 0.05
+# again, only working with the LFCshrinkage adjusted log fold changes, and with the BH adjusted p-value
+# first make sure to make the rownames with the transcript ID as a new column, then make it a dataframe for filtering
+hemo_dds_pool_deseq_res_Pmar_LFC_sig <- subset(hemo_dds_pool_deseq_res_Pmar_LFC, padj < 0.05)
+hemo_dds_pool_deseq_res_Pmar_LFC_sig $ID<- row.names(hemo_dds_pool_deseq_res_Pmar_LFC_sig )
+hemo_dds_pool_deseq_res_Pmar_LFC_sig  <- as.data.frame(hemo_dds_pool_deseq_res_Pmar_LFC_sig )
+nrow(hemo_dds_pool_deseq_res_Pmar_LFC_sig )  #2715
+
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig <- subset(hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC, padj < 0.05)
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig$ID <- row.names(hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig  )
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig   <- as.data.frame(hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig )
+nrow(hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig  )  #3167
+
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig <- subset(hemo_dds_pool_deseq_res_Pmar_GDC_LFC, padj < 0.05)
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig $ID <- row.names(hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig )
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig  <- as.data.frame(hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig)
+nrow(hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig)  #4346
+
+# Annotate all the significant proteins in each 
+
+hemo_dds_pool_deseq_res_Pmar_LFC_sig_all_annot <- left_join(hemo_dds_pool_deseq_res_Pmar_LFC_sig,dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
+
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_all_annot <- left_join(hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig,dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
+
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_all_annot <- left_join(hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig,dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
+
+### GENE CLUSTERING ANALYSIS HEATMAPS  
+# Extract genes with the highest variance across samples for each comparison using either vst or rlog transformed data
+# This heatmap rather than plotting absolute expression strength plot the amount by which each gene deviates in a specific sample from the gene’s average across all samples. 
+# example codes from RNAseq workflow: https://www.bioconductor.org/packages/devel/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#other-comparisons
+# topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 40)
+# mat  <- assay(vsd)[ topVarGenes, ]
+# mat  <- mat - rowMeans(mat)
+# anno <- as.data.frame(colData(vsd)[, c("cell","dex")])
+# pheatmap(mat, annotation_col = anno)
+
+topVarGenes_hemo_dds_pool_rlog <-  head(order(rowVars(assay(hemo_dds_pool_rlog )), decreasing = TRUE), 100)
+family_hemo_mat <- assay(hemo_dds_pool_rlog)[topVarGenes_hemo_dds_pool_rlog,]
+family_hemo_mat <- family_hemo_mat - rowMeans(family_hemo_mat)
+family_hemo_anno <- as.data.frame(colData(hemo_dds_pool_rlog)[, c("condition")])
+rownames(family_hemo_anno) <- colnames(family_hemo_mat)
+family_hemo_heatmap <- pheatmap(family_hemo_mat , annotation_col = family_hemo_anno)
+head(family_hemo_mat)
+
+# reorder annotation table to match ordering in heatmap 
+family_hemo_heatmap_reorder <-rownames(family_hemo_mat[family_hemo_heatmap$tree_row[["order"]],])
+# annotate the row.names
+family_hemo_mat_prot <- as.data.frame(family_hemo_heatmap_reorder)
+colnames(family_hemo_mat_prot)[1] <- "ID"
+family_hemo_mat_prot_annot <- left_join(family_hemo_mat_prot, dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
+
+### Volcano plots of significant genes
+# compute significance 
+hemo_dds_pool_deseq_res_Pmar_LFC_sig_volcano <- hemo_dds_pool_deseq_res_Pmar_LFC_sig
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_volcano <- hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_volcano <- hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig
+
+hemo_dds_pool_deseq_res_Pmar_LFC_sig_volcano$log10 <- -log10(hemo_dds_pool_deseq_res_Pmar_LFC_sig$padj)
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_volcano$log10 <- -log10(hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig$padj)
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_volcano$log10 <- -log10(hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig$padj)
+
+# plot the volcano plots
+hemo_dds_pool_deseq_res_Pmar_LFC_sig_volcano_plot <- ggplot(data = as.data.frame(hemo_dds_pool_deseq_res_Pmar_LFC_sig_volcano),
+                                                       aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() + 
+  labs(y = "-log10(adjusted p-value)", title = "P.mar vs. control hemocytes")
+
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_volcano_plot <- ggplot(data = as.data.frame(hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_volcano), 
+                                                            aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() +
+  labs(y = "-log10(adjusted p-value)", title = "P.mar + ZVAD vs. control hemocytes")
+
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_volcano_plot <- ggplot(data = as.data.frame(hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_volcano), 
+                                                           aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() +
+  labs(y = "-log10(adjusted p-value)", title = "P.mar + GDC vs. control hemocytes")
+
+hemo_pool_volcano <- ggarrange(hemo_dds_pool_deseq_res_Pmar_LFC_sig_volcano_plot, 
+                          hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_volcano_plot,
+                          hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_volcano_plot)
+
+ggsave(hemo_pool_volcano, file = "./FIGURES/hemo_pool_volcano_plot.tiff", device = "tiff", height = 10, width = 10)
+
+
+# annot all 
+hemo_dds_pool_deseq_res_Pmar_LFC_sig_volcano_annot <- hemo_dds_pool_deseq_res_Pmar_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
+  left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene, transcript_id), by = "ID")
+
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot <- hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
+  left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene,transcript_id), by = "ID")
+
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_volcano_annot <- hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
+  left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene,transcript_id), by = "ID")
+
+# annote those greater than 5
+hemo_dds_pool_deseq_res_Pmar_LFC_sig_volcano_5_annot <- hemo_dds_pool_deseq_res_Pmar_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 5.0 | log2FoldChange <= -5.0)
+
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_volcano_5_annot <- hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 5.0 | log2FoldChange <= -5.0)
+
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_volcano_5_annot <- hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 5.0 | log2FoldChange <= -5.0)
+
+### Extract list of significant Apoptosis Genes (not less than or greater than 1 LFC) using merge
+
+# Pmar vs control
+hemo_dds_pool_deseq_res_Pmar_LFC_sig_APOP <- merge(hemo_dds_pool_deseq_res_Pmar_LFC_sig, C_vir_rtracklayer_apop_product_final, by = "ID")
+hemo_dds_pool_deseq_res_Pmar_LFC_sig_APOP_arranged <- arrange(hemo_dds_pool_deseq_res_Pmar_LFC_sig_APOP , -log2FoldChange) 
+nrow(hemo_dds_pool_deseq_res_Pmar_LFC_sig_APOP) #66
+
+# pmar ZVAD vs control
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_APOP <- merge(hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig , C_vir_rtracklayer_apop_product_final, by = "ID")
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_APOP_arranged <- arrange(hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_APOP  , -log2FoldChange) 
+nrow(hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_APOP) # 79
+
+# pmar GDC vs control
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_APOP <- merge(hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig , C_vir_rtracklayer_apop_product_final, by = "ID")
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_LFC_sig_APOP_arranged <- arrange(hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_APOP  , -log2FoldChange) 
+nrow(hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_APOP) # 126
+
+# Compare apoptosis genes between group_by_sim groups
+hemo_dds_pool_deseq_res_Pmar_LFC_sig_APOP$condition <- "Pmar_vs_control"
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_APOP$condition <- "Pmar_ZVAD_vs_control"
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_APOP$condition <- "Pmar_GDC_vs_control"
+
+# combine data frames 
+hemo_pool_upset_all_sig_APOP <- rbind(hemo_dds_pool_deseq_res_Pmar_LFC_sig_APOP[,c("product","condition","log2FoldChange")],
+                                 hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_APOP[,c("product","condition","log2FoldChange")],
+                                 hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_APOP[,c("product","condition","log2FoldChange")])
+
+# Convert into wide format using reshape
+hemo_pool_upset_all_sig_APOP_tally <- hemo_pool_upset_all_sig_APOP %>% group_by(product) %>% tally() 
+hemo_pool_upset_all_sig_APOP_upset <- hemo_pool_upset_all_sig_APOP %>% group_by(product) %>% mutate(value=1) %>% spread(condition, value, fill =0 )
+hemo_pool_upset_all_sig_APOP_upset <- as.matrix(hemo_pool_upset_all_sig_APOP_upset)
+
+# Make plot
+hemo_pool_full_LFC_plot <- ggplot(hemo_pool_upset_all_sig_APOP, aes(x=product,y=log2FoldChange, fill=condition )) + geom_col(position="dodge") + 
+  theme(axis.text.x = element_text(angle = 75, hjust = 1)) + coord_flip()
+
+### Upset plot heatmap of significant apoptosis expression across all treatments  ####
+
+# filter out genes less than 0.1 LFC
+hemo_dds_pool_deseq_res_Pmar_LFC_sig_APOP_filter <- hemo_dds_pool_deseq_res_Pmar_LFC_sig_APOP %>% filter(abs(log2FoldChange) >= 0.1)
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_APOP_filter <- hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_APOP %>% filter(abs(log2FoldChange) >= 0.1)
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_APOP_filter <- hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_APOP %>% filter(abs(log2FoldChange) >= 0.1)
+
+# combine all dataframes
+C_vir_hemo_comb_pool <- rbind(hemo_dds_pool_deseq_res_Pmar_LFC_sig_APOP,
+                         hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_APOP,
+                         hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_APOP) %>% mutate(transcript_product = paste(product, transcript_id)) %>%
+  dplyr::select(transcript_product, condition, log2FoldChange)
+C_vir_hemo_comb_pool_spread <- spread(C_vir_hemo_comb_pool, condition, log2FoldChange, fill = 0)
+C_vir_hemo_comb_pool_spread <- column_to_rownames(C_vir_hemo_comb_pool_spread , var = "transcript_product") 
+C_vir_hemo_comb_pool_spread_mat <- as.matrix(C_vir_hemo_comb_pool_spread)
+
+C_vir_labels =c( "P. mar + GDC vs\nControl", "P. mar vs\nControl", "P. mar + ZVAD vs\nControl")
+# create named vector to hold column names
+C_vir_column_labels_pool = structure(paste0(C_vir_labels), names = paste0(colnames(C_vir_hemo_comb_pool_spread_mat)))
+
+pdf("./FIGURES/C_vir_hemo_comb_pool_spread_mat.pdf", width = 12, height = 17)
+C_vir_heatmap_pool <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_pool_spread_mat, border = TRUE, 
+                                         #column_title = ComplexHeatmap::gt_render("*C. virginica* Experimental Group"), 
+                                         column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_title = "Apoptosis Transcript and Product Name", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_dend_width = unit(2, "cm"),
+                                         column_labels = C_vir_column_labels_pool[colnames(C_vir_hemo_comb_pool_spread_mat)],
+                                         # apply split by k-meams clustering to highlight groups
+                                         row_km = 3, column_km = 2, row_names_gp = gpar(fontsize = 8),
+                                         column_names_gp = gpar(fontsize = 10),
+                                         heatmap_legend_param = list(title = "Log2 Fold Change"))
+ComplexHeatmap::draw(C_vir_heatmap_pool, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+dev.off()
+
+## Plot apoptosis transcformed counts across each sample ####
+# example codes from RNAseq workflow: https://www.bioconductor.org/packages/devel/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#other-comparisons
+
+C_vir_hemo_comb_ID_pool <-  rbind(hemo_dds_pool_deseq_res_Pmar_LFC_sig_APOP,
+                             hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_APOP,
+                             hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_APOP) %>% dplyr::pull(., ID)
+class(C_vir_hemo_comb_ID_pool)
+
+# find rownames matching these IDs
+apop_hemo_mat <- assay(hemo_dds_pool_rlog)[C_vir_hemo_comb_ID_pool,]
+apop_hemo_mat <- as.data.frame(apop_hemo_mat) %>% mutate(ID = rownames(.)) %>% 
+  left_join(., C_vir_rtracklayer_apop_product_final[,c("ID","product","transcript_id")], by = "ID") %>% filter(!is.na(product)) %>%
+  mutate(transcript_product = paste(product, transcript_id, sep = "-")) %>% dplyr::select(-ID,-product, -transcript_id)
+rownames(apop_hemo_mat) <- apop_hemo_mat$transcript_product
+apop_hemo_mat <- apop_hemo_mat[,-13]
+apop_hemo_mat <- as.matrix(apop_hemo_mat)  
+
+apop_hemo_anno <- as.data.frame(colData(hemo_dds_pool_rlog)[, c("condition")])
+rownames(apop_hemo_anno) <- colnames(apop_hemo_mat)
+colnames(apop_hemo_anno)[1] <- "Condition"
+
+pdf("./FIGURES/C_vir_apop_hemo_mat1_pool.pdf", width = 12, height = 20)
+pheatmap(apop_hemo_mat , annotation_col = apop_hemo_anno)
+dev.off()
+
+### Upset plot of significant LFCs > 1
+
+hemo_dds_pool_deseq_res_Pmar_LFC_sig_volcano_annot_1 <- hemo_dds_pool_deseq_res_Pmar_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 1.0 | log2FoldChange <= -1.0) %>%
+  filter(!is.na(product)) %>% mutate(condition = "control")
+
+hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot_1 <- hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot %>% 
+  filter(log2FoldChange >= 1.0 | log2FoldChange <= -1.0) %>% 
+  filter(!is.na(product)) %>% mutate(condition = "Pmar_ZVAD")
+
+hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_volcano_annot_1 <- hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_volcano_annot %>% 
+  filter(log2FoldChange >= 1.0 | log2FoldChange <= -1.0) %>%
+  filter(!is.na(product)) %>% mutate(condition = "Pmar_GDC")
+
+
+C_vir_hemo_1_comb <- rbind(hemo_dds_pool_deseq_res_Pmar_LFC_sig_volcano_annot_1,
+                           hemo_dds_pool_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot_1,
+                           hemo_dds_pool_deseq_res_Pmar_GDC_LFC_sig_volcano_annot_1) %>% mutate(transcript_product = paste(product, transcript_id)) %>%
+  dplyr::select(transcript_product, condition, log2FoldChange)
+C_vir_hemo_1_comb_spread <- spread(C_vir_hemo_1_comb, condition, log2FoldChange, fill = 0)
+C_vir_hemo_1_comb_spread <- column_to_rownames(C_vir_hemo_1_comb_spread , var = "transcript_product") 
+C_vir_hemo_1_comb_spread_mat <- as.matrix(C_vir_hemo_1_comb_spread)
+
+C_vir_1_labels =c( "P. mar + GDC vs\nControl", "P. mar vs\nControl", "P. mar + ZVAD vs\nControl")
+# create named vector to hold column names
+C_vir_1_column_labels = structure(paste0(C_vir_1_labels), names = paste0(colnames(C_vir_hemo_1_comb_spread_mat)))
+
+pdf("./FIGURES/C_vir_hemo_1_comb_spread_mat.pdf", width = 12, height = 10)
+C_vir_heatmap <- ComplexHeatmap::Heatmap(C_vir_hemo_1_comb_spread_mat, border = TRUE, 
+                                         #column_title = ComplexHeatmap::gt_render("*C. virginica* Experimental Group"), 
+                                         column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_title = "Transcript and Product Name LFC > abs(1)", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_dend_width = unit(2, "cm"),
+                                         column_labels = C_vir_1_column_labels[colnames(C_vir_hemo_1_comb_spread_mat)],
+                                         # apply split by k-meams clustering to highlight groups
+                                         row_km = 4, column_km = 2, 
+                                         row_names_gp = gpar(fontsize = 2),
+                                         column_names_gp = gpar(fontsize = 10),
+                                         heatmap_legend_param = list(title = "Log2 Fold Change"))
+ComplexHeatmap::draw(C_vir_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+dev.off()
+
+pdf("./FIGURES/C_vir_hemo_1_comb_spread_mat_tall.pdf", width = 12, height = 20)
+C_vir_heatmap <- ComplexHeatmap::Heatmap(C_vir_hemo_1_comb_spread_mat, border = TRUE, 
+                                         #column_title = ComplexHeatmap::gt_render("*C. virginica* Experimental Group"), 
+                                         column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_title = "Transcript and Product Name LFC > abs(1)", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_dend_width = unit(2, "cm"),
+                                         column_labels = C_vir_1_column_labels[colnames(C_vir_hemo_1_comb_spread_mat)],
+                                         # apply split by k-meams clustering to highlight groups
+                                         row_km = 4, column_km = 2, 
+                                         row_names_gp = gpar(fontsize = 2),
+                                         column_names_gp = gpar(fontsize = 10),
+                                         heatmap_legend_param = list(title = "Log2 Fold Change"))
+ComplexHeatmap::draw(C_vir_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+dev.off()
+
 #### PERKINSUS TRANSCRIPTOME ANALYSIS ####
 
 ## LOAD DATA
@@ -1519,7 +1863,190 @@ ComplexHeatmap::draw(Perk_heatmap_GO, heatmap_legend_side = "left", padding = un
 
 dev.off()
 
-#### PCA ANALYSIS ####
+## Analyze Interproscan resuls of the significant GDC and ZVAD results
+
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro_all <- left_join(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot,Perk_Interpro_GO_terms_XP,by = "transcript_id") 
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_all  <- left_join(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot,Perk_Interpro_GO_terms_XP, by = "transcript_id") 
+
+# export to csv so I can copy and paste in Interpro descriptions
+write.table(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro_all, file = "perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro_all.txt", sep= "\t", row.names = FALSE)
+write.table(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_all, file = "perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_all.txt", sep= "\t", row.names = FALSE)
+
+
+
+#### PERKINSUS TRANSCRIPTOME CONTROLLING FOR POOL ####
+perk_coldata$pool <- as.factor(perk_coldata$pool)
+
+## Creating three here so I can compare the results
+perk_pool_dds <- DESeqDataSetFromMatrix(countData = perk_counts,
+                                   colData = perk_coldata,
+                                   design = ~pool + condition) # compare by condition, controlling for pool
+
+## Prefiltering the data
+# Data prefiltering helps decrease the size of the data set and get rid of
+# rows with no data or very minimal data (<10). Apply a minimal filtering here as more stringent filtering will be applied later
+perk_pool_dds <- perk_pool_dds[ rowSums(counts(perk_pool_dds)) > 10, ]
+
+## Check levels 
+# It is prefered in R that the first level of a factor be the reference level for comparison
+# (e.g. control, or untreated samples), so we can relevel the factor like so
+# Check factor levels, set it so that comparison group is the first
+levels(perk_coldata$condition)  # Pmar is currently listed first, so this looks good 
+
+## DATA TRANSFORMATION AND VISUALIZATION
+# Assess sample clustering after setting initial formula for comparison
+perk_pool_dds_rlog <- rlog(perk_pool_dds, blind = TRUE) # keep blind = true before deseq function has been run
+
+## PCA plot visualization of individuals in the family 
+plotPCA(perk_pool_dds_rlog, intgroup=c("condition")) # little clustering by condition
+ggsave(file = "./FIGURES/perk_pool_dds_rlog.tiff", device = "tiff")
+
+### DIFFERENTIAL EXPRESSION ANALYSIS
+# run pipeline with single command because the formula has already been specified
+# Steps: estimation of size factors (controlling for differences in the sequencing depth of the samples), 
+# the estimation of dispersion values for each gene, 
+# and fitting a generalized linear model.
+perk_pool_dds_deseq <- DESeq(perk_pool_dds) 
+
+## Check the resultsNames object of each to look at the available coefficients for use in lfcShrink command
+resultsNames(perk_pool_dds_deseq)
+
+## BUILD THE RESULTS OBJECT
+# Examining the results object, change alpha to p <0.05, looking at object metadata
+# use mcols to look at metadata for each table
+perk_pool_dds_deseq_res_Pmar_GDC <- results(perk_pool_dds_deseq, alpha=0.05, name= "condition_Pmar_GDC_vs_Pmar" )
+perk_pool_dds_deseq_res_Pmar_ZVAD <- results(perk_pool_dds_deseq, alpha=0.05, name= "condition_Pmar_ZVAD_vs_Pmar")
+
+head(perk_pool_dds_deseq_res_Pmar_GDC) # condition Pmar GDC vs control
+head(perk_pool_dds_deseq_res_Pmar_ZVAD) # condition Pmar ZVAD vs control 
+
+### Perform LFC Shrinkage with apeglm
+## NOTES 
+## DECISION: USE SAME RES OBJECT TO KEEP ALPHA ADJUSTMENT, and use LFCShrink apeglm
+
+perk_pool_dds_deseq_res_Pmar_GDC_LFC <- lfcShrink(perk_pool_dds_deseq, coef="condition_Pmar_GDC_vs_Pmar" , type= "apeglm", res=perk_pool_dds_deseq_res_Pmar_GDC)
+summary(perk_pool_dds_deseq_res_Pmar_GDC_LFC)
+#out of 16842 with nonzero total read count
+#adjusted p-value < 0.05
+#LFC > 0 (up)       : 89, 0.53%
+#LFC < 0 (down)     : 92, 0.55%
+#outliers [1]       : 0, 0%
+#low counts [2]     : 0, 0%
+#(mean count < 1)
+#[1] see 'cooksCutoff' argument of ?results
+#[2] see 'independentFiltering' argument of ?results
+
+perk_pool_dds_deseq_res_Pmar_ZVAD_LFC <- lfcShrink(perk_pool_dds_deseq, coef="condition_Pmar_ZVAD_vs_Pmar", type= "apeglm", res=perk_pool_dds_deseq_res_Pmar_ZVAD)
+summary(perk_pool_dds_deseq_res_Pmar_ZVAD_LFC)
+#out of 16842 with nonzero total read count
+#adjusted p-value < 0.05
+#LFC > 0 (up)       : 91, 0.54%
+#LFC < 0 (down)     : 89, 0.53%
+#outliers [1]       : 0, 0%
+#low counts [2]     : 0, 0%
+#(mean count < 1)
+#[1] see 'cooksCutoff' argument of ?results
+#[2] see 'independentFiltering' argument of ?results
+
+### Subsetting Significant Genes by padj < 0.05
+# again, only working with the LFCshrinkage adjusted log fold changes, and with the BH adjusted p-value
+# first make sure to make the rownames with the transcript ID as a new column, then make it a dataframe for filtering
+
+perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig <- subset(perk_pool_dds_deseq_res_Pmar_ZVAD_LFC, padj < 0.05)
+perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig$transcript_id <- row.names(perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig  )
+perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig   <- as.data.frame(perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig )
+nrow(perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig  )  #180
+
+perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig <- subset(perk_pool_dds_deseq_res_Pmar_GDC_LFC, padj < 0.05)
+perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig $transcript_id <- row.names(perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig )
+perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig  <- as.data.frame(perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig)
+nrow(perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig)  #181
+
+# Annotate these genes
+perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot <- merge(perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig, unique(dplyr::select(Perkinsus_rtracklayer, transcript_id, product))) %>% 
+  mutate(product = case_when(product == "conserved hypothetical protein" | product == "hypothetical protein" ~ paste(product, transcript_id, sep = "-"),
+                             product != "conserved hypothetical protein" | product != "hypothetical protein" ~ product))
+
+perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot <- merge(perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig, unique(dplyr::select(Perkinsus_rtracklayer,transcript_id, product))) %>% 
+  mutate(product = case_when(product == "conserved hypothetical protein" | product == "hypothetical protein" ~ paste(product, transcript_id, sep = "-"),
+                             product != "conserved hypothetical protein" | product != "hypothetical protein" ~ product))
+
+perk_pool_dds_deseq_res_Pmar_GDC_ZVAD_LFC_sig_annot_comb <- intersect(perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot[,c("transcript_id","product")], perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot[,c("transcript_id","product")])
+
+# Join with these their Interproscan results
+perk_pool_dds_deseq_res_Pmar_GDC_ZVAD_LFC_sig_annot_comb_Interpro <-  left_join(perk_pool_dds_deseq_res_Pmar_GDC_ZVAD_LFC_sig_annot_comb, Perk_Interpro_GO_terms_XP, by = "transcript_id")
+
+# plot LFC 
+perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_plot <- ggplot(perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot, aes(x= product, y = log2FoldChange)) + 
+  geom_col() + coord_flip() + ggtitle("P. mar. ZVAD\n vs P. mar control")
+
+perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot_plot <- ggplot(perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot, aes(x= product, y = log2FoldChange)) +
+  geom_col() + coord_flip() + ggtitle("P. mar. GDC\n vs P. mar control")
+
+combined_Pmar_pool <- ggarrange(perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot_plot, perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_plot)
+
+ggsave(combined_Pmar_pool, device = "tiff",
+       width = 12, height = 7,
+       file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/combined_Pmar_plot")
+
+# compute significance 
+perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$log10 <- -log10(perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$padj)
+perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot$log10 <- -log10(perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot$padj)
+
+# plot the volcano plots
+perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_volcano_plot <- ggplot(data = as.data.frame(perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot),
+                                                                  aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() + 
+  labs(y = "-log10(adjusted p-value)", title = "P.mar + ZVAD vs.\ncontrol P. mar") + xlim(-10,15)
+
+perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot_volcano_plot <- ggplot(data = as.data.frame(perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot), 
+                                                                 aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() +
+  labs(y = "-log10(adjusted p-value)", title = "P.mar + GDC vs.\ncontrol P. mar") + xlim(-10,15)
+
+
+perk_pool_volcano <- ggarrange(perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_volcano_plot, 
+                          perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot_volcano_plot)
+
+ggsave(perk_pool_volcano, file = "./FIGURES/perk_pool_volcano_plot", device = "tiff", height = 3, width = 5)
+
+
+## Perkinsus expression upset plot controlled for pool ####
+perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$condition <- "P_mar_ZVAD_vs_Pmar"
+perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot$condition <- "P_mar_GDC_vs_Pmar"
+
+# filter out transcripts with very low log2foldchange
+perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_filter <- perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot %>% filter(abs(log2FoldChange) >= 0.1)
+perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot_filter <- perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot %>% filter(abs(log2FoldChange) >= 0.1)
+
+
+# combine all dataframes
+Perk_comb_pool <- rbind(perk_pool_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_filter,
+                   perk_pool_dds_deseq_res_Pmar_GDC_LFC_sig_annot_filter) %>% mutate(product = paste(product, transcript_id, sep = "-")) %>%
+  dplyr::select(product, condition, log2FoldChange) 
+Perk_comb_pool_spread <- spread(Perk_comb_pool, condition, log2FoldChange, fill = 0)
+Perk_comb_pool_spread <- column_to_rownames(Perk_comb_pool_spread , var = "product") 
+Perk_comb_pool_spread_mat <- as.matrix(Perk_comb_pool_spread)
+
+Perk_pool_labels =c( "P. mar + GDC vs\nP. mar Control", "P. mar + ZVAD vs\nP. mar Control")
+# create named vector to hold column names
+Perk_column_labels_pool = structure(paste0(Perk_pool_labels), names = paste0(colnames(Perk_comb_pool_spread_mat)))
+
+pdf("./FIGURES/Perk_pool_spread_mat.pdf", width = 8, height = 8)
+Perk_pool_heatmap <- ComplexHeatmap::Heatmap(Perk_comb_pool_spread_mat, border = TRUE, 
+                                        column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                        row_title = "Transcript and Product Name", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                        row_dend_width = unit(2, "cm"),
+                                        column_labels = Perk_column_labels_pool[colnames(Perk_comb_pool_spread_mat)],
+                                        # apply split by k-meams clustering to highlight groups
+                                        #row_km = 3, column_km = 2, 
+                                        row_names_gp = gpar(fontsize = 8),
+                                        column_names_gp = gpar(fontsize = 8),
+                                        heatmap_legend_param = list(title = "Log2 Fold Change"))
+ComplexHeatmap::draw(Perk_pool_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 40), "mm")) #bottom, left, top, right paddings
+
+dev.off()
+
+
+#### HEMOCYTE PCA ANALYSIS ####
 
 # helpful PCA plot tutorial
 #https://bioconductor.org/packages/release/bioc/vignettes/PCAtools/inst/doc/PCAtools.html
@@ -1755,6 +2282,245 @@ biplot(pheno_pca_perk, showLoadings = TRUE)
 # the firs two principal components explain almost all the variance..with the mitochondrial assay and the apoptosis assay results being
 # strongly negatively correlated. GDC sample still cluster strongly and the dermo only and ZVAD cluster together
 
+#### HEMOCYTE PCA WITH MEAN EXPRESSION ####
+
+# helpful PCA plot tutorial
+#https://bioconductor.org/packages/release/bioc/vignettes/PCAtools/inst/doc/PCAtools.html
+
+# Load phenotype data
+
+load("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/COMBINED_ANALYSIS/R_ANALYSIS/PCA_pheno_2020.RData")
+PCA_pheno_2020
+
+# set the sample names to be the same as the count data names for each pool and treatment 
+colnames(hemo_counts)
+#[1] "1_Dermo_GDC_R1_001"  "1_Dermo_ZVAD_R1_001" "1_Dermo_R1_001"      "1_control_R1_001"    "2_Dermo_GDC_R1_001"  "2_Dermo_ZVAD_R1_001"
+#[7] "2_Dermo_R1_001"      "2_control_R1_001"    "3_Dermo_GDC_R1_001"  "3_Dermo_ZVAD_R1_001" "3_Dermo_R1_001"      "3_control_R1_001"   
+
+# mutate treatment and Pool ID
+PCA_pheno_2020_all <- PCA_pheno_2020 %>% 
+  # remove the beads data
+  filter(Treat != "BEADS_LPS") %>%
+  mutate(ID = case_when(
+    ID == "Pool1" ~ "1",
+    ID == "Pool2" ~ "2",
+    ID == "Pool3" ~ "3",
+    TRUE ~ NA_character_)) %>%
+  mutate(Treat = case_when(
+    Treat == "Control_hemo" ~ "control_R1_001",
+    Treat == "Dermo_GDC" ~ "Dermo_GDC_R1_001",
+    Treat == "Dermo_ZVAD" ~ "Dermo_ZVAD_R1_001",
+    Treat == "Dermo" ~ "Dermo_R1_001",
+    TRUE ~ NA_character_)) %>% mutate(Sample_Name = paste(ID,Treat, sep = "_"))
+
+#### HEMOCYTE APOPTOSIS EXPRESSION PCA ###
+
+# Use the matrix generated in the hemocyte section to plot apoptosis transcript expression
+colnames(apop_hemo_mat)
+
+# separate phenotype data into two groups, one with control data and one without
+PCA_pheno_2020_control <- PCA_pheno_2020_all %>% dplyr::select(-contains("hemo_perk")) 
+PCA_pheno_2020_perk <- PCA_pheno_2020_all %>% filter(!grepl("control",Treat)) 
+
+# make metadata table with just ID and treat
+PCA_pheno_2020_control_metadata <- PCA_pheno_2020_control %>% # set rownames to sample name and then remove
+  column_to_rownames(., var = "Sample_Name") %>% dplyr::select(ID,Treat) 
+PCA_pheno_2020_perk_metadata <- PCA_pheno_2020_control %>% # set rownames to sample name and then remove
+  column_to_rownames(., var = "Sample_Name") %>% dplyr::select(ID,Treat) 
+
+## Hemocyte Apoptosis PCA including Control samples
+
+# put metatdata in same order as expression matrix 
+PCA_pheno_2020_control_metadata <- PCA_pheno_2020_control_metadata[colnames(apop_hemo_mat),]
+
+# check sample name match between metadata and expression data
+all(colnames(apop_hemo_mat) == rownames(PCA_pheno_2020_control_metadata)) # TRUE
+
+## Join together expression data and phenotype data all into one dataframe
+# transpose the metadata table so that the ID column is the 
+PCA_pheno_2020_control_trans <- PCA_pheno_2020_control %>% column_to_rownames(., var = "Sample_Name") %>% dplyr::select(-ID)
+class(PCA_pheno_2020_control_trans$Percent_of_this_plot_arcsine_APOP_hemo_alone)
+PCA_pheno_2020_control_transpose <- transpose(PCA_pheno_2020_control_trans)
+rownames(PCA_pheno_2020_control_transpose) <- colnames(PCA_pheno_2020_control_trans)
+colnames(PCA_pheno_2020_control_transpose) <- rownames(PCA_pheno_2020_control_trans)
+#remove top row
+PCA_pheno_2020_control_transpose <- PCA_pheno_2020_control_transpose[-1,]
+# put in correct order
+PCA_pheno_2020_control_transpose <- PCA_pheno_2020_control_transpose[,colnames(apop_hemo_mat)]
+PCA_pheno_2020_control_transpose_mat <- data.matrix(PCA_pheno_2020_control_transpose)
+
+# bind together the apop_hemo_mat and this matrix for all the samples
+all(colnames(apop_hemo_mat) == colnames(PCA_pheno_2020_control_transpose)) # TRUE first make sure samples are in the same order
+apop_hemo_mat_pheno <- rbind(apop_hemo_mat,PCA_pheno_2020_control_transpose)
+class(apop_hemo_mat_pheno)
+apop_hemo_mat_pheno <- data.matrix(apop_hemo_mat_pheno)
+class(apop_hemo_mat_pheno)
+
+## compute PCAs, remove lower 10% of variables based on variance
+
+# PCA hemo apop expression plus phenotype
+hemo_apop_control_pca <- pca(apop_hemo_mat_pheno , metadata = PCA_pheno_2020_control_metadata) 
+# PCA phenotype only
+pheno_pca <- pca(PCA_pheno_2020_control_transpose_mat, metadata = PCA_pheno_2020_control_metadata) 
+# PCA with just the expression data for hemocytes
+hemo_apop_control_pca_no_pheno <- pca(apop_hemo_mat , metadata = PCA_pheno_2020_control_metadata) 
+
+## Plot hemocyte apoptosis plus the phenotype data
+# scree plot
+hemo_apop_control_pca_scree <- screeplot(hemo_apop_control_pca,
+                                         components = getComponents(hemo_apop_control_pca, 1:12))
+
+# biplot
+hemo_apop_control_pca_biplot <- biplot(hemo_apop_control_pca, 
+                                       showLoadings = TRUE, 
+                                       ntopLoadings = 20, title = "Biplot of Top 20 Loadings") 
+
+hemo_apop_control_pca_biplot <- hemo_apop_control_pca_biplot + theme(plot.margin = unit(c(0, 0, 0, 0), "null"))
+
+# about 70% of the variation explained when apoptosis expression and cell death phenotypes 
+# PC1 explains the difference between the GDC plot and the control and Dermo/ZVAD
+# PC2 explains the difference between control samples and Dermo2ZVAD which is an outlier, and the dermo and ZVAD samples
+# ZVAD and Dermo samples always cluster and the GDC samples always cluster, and the controls cluster
+
+# plot loadings
+# For each PC of interest, ‘plotloadings’ determines the variables falling within the top/bottom 5% of the loadings range, 
+# and then creates a final consensus list of these. These variables are then plotted.
+# loadings describe how much each variable contributes to a particular principal component. 
+# Large loadings (positive or negative) indicate that a particular variable has a strong relationship to a particular principal component. 
+# The sign of a loading indicates whether a variable and a principal component are positively or negatively correlated.
+hemo_apop_control_pca_loadings <- plotloadings(hemo_apop_control_pca,
+                                               components = getComponents(hemo_apop_control_pca, c(1,2)), # makes point sizes proportional to the loadings
+                                               rangeRetain = 0.1,
+                                               labSize = 3.0,
+                                               absolute = FALSE,
+                                               title = 'Loadings plot of Top 10% variables',
+                                               shape = 23, shapeSizeRange = c(1, 5),
+                                               col = c('limegreen', 'black', 'red'),
+                                               drawConnectors = TRUE)
+
+# Plot all hemo plus pheno data together
+hemo_apop_control_pca_multiplot <- cowplot::plot_grid(hemo_apop_control_pca_biplot,  hemo_apop_control_pca_loadings,
+                                                      nrow=2, labels = "AUTO", axis = "h",align = "h")
+
+
+ggsave(plot = hemo_apop_control_pca_multiplot, device = "tiff", filename = "hemo_apop_control_pca_multiplot.tiff",
+       path = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES",
+       height = 20, width = 20)
+
+
+# plot just phenotypes no expression data
+biplot(pheno_pca, showLoadings = TRUE) 
+# GDC phenotypes cluster closely, while the Dermo and ZVAD are mostly mixed, and then the control samples are more distinguished
+
+
+# plot just the apoptosis expression and no phenotypes
+biplot(hemo_apop_control_pca_no_pheno, 
+       #showLoadings = TRUE, 
+       ntopLoadings = 20)
+# about 50% of variation explained..having the phenotype data added explains more of the variance in the model
+# again we have the GDC clustering, control clustering, and the Dermo and ZVAD clustering
+
+plotloadings(hemo_apop_control_pca_no_pheno,
+             components = getComponents(hemo_apop_control_pca_no_pheno, c(1,2)), # makes point sizes proportional to the loadings
+             rangeRetain = 0.1,
+             labSize = 2.0,
+             absolute = FALSE,
+             title = 'Loadings plot',
+             subtitle = 'PCs 1 and 2',
+             caption = 'Top 10% variables',
+             shape = 23, shapeSizeRange = c(1, 5),
+             col = c('limegreen', 'black', 'red'),
+             drawConnectors = TRUE)
+
+
+## Hemocyte apoptosis with just Dermo samples
+# put metatdata in same order as expression matrix 
+# remove control samples from apop_hemo_mat
+apop_hemo_mat_perk <- as.data.frame(apop_hemo_mat) %>% dplyr::select(-contains("control"))
+PCA_pheno_2020_perk_metadata <- PCA_pheno_2020_perk_metadata[colnames(apop_hemo_mat_perk),]
+
+# check sample name match between metadata and expression data
+all(colnames(apop_hemo_mat_perk) == rownames(PCA_pheno_2020_perk_metadata)) # TRUE
+
+## Join together expression data and phenotype data all into one dataframe
+# transpose the metadata table so that the ID column is the 
+PCA_pheno_2020_perk_trans <- PCA_pheno_2020_perk %>% column_to_rownames(., var = "Sample_Name") %>% dplyr::select(-ID)
+class(PCA_pheno_2020_perk_trans$Percent_of_this_plot_arcsine_APOP_hemo_alone)
+
+PCA_pheno_2020_perk_transpose <- transpose(PCA_pheno_2020_perk_trans)
+rownames(PCA_pheno_2020_perk_transpose) <- colnames(PCA_pheno_2020_perk_trans)
+colnames(PCA_pheno_2020_perk_transpose) <- rownames(PCA_pheno_2020_perk_trans)
+#remove top row
+PCA_pheno_2020_perk_transpose <- PCA_pheno_2020_perk_transpose[-1,]
+# put in correct order
+PCA_pheno_2020_perk_transpose <- PCA_pheno_2020_perk_transpose[,colnames(apop_hemo_mat_perk)]
+PCA_pheno_2020_perk_transpose_mat <- data.matrix(PCA_pheno_2020_perk_transpose)
+
+# bind together the apop_hemo_mat and this matrix for all the samples
+all(colnames(apop_hemo_mat_perk) == colnames(PCA_pheno_2020_perk_transpose)) # TRUE first make sure samples are in the same order
+apop_hemo_mat_pheno_perk <- rbind(apop_hemo_mat_perk,PCA_pheno_2020_perk_transpose)
+class(apop_hemo_mat_pheno_perk)
+apop_hemo_mat_pheno_perk <- data.matrix(apop_hemo_mat_pheno)
+class(apop_hemo_mat_pheno_perk)
+
+## compute PCAs
+# PCA with apoptosis phenotype and gene expression
+hemo_apop_perk_pca <- pca(apop_hemo_mat_pheno_perk , metadata = PCA_pheno_2020_perk_metadata) 
+# only phenotype
+pheno_pca_perk <- pca(PCA_pheno_2020_perk_transpose_mat, metadata = PCA_pheno_2020_perk_metadata) 
+# only apoptosis expression
+hemo_apop_perk_pca_no_pheno <- pca(apop_hemo_mat_perk, metadata = PCA_pheno_2020_perk_metadata)
+
+## plot Hemocyte expression plus phenotype
+
+screeplot(hemo_apop_perk_pca, components = getComponents(hemo_apop_perk_pca, 1:20))
+
+# biplot
+hemo_apop_perk_pca_bipplot <- biplot(hemo_apop_perk_pca, ntopLoadings = 20, showLoadings = TRUE,
+                                     title = "Top 20 Loadings") # about 70% of the variation explained when apoptosis expression and cell death phenotypes 
+# with controls removed, PC1 explains more of the variation while PC2 explains slightly less
+# PC1 explains the difference between ZVAD and control , and the GDC samples.. so it really segregates the response to GDC
+# PC2 really only separates the GDC and Dermo/ZVAD from one ZVAD sample
+
+# plot loadings
+# For each PC of interest, ‘plotloadings’ determines the variables falling within the top/bottom 5% of the loadings range, 
+# and then creates a final consensus list of these. These variables are then plotted.
+# loadings describe how much each variable contributes to a particular principal component. 
+# Large loadings (positive or negative) indicate that a particular variable has a strong relationship to a particular principal component. 
+# The sign of a loading indicates whether a variable and a principal component are positively or negatively correlated.
+hemo_apop_perk_pca_loadings <- plotloadings(hemo_apop_perk_pca,
+                                            components = getComponents(hemo_apop_perk_pca, c(1,2)), # makes point sizes proportional to the loadings
+                                            rangeRetain = 0.1,
+                                            labSize = 3.0,
+                                            absolute = FALSE,
+                                            title = 'Loadings plot of Top 10% variables',
+                                            shape = 23, shapeSizeRange = c(1, 5),
+                                            col = c('limegreen', 'black', 'red'),
+                                            drawConnectors = TRUE)
+
+# only need to pay attention to the PC1 transcripts that segregate
+#for PC1 the mitochondrial response is strongly negatively correlated with PC1
+# anything in the negatives here are more correlated with the GDC response
+# only caspase 8 and the mitochondrial phenotype are correlated with the GDC at a level of top 10% of variables
+
+# Plot all hemo plus pheno data together
+hemo_apop_perk_pca_multiplot <- cowplot::plot_grid(hemo_apop_perk_pca_bipplot,  hemo_apop_perk_pca_loadings,
+                                                   nrow=2, labels = "AUTO", axis = "h",align = "h")
+
+ggsave(plot = hemo_apop_perk_pca_multiplot, device = "tiff", filename = "hemo_apop_perk_pca_multiplot.tiff",
+       path = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES",
+       height = 20, width = 20)
+
+
+## plot just the phenotypes
+
+biplot(pheno_pca_perk, showLoadings = TRUE)
+# the firs two principal components explain almost all the variance..with the mitochondrial assay and the apoptosis assay results being
+# strongly negatively correlated. GDC sample still cluster strongly and the dermo only and ZVAD cluster together
+
+
+
+
 #### PERKKINSUS EXPRESSION PCA ####
 
 # Use the phenotype data and metadata tables that were supset for just the Perkinsus data above 
@@ -1863,9 +2629,199 @@ perk_dds_rlog_mat_pheno_perk_pca_loadings_PC2_25 <- perk_dds_rlog_mat_pheno_perk
 perk_dds_rlog_mat_pheno_perk_pca_loadings_PC2_25_Interpro <- perk_dds_rlog_mat_pheno_perk_pca_loadings_PC2_25 %>% dplyr::select(transcript_id_product, PC1,PC2) %>% 
                                                                          left_join(., Perk_Interpro_GO_terms_XP)
 
-# review particular transcripts of interest in the raw data - why weren't some of them differentially expressed?
+## review particular transcripts of interest in the raw data - why weren't some of them differentially expressed?
 
-assay(perk_dds_rlog)["XM_002780500.1",]
+# WAG22 antigen precursor, putative-XM_002780500.1 
+assay(perk_dds_rlog)["XM_002780500.1",] # much higher expression in GDC-1 likely just due to random chance and not due to a real treatment effect
+# ABC transporter, putative-XM_002773540.1
+assay(perk_dds_rlog)["XM_002773540.1",] # really is much higher expression across all GDC samples
+#ATP-dependent RNA helicase, putative-XM_002788234.1 
+assay(perk_dds_rlog)["XM_002788234.1",] # this is similarly scewed due to GDC 1
+
+#### EXPRESSION PCAS WITH THE MEAN EXPRESSION ####
+
+# Performing the PCAs with mean expression should help reduce skewing based on expression in a single treatment
+
+# get full counts matrix from all perkinsus data
+perk_dds_rlog_mat_df <- as.data.frame(perk_dds_rlog_mat)
+
+# get mean across only the rows for each group
+perk_dds_rlog_mat_df$Dermo_mean <- rowMeans(subset(perk_dds_rlog_mat_df, select = c("1_Dermo_R1_001", 
+                                                                                    "2_Dermo_R1_001",
+                                                                                    "3_Dermo_R1_001")), na.rm = TRUE)
+perk_dds_rlog_mat_df$Dermo_GDC_mean <- rowMeans(subset(perk_dds_rlog_mat_df, select = c("1_Dermo_GDC_R1_001", 
+                                                                                    "2_Dermo_GDC_R1_001",
+                                                                                    "3_Dermo_GDC_R1_001")), na.rm = TRUE)
+
+perk_dds_rlog_mat_df$Dermo_ZVAD_mean <- rowMeans(subset(perk_dds_rlog_mat_df, select =c("1_Dermo_ZVAD_R1_001", 
+                                                                                        "2_Dermo_ZVAD_R1_001",
+                                                                                        "3_Dermo_ZVAD_R1_001")), na.rm = TRUE)
+
+# Subset just these mean counts columns
+colnames(perk_dds_rlog_mat_df)
+perk_dds_rlog_mat_df_rowmeans <- perk_dds_rlog_mat_df[,c("Dermo_mean","Dermo_GDC_mean","Dermo_ZVAD_mean")]
+perk_dds_rlog_mat_df_rowmeans <- as.matrix(perk_dds_rlog_mat_df_rowmeans)
+
+# Format metadata to now match the rowmeans dataframe
+PCA_pheno_2020_perk_metadata_rowmeans <- PCA_pheno_2020_perk_metadata %>% mutate(Treat = case_when(
+      Treat == "Dermo_R1_001" ~ "Dermo_mean",
+      Treat == "Dermo_GDC_R1_001" ~ "Dermo_GDC_mean",
+      Treat == "Dermo_ZVAD_R1_001" ~ "Dermo_ZVAD_mean")) %>% distinct(Treat) %>% column_to_rownames(., var = "Treat")
+# fix order
+PCA_pheno_2020_perk_metadata_rowmeans <- PCA_pheno_2020_perk_metadata_rowmeans[colnames(perk_dds_rlog_mat_df_rowmeans),]
+
+# check sample name match between metadata and expression data
+all(colnames(perk_dds_rlog_mat_df_rowmeans) == rownames(PCA_pheno_2020_perk_metadata_rowmeans)) # TRUE
+
+# get the mean of the phenotype columns
+class(PCA_pheno_2020_perk_transpose)
+PCA_pheno_2020_perk_transpose_rowmeans <- PCA_pheno_2020_perk_transpose %>% rownames_to_column(., var = "ID")
+PCA_pheno_2020_perk_transpose_rowmeans$ID <- as.factor(PCA_pheno_2020_perk_transpose_rowmeans$ID )
+PCA_pheno_2020_perk_transpose_rowmeans <- PCA_pheno_2020_perk_transpose_rowmeans %>%  
+  mutate_if(is.character,as.numeric) %>% column_to_rownames(., var="ID")
+PCA_pheno_2020_perk_transpose_rowmeans$Dermo_mean <-   rowMeans(subset(PCA_pheno_2020_perk_transpose_rowmeans, 
+                                                                       select = c("1_Dermo_R1_001", 
+                                                                                  "2_Dermo_R1_001",
+                                                                                  "3_Dermo_R1_001")), na.rm = TRUE)
+PCA_pheno_2020_perk_transpose_rowmeans$Dermo_GDC_mean <-   rowMeans(subset(PCA_pheno_2020_perk_transpose_rowmeans, 
+                                                                       select = c("1_Dermo_GDC_R1_001", 
+                                                                                  "2_Dermo_GDC_R1_001",
+                                                                                  "3_Dermo_GDC_R1_001")), na.rm = TRUE)
+PCA_pheno_2020_perk_transpose_rowmeans$Dermo_ZVAD_mean <-   rowMeans(subset(PCA_pheno_2020_perk_transpose_rowmeans, 
+                                                                           select = c("1_Dermo_ZVAD_R1_001", 
+                                                                                      "2_Dermo_ZVAD_R1_001",
+                                                                                      "3_Dermo_ZVAD_R1_001")), na.rm = TRUE)
+# subset for just mean rows 
+PCA_pheno_2020_perk_transpose_rowmeans <- PCA_pheno_2020_perk_transpose_rowmeans %>% dplyr::select(Dermo_mean, Dermo_GDC_mean, Dermo_ZVAD_mean)
+  
+# bind together the rowmeans counts and the phenotype data
+perk_dds_rlog_mat_pheno_perk_rowmeans <- rbind(perk_dds_rlog_mat_df_rowmeans,PCA_pheno_2020_perk_transpose_rowmeans)
+class(perk_dds_rlog_mat_pheno_perk_rowmeans)
+perk_dds_rlog_mat_pheno_perk_rowmeans <- data.matrix(perk_dds_rlog_mat_pheno_perk_rowmeans)
+class(perk_dds_rlog_mat_pheno_perk_rowmeans)
+
+## compute PCAs
+# PCA with apoptosis phenotype and gene expression
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca <- pca(perk_dds_rlog_mat_pheno_perk_rowmeans, metadata = PCA_pheno_2020_perk_metadata_rowmeans) 
+
+# only perkinsus expression
+perk_dds_rlog_mat_df_rowmeans_no_pheno <- pca(perk_dds_rlog_mat_df_rowmeans, metadata = PCA_pheno_2020_perk_metadata_rowmeans)
+
+## plot Perkinsus expression plus phenotype
+
+#plot PCs as screeplot
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_scree <- screeplot(perk_dds_rlog_mat_pheno_perk_rowmeans_pca, components = getComponents(perk_dds_rlog_mat_pheno_perk_rowmeans_pca, 1:3))
+# variation is entirely in the first two PCs
+
+# biplot
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_bipplot_1_2 <- biplot(perk_dds_rlog_mat_pheno_perk_rowmeans_pca, ntopLoadings = 20, showLoadings = TRUE,
+                                                       title = "Top 20 Loadings", x="PC1",y="PC2") 
+
+# plot loadings
+# For each PC of interest, ‘plotloadings’ determines the variables falling within the top/bottom 5% of the loadings range, 
+# and then creates a final consensus list of these. These variables are then plotted.
+# loadings describe how much each variable contributes to a particular principal component. 
+# Large loadings (positive or negative) indicate that a particular variable has a strong relationship to a particular principal component. 
+# The sign of a loading indicates whether a variable and a principal component are positively or negatively correlated.
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_plot <- plotloadings(perk_dds_rlog_mat_pheno_perk_rowmeans_pca,
+                                                          components = getComponents(perk_dds_rlog_mat_pheno_perk_rowmeans_pca, c(1,2)), # makes point sizes proportional to the loadings
+                                                          rangeRetain = 0.01,
+                                                          labSize = 3.0,
+                                                          absolute = FALSE,
+                                                          title = 'Loadings plot of Top 10% variables',
+                                                          shape = 23, shapeSizeRange = c(1, 5),
+                                                          col = c('limegreen', 'black', 'red'),
+                                                          drawConnectors = TRUE)
+
+# Plot all hemo plus pheno data together
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_multiplot <- cowplot::plot_grid(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_scree,  perk_dds_rlog_mat_pheno_perk_rowmeans_pca_bipplot_1_2,
+                                                                 nrow=2, labels = "AUTO", axis = "h",align = "h", rel_heights = c(0.3,1), rel_widths = c(0.5,1))
+
+ggsave(plot = perk_dds_rlog_mat_pheno_perk_rowmeans_pca_multiplot, device = "tiff", filename = "perk_dds_rlog_mat_pheno_perk_rowmeans_pca_multiplot.tiff",
+       path = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/FIGURES",
+       height = 20, width = 20)
+
+### Examine loadings from PC1 and PC2 
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings <- perk_dds_rlog_mat_pheno_perk_rowmeans_pca$loadings %>% rownames_to_column(., var = "transcript_id_product")
+
+## Examine PC1 loadings
+# sort by the top absolute value loadings in PC1
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1 <- perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings[order(abs(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings$PC1), decreasing = TRUE),]
+
+# analyze top 25 
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50 <- perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1[1:50,] %>% filter(!grepl("Percent",transcript_id_product))
+
+# join with the Interproscan information
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro <- perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50 %>% dplyr::select(transcript_id_product, PC1,PC2) %>% 
+  left_join(., Perk_Interpro_GO_terms_XP)
+
+# Join with LFC information from ZVAD and GDC experiments
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro_LFC_ZVAD <- left_join(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro, 
+                                                                                    perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[,c("transcript_id","log2FoldChange","condition")]) %>%
+                                                                                  filter(!is.na(log2FoldChange))
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro_LFC_GDC <- left_join(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro,
+                                                                                    perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[,c("transcript_id","log2FoldChange","condition")]) %>%
+                                                                                    filter(!is.na(log2FoldChange))
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro_LFC_comb <- rbind(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro_LFC_ZVAD,
+                                                                                     perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro_LFC_GDC)                                                                                    
+# how many overlaps in the top 50 loadings?
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro_LFC_comb %>% filter(grepl("GDC", condition)) %>% distinct(transcript_id) # only 7 overlaps in the top 50 loadings...., 9 in top 100
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro_LFC_comb %>% filter(grepl("ZVAD", condition)) %>% distinct(transcript_id) # only two ZVAD overlaps
+
+#whats in those top 50 loadings, export to review in excel
+write.table(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro_LFC_GDC, "perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro_LFC_GDC.txt",row.names = FALSE, sep = "\t")
+write.table(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro_LFC_ZVAD, "perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_Interpro_LFC_ZVAD.txt",row.names = FALSE, sep = "\t")
+
+## Plot the rlog transformed counts of the top 50 loadings as a heatmap
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_rownames <- perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50 %>% column_to_rownames(., "transcript_id_product") 
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_heatmap <- perk_dds_rlog_mat_df[rownames(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_rownames),]
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_heatmap_mat <- as.matrix(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_heatmap)
+perk_anno_mean <- data.frame(Condition = c("Dermo_mean","Dermo_GDC_mean","Dermo_ZVAD_mean"))
+rownames(perk_anno_mean) <- c("Dermo_mean","Dermo_GDC_mean","Dermo_ZVAD_mean")
+perk_anno_mean_comb <- rbind(perk_anno, perk_anno_mean) %>% rownames_to_column(., var = "sample") %>% mutate(ID = case_when(
+  grepl("1_D", sample) ~ "1",
+  grepl("2_D", sample) ~ "2",
+  grepl("3_D", sample) ~ "3",
+  grepl("mean", sample) ~ "mean")) %>% column_to_rownames(.,var = "sample")
+
+pdf("./FIGURES/perk_mat1_top_50_loadings1.pdf", width = 12, height = 12)
+pheatmap(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC1_50_heatmap_mat , annotation_col = perk_anno_mean_comb)
+dev.off()
+
+
+## Examine PC2 loadings
+# sort by the top absolute value loadings
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2 <- perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings[order(abs(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings$PC2), decreasing = TRUE),]
+
+# analyze top 25 
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50 <- perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2[1:50,] %>% filter(!grepl("Percent",transcript_id_product))
+
+# join with the Interproscan information
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro <- perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50 %>% dplyr::select(transcript_id_product, PC2,PC2) %>% 
+  left_join(., Perk_Interpro_GO_terms_XP)
+
+# Join with LFC information from ZVAD and GDC experiments
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro_LFC_ZVAD <- left_join(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro, 
+                                                                                         perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[,c("transcript_id","log2FoldChange","condition")]) %>%
+  filter(!is.na(log2FoldChange))
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro_LFC_GDC <- left_join(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro,
+                                                                                        perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[,c("transcript_id","log2FoldChange","condition")]) %>%
+  filter(!is.na(log2FoldChange))
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro_LFC_comb <- rbind(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro_LFC_ZVAD,
+                                                                                     perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro_LFC_GDC)                                                                                    
+# how many overlaps in the top 50 loadings?
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro_LFC_comb %>% filter(grepl("GDC", condition)) %>% distinct(transcript_id) # 0 overlaps in the top 50 loadings...., 9 in top 100
+perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro_LFC_comb %>% filter(grepl("ZVAD", condition)) %>% distinct(transcript_id) # only 10 ZVAD overlaps
+
+#whats in those top 50 loadings, export to review in excel
+write.table(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro_LFC_ZVAD, "perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro_LFC_ZVAD.txt",row.names = FALSE, sep = "\t")
+
+
+
+## review particular transcripts of interest in the raw data - why weren't some of them differentially expressed?
+assay(perk_dds_rlog)["XM_002775492.1",] # very similar expression across all challenges
+assay(perk_dds_rlog)["XM_002775509.1",] # protein phosphatase - is higher expression in GDC
+
 
 
 #### BIPLOT SOURCE CODE ####
