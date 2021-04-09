@@ -222,7 +222,7 @@ perk_coldata_collapse_binarize <- binarizeCategoricalColumns.pairwise(perk_colda
 row.names(perk_coldata_collapse_binarize) <- row.names(perk_coldata_collapse)
 colnames(perk_coldata_collapse_binarize)
 
-#### QUANTIFY MODULDE ASSOCIATIONS WITH CHALLENGE ####
+#### QUANTIFY MODULE ASSOCIATIONS WITH CHALLENGE ####
 
 ## Going to quantify for each set any significant associations with treatment 
 
@@ -247,11 +247,11 @@ par(mar = c(6, 8.5, 3, 3))
 # Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
 # green is more negatively correlated)
 labeledHeatmap(Matrix = hemo_full_moduleTraitCor,
-               xLabels = names(Dermo_Tolerant_coldata_collapsed_binarize),
+               xLabels = names(hemo_coldata_collapse_binarize),
                yLabels = names(hemo_full_MEs),
                ySymbols = names(hemo_full_MEs),
                colorLabels = FALSE,
-               colors = greenWhiteRed(50),
+               colors = blueWhiteRed(50),
                textMatrix = hemo_full_textMatrix,
                setStdMargins = FALSE,
                cex.text = 0.45,
@@ -261,84 +261,224 @@ labeledHeatmap(Matrix = hemo_full_moduleTraitCor,
                main = paste("Module-trait relationships"))
 
 # Which modules have the highest associations with disease (high correlation and low P value)?
-hemo_full_moduleTraitCor_df <- as.data.frame(hemo_full_moduleTraitCor)
-hemo_full_moduleTraitCor_df$mod_names <- row.names(hemo_full_moduleTraitCor_df)
-hemo_full_moduleTraitCor_df <- hemo_full_moduleTraitCor_df[,c("mod_names","Condition.Injected.vs.Control")]
-hemo_full_moduleTraitPvalue_df <- as.data.frame(hemo_full_moduleTraitPvalue)
-hemo_full_moduleTraitPvalue_df$mod_names <- row.names(hemo_full_moduleTraitPvalue_df)
-hemo_full_moduleTraitPvalue_df <- hemo_full_moduleTraitPvalue_df[,c("mod_names","Condition.Injected.vs.Control")]
-colnames(hemo_full_moduleTraitPvalue_df)[2] <- "pvalue"
+hemo_full_moduleTraitCor_df <- as.data.frame(hemo_full_moduleTraitCor) %>% dplyr::select(condition.Pmar.vs.control,condition.Pmar_GDC.vs.control,condition.Pmar_ZVAD.vs.control)
+colnames(hemo_full_moduleTraitCor_df) <- c("condition.Pmar.vs.control.moduleTraitCor", "condition.Pmar_GDC.vs.control.moduleTraitCor", "condition.Pmar_ZVAD.vs.control.moduleTraitCor")
+hemo_full_moduleTraitPvalue_df <- as.data.frame(hemo_full_moduleTraitPvalue) %>% dplyr::select(condition.Pmar.vs.control,condition.Pmar_GDC.vs.control,condition.Pmar_ZVAD.vs.control)
+colnames(hemo_full_moduleTraitPvalue_df) <- c("condition.Pmar.vs.control.moduleTraitPvalue", "condition.Pmar_GDC.vs.control.moduleTraitPvalue", "condition.Pmar_ZVAD.vs.control.moduleTraitPvalue")
 
-hemo_full_moduleTraitCor_Pval_df <- join(hemo_full_moduleTraitCor_df, hemo_full_moduleTraitPvalue_df, by = "mod_names")
+hemo_full_moduleTraitCor_Pval_df <- cbind(hemo_full_moduleTraitCor_df, hemo_full_moduleTraitPvalue_df) 
+
+hemo_full_moduleTraitCor_Pval_df_Pmar_vs_control <- hemo_full_moduleTraitCor_Pval_df %>% dplyr::select(contains("condition.Pmar.vs.control"))
+hemo_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_control <- hemo_full_moduleTraitCor_Pval_df %>% dplyr::select(contains("condition.Pmar_GDC.vs.control"))
+hemo_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_control <- hemo_full_moduleTraitCor_Pval_df %>% dplyr::select(contains("condition.Pmar_ZVAD.vs.control"))
 
 # Significantly correlated modules
-hemo_full_moduleTraitCor_Pval_df[order(hemo_full_moduleTraitCor_Pval_df$pvalue),]
-class(hemo_full_moduleTraitCor_Pval_df$pvalue) # numeric
-hemo_full_moduleTraitCor_Pval_df_sig <- hemo_full_moduleTraitCor_Pval_df %>% filter(pvalue <= 0.055)
-hemo_full_moduleTraitCor_Pval_df_sig #7 
+hemo_full_moduleTraitCor_Pval_df_Pmar_vs_control_sig <- hemo_full_moduleTraitCor_Pval_df_Pmar_vs_control %>% filter(condition.Pmar.vs.control.moduleTraitPvalue <= 0.05)  %>% rownames_to_column(., "mod_names") 
+nrow(hemo_full_moduleTraitCor_Pval_df_Pmar_vs_control_sig) #26 significant modules
 
-### ANNOTATE APOPTOSIS GENES IN SIGNIFICANT MODULES
-hemo_full_moduleTraitCor_Pval_df_sig_list <- hemo_full_moduleTraitCor_Pval_df_sig$mod_names
-hemo_full_moduleTraitCor_Pval_df_sig_list_rm <- str_remove(hemo_full_moduleTraitCor_Pval_df_sig_list, "ME")
+hemo_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_control_sig <- hemo_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_control %>% filter(condition.Pmar_GDC.vs.control.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
+nrow(hemo_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_control_sig) #41 significant modules, only 10 have positive correlations with GDC
+
+perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_control_sig <- hemo_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_control %>% filter(condition.Pmar_ZVAD.vs.control.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
+nrow(hemo_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_control_sig) #32 significant modules
+
+# compare modules
+hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare <- hemo_full_moduleTraitCor_Pval_df_Pmar_vs_control_sig %>% 
+  full_join(.,hemo_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_control_sig) %>% 
+  full_join(.,hemo_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_control_sig) %>% dplyr::select(!contains("Pvalue"))
+  
+# find those shared between all 
+hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare_shared <- drop_na(hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare)
+# 8 shared between all 
+# interesting modules that have an opposite sign between treatments
+   # MEyellow
+   # MEdarkseagreen4
+   # MEplum4
+
+### Repeat for P_marinus counts 
+
+# tutorial for this section: https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/Tutorials/FemaleLiver-03-relateModsToExt.pdf
+# Define numbers of genes and samples
+perk_full_nGenes = ncol(perk_dds_rlog_matrix)
+perk_full_nSamples = nrow(perk_dds_rlog_matrix)
+
+# Recalculate MEs with color labels
+perk_full_MEs0 = moduleEigengenes(perk_dds_rlog_matrix, perk_full_moduleColors)$eigengenes
+perk_full_MEs = orderMEs(perk_full_MEs0)
+perk_full_moduleTraitCor = cor(perk_full_MEs, perk_coldata_collapse_binarize, use = "p");
+perk_full_moduleTraitPvalue = corPvalueStudent(perk_full_moduleTraitCor, perk_full_nSamples)
+
+# Graph and color code each the strength of association (correlation) of module eigengenes and trai
+sizeGrWindow(10,6)
+# Will display correlations and their p-values
+perk_full_textMatrix = paste(signif(perk_full_moduleTraitCor, 2), "\n(",
+                             signif(perk_full_moduleTraitPvalue, 1), ")", sep = "");
+dim(perk_full_textMatrix) = dim(perk_full_moduleTraitCor)
+par(mar = c(6, 8.5, 3, 3))
+# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
+# green is more negatively correlated)
+labeledHeatmap(Matrix = perk_full_moduleTraitCor,
+               xLabels = names(perk_coldata_collapse_binarize),
+               yLabels = names(perk_full_MEs),
+               ySymbols = names(perk_full_MEs),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = perk_full_textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.45,
+               cex.lab = 0.7,
+               zlim = c(-1,1), 
+               yColorWidth = 0.2, 
+               main = paste("Module-trait relationships"))
+
+# Which modules have the highest associations with disease (high correlation and low P value)?
+perk_full_moduleTraitCor_df <- as.data.frame(perk_full_moduleTraitCor) %>% dplyr::select(condition.Pmar_GDC.vs.Pmar,condition.Pmar_ZVAD.vs.Pmar)
+colnames(perk_full_moduleTraitCor_df) <- c( "condition.Pmar_GDC.vs.Pmar.moduleTraitCor", "condition.Pmar_ZVAD.vs.Pmar.moduleTraitCor")
+perk_full_moduleTraitPvalue_df <- as.data.frame(perk_full_moduleTraitPvalue) %>% dplyr::select(condition.Pmar_GDC.vs.Pmar,condition.Pmar_ZVAD.vs.Pmar)
+colnames(perk_full_moduleTraitPvalue_df) <- c( "condition.Pmar_GDC.vs.Pmar.moduleTraitPvalue", "condition.Pmar_ZVAD.vs.Pmar.moduleTraitPvalue")
+
+perk_full_moduleTraitCor_Pval_df <- cbind(perk_full_moduleTraitCor_df, perk_full_moduleTraitPvalue_df) 
+
+perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar <- perk_full_moduleTraitCor_Pval_df %>% dplyr::select(contains("condition.Pmar_GDC.vs.Pmar"))
+perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar <- perk_full_moduleTraitCor_Pval_df %>% dplyr::select(contains("condition.Pmar_ZVAD.vs.Pmar"))
+
+# Significantly correlated modules
+
+perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar_sig <- perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar %>% filter(condition.Pmar_GDC.vs.Pmar.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
+nrow(perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar_sig) #19 significant modules
+
+perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig <- perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar %>% filter(condition.Pmar_ZVAD.vs.Pmar.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
+nrow(perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig) #24 significant modules
+
+# compare modules
+perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare <- 
+  full_join(perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar_sig,perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig) %>% dplyr::select(!contains("Pvalue"))
+
+# find those shared between all 
+perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare_shared <- drop_na(perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare)
+# 5 shared between all, all move in the same direction 
+
+#### ANNOTATE APOPTOSIS GENES IN SIGNIFICANT MODULES ####
+
+# Perform first for hemocyte samples
+hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare
+
+hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare_list <- hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare$mod_names
+hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare_list_rm <- str_remove(hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare_list, "ME")
 
 # Use function to lookup all apop names for each significant module
-matrix_common= hemo_dds_rlog_matrix_common
+matrix= hemo_dds_rlog_matrix
 moduleColors=hemo_full_moduleColors
 lookup =   C_vir_rtracklayer_apop_product_final
 
 lookup_mod_apop <- function(list) {
-  list_vec <- colnames(matrix_common)[moduleColors == list]
+  list_vec <- colnames(matrix)[moduleColors == list]
   list_apop <- lookup[lookup$ID %in% list_vec,]
   list_apop_short <- list_apop[,c("product","transcript_id","gene")]
 }
 # specify names for list of lists
-names(hemo_full_moduleTraitCor_Pval_df_sig_list_rm) <- c("darkslateblue", "turquoise",     "greenyellow",   "skyblue3" ,     "cyan"  ,        "red"  ,         "tan" )
+names(hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare_list_rm) <- c("red"            ,"yellow"        ,  "skyblue3"       , "blueviolet"    ,  "darkorange2"    , "orangered4"      ,"orangered3"     , "purple"        ,  "lightcyan"     , 
+                                                                      "deeppink"       ,"salmon2"       ,  "darkolivegreen4", "darkviolet"    ,  "bisque4"        , "darkseagreen4"   ,"navajowhite"    , "navajowhite1"  ,  "antiquewhite2" , 
+                                                                      "green4"         ,"mediumpurple1" ,  "honeydew"       , "blue"          ,  "plum4"          , "lightsteelblue"  ,"lightpink2"     , "mistyrose"     ,  "magenta3"      , 
+                                                                      "chocolate4"     ,"thistle"       ,  "antiquewhite1"  , "navajowhite2"  ,  "royalblue"      , "skyblue1"        ,"skyblue2"       , "lavenderblush1",  "darkgreen"     , 
+                                                                      "lightslateblue" ,"green"         ,  "salmon4"        , "plum2"         ,  "lightcoral"     , "yellow3"         ,"tan4"           , "lightpink3"    ,  "mediumpurple3" , 
+                                                                      "plum"           ,"cyan"          ,  "darkred"        , "paleturquoise" ,  "black"          , "darkorange"      ,"yellowgreen"    , "skyblue4"      ,  "plum1"         , 
+                                                                      "blue4"          ,"coral1"        ,  "darkslateblue"  , "darkolivegreen",  "palevioletred2" , "lightsteelblue1")
 
-hemo_full_module_apop <- lapply(hemo_full_moduleTraitCor_Pval_df_sig_list_rm,  lookup_mod_apop)
+hemo_full_module_apop <- lapply(hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare_list_rm,  lookup_mod_apop)
 hemo_full_module_apop_df <- do.call(rbind,hemo_full_module_apop)
 hemo_full_module_apop_df$mod_names <- gsub("\\..*","",row.names(hemo_full_module_apop_df))
 hemo_full_module_apop_df$mod_names <- gsub("^","ME",hemo_full_module_apop_df$mod_names)
 # add module significance
-hemo_full_module_apop_df <- left_join(hemo_full_module_apop_df,hemo_full_moduleTraitCor_Pval_df_sig)
-hemo_full_module_apop_df$exp <- "Dermo_Tol"
+hemo_full_module_apop_df <- left_join(hemo_full_module_apop_df,hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare)
+hemo_full_module_apop_df$exp <- "hemo"
 
-## Gene relationship to trait and important modules: Gene Significance and Module Membership
-# Define variable injected 
-hemo_full_injection = as.data.frame(Dermo_Tolerant_coldata_collapsed_binarize$Condition.Injected.vs.Control);
-names(hemo_full_injection) = "injection"
+### can't repeat for P. marinus because I have't systematically annotated their apoptosis genes 
+
+### Gene relationship to trait and important modules: Gene Significance and Module Membership ####
+# Interpretation notes from Langfelder and Horvath 2008
+  # The sign of module membership encodes whether the gene has a positive or a negative relationship with the blue module eigengene. 
+  # The module membership measure can be defined for all input genes (irrespective of their original module membership). 
+  # It turns out that the module membership measure is highly related to the intramodular connectivity kIM. Highly connected 
+  # intramodular hub genes tend to have high module membership values to the respective module
+
+  #The higher the mean gene significance in a module, the more significantly related the mod- ule is to the clinical trait of interest. B.
+
+## Hemocyte MM for all treatments
 # names (colors) of the modules
 hemo_full_modNames = substring(names(hemo_full_MEs), 3)
 hemo_full_geneModuleMembership = as.data.frame(cor(hemo_dds_rlog_matrix, hemo_full_MEs, use = "p"))
+
+# calculate the module membership. this will be the same across every treatment, the treatment really only matters for gene trait significance
 hemo_full_MMPvalue = as.data.frame(corPvalueStudent(as.matrix(hemo_full_geneModuleMembership), hemo_full_nSamples))
 
 names(hemo_full_geneModuleMembership) = paste("MM", hemo_full_modNames, sep="")
 names(hemo_full_MMPvalue) = paste("p.MM", hemo_full_modNames, sep="")
 
-hemo_full_geneTraitSignificance = as.data.frame(cor(hemo_dds_rlog_matrix,hemo_full_injection, use = "p"))
-hemo_full_GSPvalue = as.data.frame(corPvalueStudent(as.matrix(hemo_full_geneTraitSignificance), hemo_full_nSamples))
+## calculate gene trait significance for each treatment
+# Control vs. Pmar
+# Define variable injected 
+hemo_full_control_Pmar = as.data.frame(hemo_coldata_collapse_binarize$condition.Pmar.vs.control);
+names(hemo_full_control_Pmar) = "control_Pmar"
+hemo_full_geneTraitSignificance_control_Pmar = as.data.frame(cor(hemo_dds_rlog_matrix,hemo_full_control_Pmar, use = "p"))
+hemo_full_GSPvalue_control_Pmar = as.data.frame(corPvalueStudent(as.matrix(hemo_full_geneTraitSignificance_control_Pmar), hemo_full_nSamples))
 
-names(hemo_full_geneTraitSignificance) = paste("GS.", names(hemo_full_injection), sep="")
-names(hemo_full_GSPvalue) = paste("p.GS.", names(hemo_full_injection), sep="")
+names(hemo_full_geneTraitSignificance_control_Pmar) = paste("GS.", names(hemo_full_control_Pmar), sep="")
+names(hemo_full_GSPvalue_control_Pmar) = paste("p.GS.", names(hemo_full_control_Pmar), sep="")
 
-## Intramodular analysis: identifying genes with high GS and MM
-# Using the GS and MM measures, we can identify genes that have a high significance for disease challenge
-# as well as high module membership in interesting modules. As an example, we look at the brown module 
-# that has the highest association with weight. We plot a scatterplot of Gene Significance vs. Module Membership in the brown module:
-#hemo_full_module = "skyblue3" # not that strong of an association
-hemo_full_module = "turquoise" # cor = 0.37
-#hemo_full_module = "greenyellow" # cor = 0.33
-hemo_full_column = match(hemo_full_module, hemo_full_modNames)
-hemo_full_moduleGenes = hemo_full_moduleColors==hemo_full_module
-sizeGrWindow(7, 7);
-par(mfrow = c(1,1));
-verboseScatterplot(abs(hemo_full_geneModuleMembership[hemo_full_moduleGenes, hemo_full_column]),
-                   abs(hemo_full_geneTraitSignificance[hemo_full_moduleGenes, 1]),
-                   xlab = paste("Module Membership in", hemo_full_module, "module"),
-                   ylab = "Gene significance for challenge",
-                   main = paste("Module membership vs. gene significance\n"),
-                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = hemo_full_module)
+# Control vs Pmar_GDC
+hemo_full_control_Pmar_GDC = as.data.frame(hemo_coldata_collapse_binarize$condition.Pmar_GDC.vs.control);
+names(hemo_full_control_Pmar_GDC) = "control_Pmar_GDC"
+hemo_full_geneTraitSignificance_control_Pmar_GDC = as.data.frame(cor(hemo_dds_rlog_matrix,hemo_full_control_Pmar_GDC, use = "p"))
+hemo_full_GSPvalue_control_Pmar_GDC = as.data.frame(corPvalueStudent(as.matrix(hemo_full_geneTraitSignificance_control_Pmar_GDC), hemo_full_nSamples))
 
-## IDENTIFY HUB GENES IN EACH SIG MODULE ##
+names(hemo_full_geneTraitSignificance_control_Pmar_GDC) = paste("GS.", names(hemo_full_control_Pmar_GDC), sep="")
+names(hemo_full_GSPvalue_control_Pmar_GDC) = paste("p.GS.", names(hemo_full_control_Pmar_GDC), sep="")
+
+# Control vs Pmar_ZVAD
+hemo_full_control_Pmar_ZVAD = as.data.frame(hemo_coldata_collapse_binarize$condition.Pmar_ZVAD.vs.control);
+names(hemo_full_control_Pmar_ZVAD) = "control_Pmar_ZVAD"
+hemo_full_geneTraitSignificance_control_Pmar_ZVAD = as.data.frame(cor(hemo_dds_rlog_matrix,hemo_full_control_Pmar_ZVAD, use = "p"))
+hemo_full_GSPvalue_control_Pmar_ZVAD = as.data.frame(corPvalueStudent(as.matrix(hemo_full_geneTraitSignificance_control_Pmar_ZVAD), hemo_full_nSamples))
+
+names(hemo_full_geneTraitSignificance_control_Pmar_ZVAD) = paste("GS.", names(hemo_full_control_Pmar_ZVAD), sep="")
+names(hemo_full_GSPvalue_control_Pmar_ZVAD) = paste("p.GS.", names(hemo_full_control_Pmar_ZVAD), sep="")
+
+## Perk MM for all treatments
+# names (colors) of the modules
+perk_full_modNames = substring(names(perk_full_MEs), 3)
+perk_full_geneModuleMembership = as.data.frame(cor(perk_dds_rlog_matrix, perk_full_MEs, use = "p"))
+
+# calculate the module membership. this will be the same across every treatment, the treatment really only matters for gene trait significance
+perk_full_MMPvalue = as.data.frame(corPvalueStudent(as.matrix(perk_full_geneModuleMembership), perk_full_nSamples))
+
+names(perk_full_geneModuleMembership) = paste("MM", perk_full_modNames, sep="")
+names(perk_full_MMPvalue) = paste("p.MM", perk_full_modNames, sep="")
+
+## calculate gene trait significance for each treatment
+# Pmar vs Pmar_GDC
+perk_full_Pmar_Pmar_GDC = as.data.frame(perk_coldata_collapse_binarize$condition.Pmar_GDC.vs.Pmar);
+names(perk_full_Pmar_Pmar_GDC) = "Pmar_Pmar_GDC"
+perk_full_geneTraitSignificance_Pmar_Pmar_GDC = as.data.frame(cor(perk_dds_rlog_matrix,perk_full_Pmar_Pmar_GDC, use = "p"))
+perk_full_GSPvalue_Pmar_Pmar_GDC = as.data.frame(corPvalueStudent(as.matrix(perk_full_geneTraitSignificance_Pmar_Pmar_GDC), perk_full_nSamples))
+
+names(perk_full_geneTraitSignificance_Pmar_Pmar_GDC) = paste("GS.", names(perk_full_Pmar_Pmar_GDC), sep="")
+names(perk_full_GSPvalue_Pmar_Pmar_GDC) = paste("p.GS.", names(perk_full_Pmar_Pmar_GDC), sep="")
+
+# Pmar vs Pmar_ZVAD
+perk_full_Pmar_Pmar_ZVAD = as.data.frame(perk_coldata_collapse_binarize$condition.Pmar_ZVAD.vs.Pmar);
+names(perk_full_Pmar_Pmar_ZVAD) = "Pmar_Pmar_ZVAD"
+perk_full_geneTraitSignificance_Pmar_Pmar_ZVAD = as.data.frame(cor(perk_dds_rlog_matrix,perk_full_Pmar_Pmar_ZVAD, use = "p"))
+perk_full_GSPvalue_Pmar_Pmar_ZVAD = as.data.frame(corPvalueStudent(as.matrix(perk_full_geneTraitSignificance_Pmar_Pmar_ZVAD), perk_full_nSamples))
+
+names(perk_full_geneTraitSignificance_Pmar_Pmar_ZVAD) = paste("GS.", names(perk_full_Pmar_Pmar_ZVAD), sep="")
+names(perk_full_GSPvalue_Pmar_Pmar_ZVAD) = paste("p.GS.", names(perk_full_Pmar_Pmar_ZVAD), sep="")
+
+
+#### CALCULATE INTRAMODULAR CONNECTIVITY ####
+
+
+#### IDENTIFY HUB GENES IN EACH SIG MODULE ####
 hemo_full_colorh = c("darkslateblue", "turquoise",     "greenyellow",   "skyblue3" ,     "cyan"  ,        "red"  ,         "tan" )
 
 hemo_full_Module_hub_genes <- chooseTopHubInEachModule(
