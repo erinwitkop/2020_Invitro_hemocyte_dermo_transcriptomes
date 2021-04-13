@@ -416,7 +416,7 @@ hemo_full_module_apop_df_5_greater_control_Pmar_ZVAD <- hemo_full_module_apop_df
   # It turns out that the module membership measure is highly related to the intramodular connectivity kIM. Highly connected 
   # intramodular hub genes tend to have high module membership values to the respective module
 
-  #The higher the mean gene significance in a module, the more significantly related the mod- ule is to the clinical trait of interest. B.
+  #The higher the mean gene significance in a module, the more significantly related the module is to the clinical trait of interest. B.
 
 ## Hemocyte MM for all treatments
 # names (colors) of the modules
@@ -508,11 +508,148 @@ verboseScatterplot(abs(hemo_full_geneModuleMembership [hemo_full_moduleGenes, he
                    ylab = "Gene significance for challenge",
                    main = paste("Module membership vs. gene significance\n"),
                    cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = hemo_full_module)
-ggsave(plot = last_plot(), device = "png", 
-       file=paste("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/WGCNA/FIGURES/control_Pmar",list,".png",sep=""))
+quartz.save(paste("./FIGURES/control_Pmar",list, sep ="_"), type = "png", device = dev.cur(), dpi = 100)
 }
-
 lapply(hemo_full_module_apop_df_5_greater_control_Pmar_list,  GS_MM_plot)
+
+## modules with a good correlation between GS and module membership (looking at those with higher than 0.4 correlation)
+# high correlation of GS and MM illustrates that genes highly significantly associated with a trait are often also the most important (central) elements of modules associated with the trait
+  # red = cor = 0.44
+  # lightcyan = 0.6
+  # darkseagreen4 = 0.4 
+  # antiquewhite2 = 0.44
+  # blue = 0.4
+
+# Hemocyte Control vs P. mar_GDC
+# only view the modules that are interesting for apoptosis (>=5 apoptosis transcripts found)
+hemo_full_module_apop_df_5_greater_control_Pmar_GDC_list <- as.character(unlist(hemo_full_module_apop_df_5_greater_control_Pmar_GDC))
+hemo_full_module_apop_df_5_greater_control_Pmar_GDC_list <- str_remove(hemo_full_module_apop_df_5_greater_control_Pmar_GDC_list, "ME")
+
+GS_MM_plot <- function(list) {
+  hemo_full_module = list 
+  hemo_full_column = match(hemo_full_module, hemo_full_modNames)
+  hemo_full_moduleGenes = hemo_full_moduleColors==hemo_full_module
+  sizeGrWindow(7, 7);
+  par(mfrow = c(1,1));
+  verboseScatterplot(abs(hemo_full_geneModuleMembership [hemo_full_moduleGenes, hemo_full_column]),
+                     abs(hemo_full_geneTraitSignificance_control_Pmar_GDC[hemo_full_moduleGenes, 1]),
+                     xlab = paste("Module Membership in", hemo_full_module, "module"),
+                     ylab = "Gene significance for challenge",
+                     main = paste("Module membership vs. gene significance\n"),
+                     cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = hemo_full_module)
+  quartz.save(paste("./FIGURES/control_Pmar_GDC",list, sep ="_"), type = "png", device = dev.cur(), dpi = 100)
+}
+lapply(hemo_full_module_apop_df_5_greater_control_Pmar_GDC_list,  GS_MM_plot)
+
+## modules with a good correlation between GS and module membership (looking at those with higher than 0.4 correlation)
+# high correlation of GS and MM illustrates that genes highly significantly associated with a trait are often also the most important (central) elements of modules associated with the trait
+  # yellow = 0.71
+  # lightcyan = 0.55
+  # antique white2 = 0.75
+  # navajowhite2 = 0.59
+  # darkgreen = 0.4
+  # lighpink3 = 0.62
+  # mediumpurple3 = 0.53
+  # plum = 0.73
+  # cyan = 0.46
+  # darkred = 0.64 
+  # paleturquoise = 0.6
+  # black = 0.61
+  # darkorange = 0.62
+
+# Hemocyte Control vs P. mar_ZVAD
+# only view the modules that are interesting for apoptosis (>=5 apoptosis transcripts found)
+hemo_full_module_apop_df_5_greater_control_Pmar_ZVAD_list <- as.character(unlist(hemo_full_module_apop_df_5_greater_control_Pmar_ZVAD))
+hemo_full_module_apop_df_5_greater_control_Pmar_ZVAD_list <- str_remove(hemo_full_module_apop_df_5_greater_control_Pmar_ZVAD_list, "ME")
+
+GS_MM_plot <- function(list) {
+  hemo_full_module = list 
+  hemo_full_column = match(hemo_full_module, hemo_full_modNames)
+  hemo_full_moduleGenes = hemo_full_moduleColors==hemo_full_module
+  sizeGrWindow(7, 7);
+  par(mfrow = c(1,1));
+  verboseScatterplot(abs(hemo_full_geneModuleMembership [hemo_full_moduleGenes, hemo_full_column]),
+                     abs(hemo_full_geneTraitSignificance_control_Pmar_ZVAD[hemo_full_moduleGenes, 1]),
+                     xlab = paste("Module Membership in", hemo_full_module, "module"),
+                     ylab = "Gene significance for challenge",
+                     main = paste("Module membership vs. gene significance\n"),
+                     cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = hemo_full_module)
+  quartz.save(paste("./FIGURES/control_Pmar_ZVAD",list, sep ="_"), type = "png", device = dev.cur(), dpi = 100)
+}
+lapply(hemo_full_module_apop_df_5_greater_control_Pmar_ZVAD_list,  GS_MM_plot)
+
+## modules with a good correlation between GS and module membership (looking at those with higher than 0.4 correlation)
+# high correlation of GS and MM illustrates that genes highly significantly associated with a trait are often also the most important (central) elements of modules associated with the trait
+  # yellow = 0.48
+  # orangered4 = 0.52
+  # lightcyan = 0.56
+  # plum = 0.61
+  # darkslateblue = 0.57
+
+## Parasite intramodular analysis - perform for each treatment 
+# P. mar Control vs P. mar_GDC
+# view the modules significant with GDC treatment 
+perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar_sig_list <-  as.character(unlist(perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar_sig$mod_names))
+perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar_sig_list <- str_remove(perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar_sig_list, "ME")
+
+GS_MM_plot_perk <- function(list) {
+  perk_full_module = list 
+  perk_full_column = match(perk_full_module, perk_full_modNames)
+  perk_full_moduleGenes = perk_full_moduleColors==perk_full_module
+  sizeGrWindow(7, 7);
+  par(mfrow = c(1,1));
+  verboseScatterplot(abs(perk_full_geneModuleMembership [perk_full_moduleGenes, perk_full_column]),
+                     abs(perk_full_geneTraitSignificance_Pmar_Pmar_GDC[perk_full_moduleGenes, 1]),
+                     xlab = paste("Module Membership in", perk_full_module, "module"),
+                     ylab = "Gene significance for challenge",
+                     main = paste("Module membership vs. gene significance\n"),
+                     cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = perk_full_module)
+  quartz.save(paste("./FIGURES/perk_Pmar_Pmar_GDC",list, sep ="_"), type = "png", device = dev.cur(), dpi = 100)
+}
+lapply(perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar_sig_list,  GS_MM_plot_perk)
+
+## modules with a good correlation between GS and module membership (looking at those with higher than 0.4 correlation)
+# high correlation of GS and MM illustrates that genes highly significantly associated with a trait are often also the most important (central) elements of modules associated with the trait
+  #darkseagreen2 = 0.67
+  #orange = 0.52
+  # indianred3 = 0.48
+  # yellow4 = 0.66
+  #steelblue = 0.42
+  #darkorange2 = 0.57
+  #darkturqoise = 0.49
+  # indianred4 = 0.47
+  #blue4 = 0.78
+  #lightblue4 = 0.78
+# P. mar Control vs P. mar_GDC
+# view the modules significant with GDC treatment 
+perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig_list <-  as.character(unlist(perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig$mod_names))
+perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig_list <- str_remove(perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig_list, "ME")
+
+GS_MM_plot_perk <- function(list) {
+  perk_full_module = list 
+  perk_full_column = match(perk_full_module, perk_full_modNames)
+  perk_full_moduleGenes = perk_full_moduleColors==perk_full_module
+  sizeGrWindow(7, 7);
+  par(mfrow = c(1,1));
+  verboseScatterplot(abs(perk_full_geneModuleMembership [perk_full_moduleGenes, perk_full_column]),
+                     abs(perk_full_geneTraitSignificance_Pmar_Pmar_ZVAD[perk_full_moduleGenes, 1]),
+                     xlab = paste("Module Membership in", perk_full_module, "module"),
+                     ylab = "Gene significance for challenge",
+                     main = paste("Module membership vs. gene significance\n"),
+                     cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = perk_full_module)
+  quartz.save(paste("./FIGURES/perk_Pmar_Pmar_ZVAD",list, sep ="_"), type = "png", device = dev.cur(), dpi = 100)
+}
+lapply(perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig_list,  GS_MM_plot_perk)
+
+## modules with a good correlation between GS and module membership (looking at those with higher than 0.4 correlation)
+# high correlation of GS and MM illustrates that genes highly significantly associated with a trait are often also the most important (central) elements of modules associated with the trait
+  #darkseagreen2 = 0.73
+  # darkseagreen4 = 0.42
+  #lightpink3 = 0.57
+  #pink3 = 0.78
+  #navajowhite2 = 0.7
+  # darkturqiouse = 0.61
+  #blue4 = 0.53
 
 #### CALCULATE INTRAMODULAR CONNECTIVITY ####
 
