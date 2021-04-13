@@ -279,7 +279,7 @@ nrow(hemo_full_moduleTraitCor_Pval_df_Pmar_vs_control_sig) #26 significant modul
 hemo_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_control_sig <- hemo_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_control %>% filter(condition.Pmar_GDC.vs.control.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
 nrow(hemo_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_control_sig) #41 significant modules, only 10 have positive correlations with GDC
 
-perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_control_sig <- hemo_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_control %>% filter(condition.Pmar_ZVAD.vs.control.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
+hemo_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_control_sig <- hemo_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_control %>% filter(condition.Pmar_ZVAD.vs.control.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
 nrow(hemo_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_control_sig) #32 significant modules
 
 # compare modules
@@ -393,7 +393,21 @@ hemo_full_module_apop_df$mod_names <- gsub("^","ME",hemo_full_module_apop_df$mod
 hemo_full_module_apop_df <- left_join(hemo_full_module_apop_df,hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare)
 hemo_full_module_apop_df$exp <- "hemo"
 
-### can't repeat for P. marinus because I have't systematically annotated their apoptosis genes 
+# which modules have apoptosis gene names
+hemo_full_module_apop_df %>% distinct(mod_names) %>% View() # 57
+
+# which modules have more than five apoptosis gene names
+hemo_full_module_apop_df_5_greater <- hemo_full_module_apop_df %>% group_by(mod_names) %>% filter(n() >= 5) %>% distinct(mod_names)
+hemo_full_module_apop_df_5_greater_annot <- hemo_full_module_apop_df[(hemo_full_module_apop_df$mod_names %in% hemo_full_module_apop_df_5_greater$mod_names),]
+
+hemo_full_module_apop_df_5_greater_control_Pmar <- hemo_full_module_apop_df_5_greater_annot %>% filter(!is.na(condition.Pmar.vs.control.moduleTraitCor)) %>% 
+  dplyr::select(mod_names) %>% distinct()
+hemo_full_module_apop_df_5_greater_control_Pmar_GDC <- hemo_full_module_apop_df_5_greater_annot %>% filter(!is.na(condition.Pmar_GDC.vs.control.moduleTraitCor)) %>% 
+  dplyr::select(mod_names) %>% distinct()
+hemo_full_module_apop_df_5_greater_control_Pmar_ZVAD <- hemo_full_module_apop_df_5_greater_annot %>% filter(!is.na(condition.Pmar_ZVAD.vs.control.moduleTraitCor)) %>% 
+  dplyr::select(mod_names) %>% distinct()
+
+### can't repeat for P. marinus because I haven't systematically annotated their apoptosis genes 
 
 ### Gene relationship to trait and important modules: Gene Significance and Module Membership ####
 # Interpretation notes from Langfelder and Horvath 2008
@@ -474,9 +488,53 @@ perk_full_GSPvalue_Pmar_Pmar_ZVAD = as.data.frame(corPvalueStudent(as.matrix(per
 names(perk_full_geneTraitSignificance_Pmar_Pmar_ZVAD) = paste("GS.", names(perk_full_Pmar_Pmar_ZVAD), sep="")
 names(perk_full_GSPvalue_Pmar_Pmar_ZVAD) = paste("p.GS.", names(perk_full_Pmar_Pmar_ZVAD), sep="")
 
+### Intramodular analysis: identifying genes with high GS and MM
+
+## Hemocyte intramodular analysis - perform for each treatment 
+# Hemocyte Control vs P. mar
+# only view the modules that are interesting for apoptosis (>=5 apoptosis transcripts found)
+hemo_full_module_apop_df_5_greater_control_Pmar_list <- as.character(unlist(hemo_full_module_apop_df_5_greater_control_Pmar))
+hemo_full_module_apop_df_5_greater_control_Pmar_list <- str_remove(hemo_full_module_apop_df_5_greater_control_Pmar_list, "ME")
+
+GS_MM_plot <- function(list) {
+hemo_full_module = list 
+hemo_full_column = match(hemo_full_module, hemo_full_modNames)
+hemo_full_moduleGenes = hemo_full_moduleColors==hemo_full_module
+sizeGrWindow(7, 7);
+par(mfrow = c(1,1));
+verboseScatterplot(abs(hemo_full_geneModuleMembership [hemo_full_moduleGenes, hemo_full_column]),
+                   abs(hemo_full_geneTraitSignificance_control_Pmar[hemo_full_moduleGenes, 1]),
+                   xlab = paste("Module Membership in", hemo_full_module, "module"),
+                   ylab = "Gene significance for challenge",
+                   main = paste("Module membership vs. gene significance\n"),
+                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = hemo_full_module)
+ggsave(plot = last_plot(), device = "png", 
+       file=paste("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/WGCNA/FIGURES/control_Pmar",list,".png",sep=""))
+}
+
+lapply(hemo_full_module_apop_df_5_greater_control_Pmar_list,  GS_MM_plot)
 
 #### CALCULATE INTRAMODULAR CONNECTIVITY ####
 
+hemo_ADJ1=abs(cor(hemo_dds,use="p"))^6 # this command caused my RStudio to crash..
+hemo_Alldegrees1=intramodularConnectivity(hemo_ADJ1, hemo_colorh1)
+head(hemo_Alldegrees1)
+
+## Plot gene significance and intramodular connectivity for each module
+
+colorlevels=unique(colorh1)
+sizeGrWindow(9,6)
+par(mfrow=c(2,as.integer(0.5+length(colorlevels)/2)))
+par(mar = c(4,5,3,1))
+for (i in c(1:length(colorlevels)))
+{
+  whichmodule=colorlevels[[i]];
+  restrict1 = (colorh1==whichmodule);
+  verboseScatterplot(Alldegrees1$kWithin[restrict1],
+                     GeneSignificance[restrict1], col=colorh1[restrict1],
+                     main=whichmodule,
+                     xlab = "Connectivity", ylab = "Gene Significance", abline = TRUE)
+}
 
 #### IDENTIFY HUB GENES IN EACH SIG MODULE ####
 hemo_full_colorh = c("darkslateblue", "turquoise",     "greenyellow",   "skyblue3" ,     "cyan"  ,        "red"  ,         "tan" )
