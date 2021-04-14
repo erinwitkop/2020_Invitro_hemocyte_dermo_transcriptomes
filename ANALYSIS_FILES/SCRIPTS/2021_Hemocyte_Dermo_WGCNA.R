@@ -806,6 +806,11 @@ names(hemo_control_Pmar_intramodular) <- c("MM.red", "MM.lightcyan", "MM.darksea
 FilterGenes_control_Pmar <- lapply(hemo_control_Pmar_intramodular, lookup_annot_intramodular)
 FilterGenes_control_Pmar_df <- do.call(rbind,FilterGenes_control_Pmar) %>% mutate(group = "control_Pmar")
 
+# Join with trait correlation for each module
+FilterGenes_control_Pmar_df$mod_names <- str_replace(FilterGenes_control_Pmar_df$mod_names, "MM.","ME")
+FilterGenes_control_Pmar_df <- left_join(FilterGenes_control_Pmar_df, hemo_full_moduleTraitCor_Pval_df_Pmar_vs_control_sig) %>% 
+        dplyr::rename(moduleTraitCor = condition.Pmar.vs.control.moduleTraitCor, moduleTraitPvalue = condition.Pmar.vs.control.moduleTraitPvalue)
+
 # control_Pmar_GDC 
   # modules of interest fitting criteria above  
     # yellow = 0.71
@@ -825,11 +830,16 @@ FilterGenes_control_Pmar_df <- do.call(rbind,FilterGenes_control_Pmar) %>% mutat
 GS1 = hemo_full_geneTraitSignificance_control_Pmar_GDC
 hemo_control_Pmar_GDC_intramodular <- c("MM.yellow","MM.lightcyan","MM.antiquewhite2","MM.navajowhite2","MM.darkgreen","MM.lightpink3",
                                         "MM.mediumpurple3" ,"MM.plum","MM.cyan","MM.darkred","MM.paleturquoise" ,"MM.black","MM.darkorange")
-names(hemo_control_Pmar_GDC_intramodular) <- c("MM.yellow","MM.lightcyan","MM.antiquewhite2","MM.navajowhite2","MM.darkgreen","MM.lighypink3",
+names(hemo_control_Pmar_GDC_intramodular) <- c("MM.yellow","MM.lightcyan","MM.antiquewhite2","MM.navajowhite2","MM.darkgreen","MM.lightpink3",
                                                "MM.mediumpurple3" ,"MM.plum","MM.cyan","MM.darkred","MM.paleturquoise" ,"MM.black","MM.darkorange")
 
 FilterGenes_control_Pmar_GDC <- lapply(hemo_control_Pmar_GDC_intramodular, lookup_annot_intramodular)
 FilterGenes_control_Pmar_GDC_df <- do.call(rbind,FilterGenes_control_Pmar_GDC) %>% mutate(group = "control_Pmar_GDC")
+
+# Join with trait correlation for each module
+FilterGenes_control_Pmar_GDC_df$mod_names <- str_replace(FilterGenes_control_Pmar_GDC_df$mod_names, "MM.","ME")
+FilterGenes_control_Pmar_GDC_df <- left_join(FilterGenes_control_Pmar_GDC_df, hemo_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_control_sig) %>% 
+  dplyr::rename(moduleTraitCor = condition.Pmar_GDC.vs.control.moduleTraitCor, moduleTraitPvalue = condition.Pmar_GDC.vs.control.moduleTraitPvalue)
 
 # control_Pmar_ZVAD 
   # modules of interest fitting criteria above
@@ -846,42 +856,97 @@ names(hemo_control_Pmar_ZVAD_intramodular) <- c("MM.yellow", "MM.orangered4", "M
 FilterGenes_control_Pmar_ZVAD <- lapply(hemo_control_Pmar_ZVAD_intramodular, lookup_annot_intramodular)
 FilterGenes_control_Pmar_ZVAD_df <- do.call(rbind,FilterGenes_control_Pmar_ZVAD) %>% mutate(group = "control_Pmar_ZVAD")
 
+# Join with trait correlation for each module
+FilterGenes_control_Pmar_ZVAD_df$mod_names <- str_replace(FilterGenes_control_Pmar_ZVAD_df$mod_names, "MM.","ME")
+FilterGenes_control_Pmar_ZVAD_df <- left_join(FilterGenes_control_Pmar_ZVAD_df, hemo_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_control_sig) %>% 
+  dplyr::rename(moduleTraitCor = condition.Pmar_ZVAD.vs.control.moduleTraitCor, moduleTraitPvalue = condition.Pmar_ZVAD.vs.control.moduleTraitPvalue)
+
 ## Combine hemocyte data frames
 FilterGenes_comb <- rbind(FilterGenes_control_Pmar_df,
                           FilterGenes_control_Pmar_GDC_df,
                           FilterGenes_control_Pmar_ZVAD_df)
 
+# how many in each module per treatment?
+FilterGenes_comb %>% group_by(mod_names, group) %>% dplyr::count() %>% View()
+
+# are any of these apoptotic?
+FilterGenes_comb_apop <- FilterGenes_comb[FilterGenes_comb$ID %in% C_vir_rtracklayer_apop_product_final$ID,] %>% 
+  dplyr::select(ID, gene,product, transcript_id, mod_names, group, moduleTraitCor,moduleTraitPvalue)
+
+# how many apop intramodular hub genes in each module per treatment?
+FilterGenes_comb_apop %>% group_by(mod_names, group) %>% dplyr::count() %>% View()
 
 ### Repeat finding of intramodular hub genes, but for P. marinus samples now 
 # annotate intramodular hub genes in each module
 # Use function to lookup all apop names for each significant module
 matrix = perk_dds_rlog_matrix
 lookup =   Perkinsus_rtracklayer
-GS1 = hemo_full_geneTraitSignificance_control_Pmar
-datKME =  hemo_datKME
+datKME =  perk_datKME
 
-lookup_annot_intramodular <- function(list) {
+lookup_annot_intramodular_perk <- function(list) {
   FilterGenes = abs(GS1)> .2 & abs(datKME[list])>.8
-  FilterGenes_annot <- data.frame("ID" = dimnames(data.frame(matrix))[[2]][FilterGenes]) %>% left_join(., lookup) %>% mutate(mod_names = list)
+  FilterGenes_annot <- data.frame("Name" = dimnames(data.frame(matrix))[[2]][FilterGenes]) %>% left_join(., lookup) %>% mutate(mod_names = list)
 }
 
-
-# control_Pmar
+# Pmar_vs_Pmar_GDC
 # modules of interest fitting criteria above
-# red = cor = 0.44
-# lightcyan = 0.6
-# darkseagreen4 = 0.4 
-# antiquewhite2 = 0.44
-# blue = 0.4
-hemo_control_Pmar_intramodular <- c("MM.red", "MM.lightcyan", "MM.darkseagreen4", "MM.antiquewhite2", "MM.blue")
-names(hemo_control_Pmar_intramodular) <- c("MM.red", "MM.lightcyan", "MM.darkseagreen4", "MM.antiquewhite2", "MM.blue")
+    #darkseagreen2 = 0.67
+    #orange = 0.52
+    #indianred3 = 0.48
+    #yellow4 = 0.66
+    #steelblue = 0.42
+    #darkorange2 = 0.57
+    #darkturquoise = 0.49
+    #indianred4 = 0.47
+    #blue4 = 0.78
+    #lightblue4 = 0.78
 
-FilterGenes_control_Pmar <- lapply(hemo_control_Pmar_intramodular, lookup_annot_intramodular)
-FilterGenes_control_Pmar_df <- do.call(rbind,FilterGenes_control_Pmar) %>% mutate(group = "control_Pmar")
+GS1 = perk_full_geneTraitSignificance_Pmar_Pmar_GDC
+Pmar_intramodular <- c("MM.darkseagreen2","MM.orange","MM.indianred3","MM.yellow4","MM.steelblue","MM.darkorange2","MM.darkturquoise","MM.indianred4","MM.blue4","MM.lightblue4")
+names(Pmar_intramodular) <- c("MM.darkseagreen2","MM.orange","MM.indianred3","MM.yellow4","MM.steelblue","MM.darkorange2","MM.darkturquoise","MM.indianred4","MM.blue4","MM.lightblue4")
 
+FilterGenes_Pmar_Pmar_GDC <- lapply(Pmar_intramodular, lookup_annot_intramodular_perk)
+FilterGenes_Pmar_Pmar_GDC_df <- do.call(rbind,FilterGenes_Pmar_Pmar_GDC) %>% mutate(group = "Pmar_Pmar_GDC")
 
+# Join with trait correlation for each module
+FilterGenes_Pmar_Pmar_GDC_df$mod_names <- str_replace(FilterGenes_Pmar_Pmar_GDC_df$mod_names, "MM.","ME")
+FilterGenes_Pmar_Pmar_GDC_df <- perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar %>% rownames_to_column(., "mod_names") %>%
+  left_join(FilterGenes_Pmar_Pmar_GDC_df, .) %>%
+  dplyr::rename(moduleTraitCor = condition.Pmar_GDC.vs.Pmar.moduleTraitCor, moduleTraitPvalue = condition.Pmar_GDC.vs.Pmar.moduleTraitPvalue)
 
+## Pmar_Pmar_ZVAD
+  #darkseagreen2 = 0.73
+  #darkseagreen4 = 0.42
+  #lightpink3 = 0.57
+  #pink3 = 0.78
+  #navajowhite2 = 0.7
+  # darkturqiouse = 0.61
+  #blue4 = 0.53
 
+GS1 = perk_full_geneTraitSignificance_Pmar_Pmar_ZVAD
+Pmar_intramodular <- c("MM.darkseagreen2","MM.darkseagreen4","MM.lightpink3","MM.pink3","MM.navajowhite","MM.darkturquoise","MM.blue4")
+names(Pmar_intramodular) <- c("MM.darkseagreen2","MM.darkseagreen4","MM.lightpink3","MM.pink3","MM.navajowhite","MM.darkturquoise","MM.blue4")
+
+FilterGenes_Pmar_Pmar_ZVAD <- lapply(Pmar_intramodular, lookup_annot_intramodular_perk)
+FilterGenes_Pmar_Pmar_ZVAD_df <- do.call(rbind,FilterGenes_Pmar_Pmar_ZVAD) %>% mutate(group = "Pmar_Pmar_ZVAD")
+
+# Join with trait correlation for each module
+FilterGenes_Pmar_Pmar_ZVAD_df$mod_names <- str_replace(FilterGenes_Pmar_Pmar_ZVAD_df$mod_names, "MM.","ME")
+FilterGenes_Pmar_Pmar_ZVAD_df <- perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar %>% rownames_to_column(., "mod_names") %>%
+  left_join(FilterGenes_Pmar_Pmar_ZVAD_df, .) %>%
+  dplyr::rename(moduleTraitCor = condition.Pmar_ZVAD.vs.Pmar.moduleTraitCor, moduleTraitPvalue = condition.Pmar_ZVAD.vs.Pmar.moduleTraitPvalue)
+
+# Combine P.mar dataframes
+FilterGenes_Pmar_comb <- rbind(FilterGenes_Pmar_Pmar_ZVAD_df, FilterGenes_Pmar_Pmar_GDC_df)
+
+# how many in each module per treatment?
+FilterGenes_Pmar_comb %>% group_by(mod_names, group) %>% dplyr::mutate(count = n()) %>% dplyr::distinct(mod_names, group, count, moduleTraitCor, moduleTraitPvalue) %>% View()
+  # many intramodular hub
+
+# Combine with Interproscan 
+FilterGenes_Pmar_comb_Interpro <- left_join(FilterGenes_Pmar_comb[,c("Name","product","transcript_id","moduleTraitCor","moduleTraitPvalue")], 
+                                            Perk_Interpro_GO_terms_XP[,c("protein_id","source","transcript_id", "Ontology_term",
+                                                                         "Dbxref","signature_desc")], by = "transcript_id")
 
 #### EXPORT WGNCA MATRIX TO CALCULATE INTRAMODULAR CONNECTIVITY IN BLUEWAVES ####
 
