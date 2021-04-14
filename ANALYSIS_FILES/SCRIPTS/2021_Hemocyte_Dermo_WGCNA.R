@@ -23,6 +23,7 @@ library(ComplexHeatmap)
 library(pheatmap)
 library(gt)
 library(paletteer)
+library(rtracklayer)
 # Using R version 3.6.1
 
 # helpful WGCNA tutorials and FAQs
@@ -651,117 +652,248 @@ lapply(perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig_list,  GS_MM_plot_
   # darkturqiouse = 0.61
   #blue4 = 0.53
 
-#### CALCULATE INTRAMODULAR CONNECTIVITY ####
-
-hemo_ADJ1=abs(cor(hemo_dds,use="p"))^6 # this command caused my RStudio to crash..
-hemo_Alldegrees1=intramodularConnectivity(hemo_ADJ1, hemo_colorh1)
-head(hemo_Alldegrees1)
-
-## Plot gene significance and intramodular connectivity for each module
-
-colorlevels=unique(colorh1)
-sizeGrWindow(9,6)
-par(mfrow=c(2,as.integer(0.5+length(colorlevels)/2)))
-par(mar = c(4,5,3,1))
-for (i in c(1:length(colorlevels)))
-{
-  whichmodule=colorlevels[[i]];
-  restrict1 = (colorh1==whichmodule);
-  verboseScatterplot(Alldegrees1$kWithin[restrict1],
-                     GeneSignificance[restrict1], col=colorh1[restrict1],
-                     main=whichmodule,
-                     xlab = "Connectivity", ylab = "Gene Significance", abline = TRUE)
-}
-
 #### IDENTIFY HUB GENES IN EACH SIG MODULE ####
-hemo_full_colorh = c("darkslateblue", "turquoise",     "greenyellow",   "skyblue3" ,     "cyan"  ,        "red"  ,         "tan" )
 
-hemo_full_Module_hub_genes <- chooseTopHubInEachModule(
-  hemo_dds_rlog_matrix_common, 
-  hemo_full_colorh, 
-  power = 3,  # power used for the adjacency network
+# Hemocytes control vs Pmar
+hemo_full_colorh_control_Pmar = hemo_full_module_apop_df_5_greater_control_Pmar
+
+perk_full_Module_hub_genes_control_Pmar <- chooseTopHubInEachModule(
+  hemo_dds_rlog_matrix, 
+  hemo_full_colorh_control_Pmar, 
+  power = 7,  # power used for the adjacency network
   type = "signed hybrid", 
   corFnc = "bicor"
 )
-class(hemo_full_Module_hub_genes)
-hemo_full_Module_hub_genes_df <- as.data.frame(hemo_full_Module_hub_genes)
-colnames(hemo_full_Module_hub_genes_df)[1] <- "ID"
-hemo_full_Module_hub_genes_apop <- merge(hemo_full_Module_hub_genes_df, C_vir_rtracklayer, by = "ID")
-nrow(hemo_full_Module_hub_genes_apop) # 7, none involed in apoptosis
+class(hemo_full_Module_hub_genes_control_Pmar)
+hemo_full_Module_hub_genes_control_Pmar_df <- as.data.frame(hemo_full_Module_hub_genes_control_Pmar) %>% rownames_to_column(., var = "mod_names")
+colnames(hemo_full_Module_hub_genes_control_Pmar_df)[2] <- "ID"
+hemo_full_Module_hub_genes_control_Pmar_all_control_Pmar <- merge(hemo_full_Module_hub_genes_control_Pmar_df, C_vir_rtracklayer, by = "ID")
+hemo_full_Module_hub_genes_control_Pmar_all_control_Pmar$product
+  # [1] "titin homolog, transcript variant X8"                        "uncharacterized LOC111125453, transcript variant X2"        
+  # [3] "protocadherin-9-like, transcript variant X8"                 "uncharacterized LOC111122522, transcript variant X2"        
+  # [5] "ribosome-binding protein 1-like, transcript variant X18"     "retina and anterior neural fold homeobox protein 2-like"    
+  # [7] "uncharacterized LOC111128504, transcript variant X2"         "neural cell adhesion molecule 1-like, transcript variant X3"
+  # [9] "uncharacterized LOC111119964, transcript variant X3" 
 
-## Compare turquoise module from consensus network to the full network...doesn't make sense to do this since I haven't confirmed that they are preserved yet 
+# Hemocytes control vs Pmar_GDC
+hemo_full_colorh_control_Pmar_GDC = hemo_full_module_apop_df_5_greater_control_Pmar_GDC_list
 
-hemo_full_module_apop_df_turq <- hemo_full_module_apop_df %>% filter(mod_names == "MEturquoise")
-hemo_full_module_apop_df_turq$type <- "full"
-Dermo_Tol_module_apop_df_turq <- Dermo_Tol_module_apop_df %>% filter(mod_names == "MEturquoise")
-Dermo_Tol_module_apop_df_turq$type <- "consensus"
+hemo_full_Module_hub_genes_control_Pmar_GDC <- chooseTopHubInEachModule(
+  hemo_dds_rlog_matrix, 
+  hemo_full_colorh_control_Pmar_GDC, 
+  power = 7,  # power used for the adjacency network
+  type = "signed hybrid", 
+  corFnc = "bicor"
+)
 
-Dermo_Tol_turq_comparison <- full_join(hemo_full_module_apop_df_turq[,c("product","transcript_id","type")], Dermo_Tol_module_apop_df_turq[,c("product","transcript_id","type")], by ="transcript_id")
-# few shared genes 
+hemo_full_Module_hub_genes_control_Pmar_GDC_df <- as.data.frame(hemo_full_Module_hub_genes_control_Pmar_GDC) %>% rownames_to_column(., var = "mod_names")
+colnames(hemo_full_Module_hub_genes_control_Pmar_GDC_df)[2] <- "ID"
+hemo_full_Module_hub_genes_control_Pmar_GDC_all_control_Pmar_GDC <- merge(hemo_full_Module_hub_genes_control_Pmar_GDC_df, C_vir_rtracklayer, by = "ID")
+hemo_full_Module_hub_genes_control_Pmar_GDC_all_control_Pmar_GDC$product
 
-## Export modules to cytoscape for visualization ###
-# Recalculate topological overlap if needed
-#hemo_full_TOM = TOMsimilarityFromExpr(hemo_dds_rlog_matrix,
-#                                           power = 3, # picked suitable power in the code above 
-#                                           TOMType = "signed", # use signed TOM type
-#                                           networkType= "signed hybrid", # use signed hybrid network type
-#                                           corType = "bicor") # use suggested bicor
-#
-#save(hemo_full_TOM, file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/hemo_full_TOM.RData" )
-
-# Select modules
-hemo_full_modules = c("darkslateblue", "turquoise", "greenyellow",   "skyblue3" , "cyan"  ,"red"  , "tan" )
-# Select module probes
-hemo_full_probes = colnames(hemo_dds_rlog_matrix)
-# export moduleColors file for use in cluster
-write.table(hemo_full_moduleColors, file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/hemo_full_moduleColors.table")
-
-hemo_full_inModule = is.finite(match(hemo_full_moduleColors, hemo_full_modules))
-hemo_full_modProbes = hemo_full_probes[hemo_full_inModule]
-hemo_full_modGenes = C_vir_rtracklayer$ID[match(hemo_full_modProbes, C_vir_rtracklayer$ID)]
-# Select the corresponding Topological Overlap
-hemo_full_modTOM = hemo_full_TOM[hemo_full_inModule, hemo_full_inModule]
-
-dimnames(hemo_full_modTOM) = list(hemo_full_modProbes, hemo_full_modProbes)
-# Export the network into edge and node list files Cytoscape can read
-#hemo_full_cyt = exportNetworkToCytoscape(hemo_full_modTOM,
-#                               edgeFile = paste("CytoscapeInput-edges-", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
-#                               nodeFile = paste("CytoscapeInput-nodes-", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
-#                               weighted = TRUE,
-#                               threshold = 0.02,
-#                               nodeNames = hemo_full_modProbes,
-#                               altNodeNames = hemo_full_modGenes,
-#                               nodeAttr = hemo_full_moduleColors[hemo_full_inModule])
-#
-
-## Upload finished cytoscape network node file so that annotation information can be added
-# The below code may not be necessary because I can add the apoptosis data table as a separate data table cytoscape will automatically attach 
-# it to the network 
-#hemo_full_cyt_node <- read.table(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/CytoscapeInput-nodes-Dermo_Tull_fulldarkslateblue-turquoise-greenyellow-skyblue3-cyan-red-tan.txt",
-#                                      sep="\t", skip=1) # skip the first line because it has the original column names
-#
-## original col names were : nodeName  altName nodeAttr[nodesPresent, ]
-#
-#colnames(hemo_full_cyt_node)[c(1:3)] <- c("ID","altName","nodesPresent")
-#hemo_full_cyt_node <- left_join(hemo_full_cyt_node, C_vir_rtracklayer_apop_product_final[,c("product","gene","ID","transcript_id")], by ="ID")
-#
-#write.table(hemo_full_cyt_node, sep = " ", quote= FALSE, row.names=FALSE, file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/CytoscapeInput-nodes-Dermo_Tull_fulldarkslateblue-turquoise-greenyellow-skyblue3-cyan-red-tan_ANNOT.txt")
-## Compare IAPs and GIMAPs between Consensus set and Full set
-
-# Consensus set in significant modules
-Dermo_Tol_module_apop_df_IAP <- Dermo_Tol_module_apop_df[grepl("IAP", Dermo_Tol_module_apop_df$product, ignore.case = TRUE),]
-Dermo_Tol_module_apop_df_IAP <- Dermo_Tol_module_apop_df_IAP[order(Dermo_Tol_module_apop_df_IAP$product),]
-Dermo_Tol_module_apop_df_GIMAP <- Dermo_Tol_module_apop_df[grepl("IMAP", Dermo_Tol_module_apop_df$product, ignore.case = TRUE),]
-Dermo_Tol_module_apop_df_GIMAP <- Dermo_Tol_module_apop_df_GIMAP[order(Dermo_Tol_module_apop_df_GIMAP$product),]
-
-# full set in significant modules
-hemo_full_module_apop_df_IAP <-   hemo_full_module_apop_df[grepl("IAP", hemo_full_module_apop_df$product, ignore.case = TRUE),]
-hemo_full_module_apop_df_IAP <-   hemo_full_module_apop_df_IAP[order(hemo_full_module_apop_df_IAP$product),]
-hemo_full_module_apop_df_GIMAP <- hemo_full_module_apop_df[grepl("IMAP", hemo_full_module_apop_df$product, ignore.case = TRUE),]
-hemo_full_module_apop_df_GIMAP <- hemo_full_module_apop_df_GIMAP[order(hemo_full_module_apop_df_GIMAP$product),]
-
-setdiff(Dermo_Tol_module_apop_df_IAP$transcript_id,hemo_full_module_apop_df_IAP$transcript_id)
-setdiff(hemo_full_module_apop_df_IAP$transcript_id,Dermo_Tol_module_apop_df_IAP$transcript_id)
+hemo_full_Module_hub_genes_control_Pmar_GDC_all_control_Pmar_GDC$ID %in% BIR_XP_gff_CV_uniq_XP_XM$ID # none are IAP
 
 
+# Hemocytes control vs Pmar_ZVAD
+hemo_full_colorh_control_Pmar_ZVAD = hemo_full_module_apop_df_5_greater_control_Pmar_ZVAD_list
+
+hemo_full_Module_hub_genes_control_Pmar_ZVAD <- chooseTopHubInEachModule(
+  hemo_dds_rlog_matrix, 
+  hemo_full_colorh_control_Pmar_ZVAD, 
+  power = 7,  # power used for the adjacency network
+  type = "signed hybrid", 
+  corFnc = "bicor"
+)
+
+hemo_full_Module_hub_genes_control_Pmar_ZVAD_df <- as.data.frame(hemo_full_Module_hub_genes_control_Pmar_ZVAD) %>% rownames_to_column(., var = "mod_names")
+colnames(hemo_full_Module_hub_genes_control_Pmar_ZVAD_df)[2] <- "ID"
+hemo_full_Module_hub_genes_control_Pmar_ZVAD_all_control_Pmar_ZVAD <- merge(hemo_full_Module_hub_genes_control_Pmar_ZVAD_df, C_vir_rtracklayer, by = "ID")
+hemo_full_Module_hub_genes_control_Pmar_ZVAD_all_control_Pmar_ZVAD$product
+
+hemo_full_Module_hub_genes_control_Pmar_ZVAD_all_control_Pmar_ZVAD$ID %in% BIR_XP_gff_CV_uniq_XP_XM$ID # none are IAP
+
+# Perkinsus hub genes 
+# GDC 
+perk_full_colorh_control_Pmar_GDC = perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar_sig_list
+
+perk_full_Module_hub_genes_control_Pmar_GDC <- chooseTopHubInEachModule(
+  perk_dds_rlog_matrix, 
+  perk_full_colorh_control_Pmar_GDC, 
+  power = 7,  # power used for the adjacency network
+  type = "signed hybrid", 
+  corFnc = "bicor"
+)
+
+perk_full_Module_hub_genes_control_Pmar_GDC_df <- as.data.frame(perk_full_Module_hub_genes_control_Pmar_GDC) %>% rownames_to_column(., var = "mod_names")
+colnames(perk_full_Module_hub_genes_control_Pmar_GDC_df)[2] <- "Name"
+perk_full_Module_hub_genes_control_Pmar_GDC_all_control_Pmar_GDC <- merge(perk_full_Module_hub_genes_control_Pmar_GDC_df, Perkinsus_rtracklayer, by = "Name")
+perk_full_Module_hub_genes_control_Pmar_GDC_all_control_Pmar_GDC$product
+
+# ZVAD
+perk_full_colorh_control_Pmar_ZVAD = perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig_list
+
+perk_full_Module_hub_genes_control_Pmar_ZVAD <- chooseTopHubInEachModule(
+  perk_dds_rlog_matrix, 
+  perk_full_colorh_control_Pmar_ZVAD, 
+  power = 7,  # power used for the adjacency network
+  type = "signed hybrid", 
+  corFnc = "bicor"
+)
+
+perk_full_Module_hub_genes_control_Pmar_ZVAD_df <- as.data.frame(perk_full_Module_hub_genes_control_Pmar_ZVAD) %>% rownames_to_column(., var = "mod_names")
+colnames(perk_full_Module_hub_genes_control_Pmar_ZVAD_df)[2] <- "Name"
+perk_full_Module_hub_genes_control_Pmar_ZVAD_all_control_Pmar_ZVAD <- merge(perk_full_Module_hub_genes_control_Pmar_ZVAD_df, Perkinsus_rtracklayer, by = "Name")
+perk_full_Module_hub_genes_control_Pmar_ZVAD_all_control_Pmar_ZVAD$product
+
+### EXPORT DATAFRAMES FOR ANALYSIS ####
+
+# DATA TO INTERGRATE FOR VISUALIZATION IN EXCEL
+  # GOALS: examine the pathways that are in modules and significantly positively correlated with challenge
+  # in the paper, the WGCNA data just provides further evidence of pathways that are working together, and is complementary to the
+    # DESeq2 paper. Additionally, identification of modules with a high correlation between gene significance and module membership shows
+    # where genes are highly significantly associated with challenge and are also highly important members of the module.. these are modules
+    # with potentially interesting candidates that are driving the response to challenge
+    # finally identified hub genes may also be interesting candidates for study as they are highly connected and may be most important
+  
+  # HEMOCYTES 
+      # 1. Apoptosis Product information for significant modules with apoptosis members 
+      # 2. module significance with challenge (GS) and module membership (MM)
+      # 3. Correlation between GS and MM for these modules
+      # 4. Hub genes in these modules 
+      # 5. Module membership for each gene in each module - correlation between the expression values and the module membership
+            # - Highly connected intramodular hub genes tend to have high module membership values to the respective module. 
+
+#### Calculate module membership value for each gene in each module ####
+hemo_datKME=signedKME(hemo_dds_rlog_matrix, hemo_full_MEs, outputColumnName="MM.")
+head(hemo_datKME)
+
+perk_datKME=signedKME(perk_dds_rlog_matrix, perk_full_MEs, outputColumnName="MM.")
+head(perk_datKME)
+
+
+#### Find genes with high gene significance and high intramodular connectivity in interesting modules ####
+# Remember that module membership is highly related to intramodular connectivity
+
+# Which modules should be looked at?
+  # For hemocytes: modules that are significant for treatment, have >5 apoptosis transcripts, and have high correlation between GS and MM
+  # For hemocytes: same as above, except no filtering of modules for apoptosis related transcripts
+# filter genes for each module of interest that have correlation between 
+
+# annotate intramodular hub genes in each module
+# Use function to lookup all apop names for each significant module
+matrix = hemo_dds_rlog_matrix
+lookup =   C_vir_rtracklayer_transcripts
+datKME =  hemo_datKME
+
+lookup_annot_intramodular <- function(list) {
+FilterGenes = abs(GS1)> .2 & abs(datKME[list])>.8
+FilterGenes_annot <- data.frame("ID" = dimnames(data.frame(matrix))[[2]][FilterGenes]) %>% left_join(., lookup) %>% mutate(mod_names = list)
+}
+
+## Hemocytes first
+# control_Pmar
+  # modules of interest fitting criteria above
+  # red = cor = 0.44
+  # lightcyan = 0.6
+  # darkseagreen4 = 0.4 
+  # antiquewhite2 = 0.44
+  # blue = 0.4
+
+GS1 = hemo_full_geneTraitSignificance_control_Pmar
+hemo_control_Pmar_intramodular <- c("MM.red", "MM.lightcyan", "MM.darkseagreen4", "MM.antiquewhite2", "MM.blue")
+names(hemo_control_Pmar_intramodular) <- c("MM.red", "MM.lightcyan", "MM.darkseagreen4", "MM.antiquewhite2", "MM.blue")
+
+FilterGenes_control_Pmar <- lapply(hemo_control_Pmar_intramodular, lookup_annot_intramodular)
+FilterGenes_control_Pmar_df <- do.call(rbind,FilterGenes_control_Pmar) %>% mutate(group = "control_Pmar")
+
+# control_Pmar_GDC 
+  # modules of interest fitting criteria above  
+    # yellow = 0.71
+    # lightcyan = 0.55
+    # antique white2 = 0.75
+    # navajowhite2 = 0.59
+    # darkgreen = 0.4
+    # lightpink3 = 0.62
+    # mediumpurple3 = 0.53
+    # plum = 0.73
+    # cyan = 0.46
+    # darkred = 0.64 
+    # paleturquoise = 0.6
+    # black = 0.61
+    # darkorange = 0.62
+
+GS1 = hemo_full_geneTraitSignificance_control_Pmar_GDC
+hemo_control_Pmar_GDC_intramodular <- c("MM.yellow","MM.lightcyan","MM.antiquewhite2","MM.navajowhite2","MM.darkgreen","MM.lightpink3",
+                                        "MM.mediumpurple3" ,"MM.plum","MM.cyan","MM.darkred","MM.paleturquoise" ,"MM.black","MM.darkorange")
+names(hemo_control_Pmar_GDC_intramodular) <- c("MM.yellow","MM.lightcyan","MM.antiquewhite2","MM.navajowhite2","MM.darkgreen","MM.lighypink3",
+                                               "MM.mediumpurple3" ,"MM.plum","MM.cyan","MM.darkred","MM.paleturquoise" ,"MM.black","MM.darkorange")
+
+FilterGenes_control_Pmar_GDC <- lapply(hemo_control_Pmar_GDC_intramodular, lookup_annot_intramodular)
+FilterGenes_control_Pmar_GDC_df <- do.call(rbind,FilterGenes_control_Pmar_GDC) %>% mutate(group = "control_Pmar_GDC")
+
+# control_Pmar_ZVAD 
+  # modules of interest fitting criteria above
+      # yellow = 0.48
+      # orangered4 = 0.52
+      # lightcyan = 0.56
+      # plum = 0.61
+      # darkslateblue = 0.57
+
+GS1 = hemo_full_geneTraitSignificance_control_Pmar_ZVAD
+hemo_control_Pmar_ZVAD_intramodular <- c("MM.yellow", "MM.orangered4", "MM.lightcyan", "MM.plum","MM.darkslateblue")
+names(hemo_control_Pmar_ZVAD_intramodular) <- c("MM.yellow", "MM.orangered4", "MM.lightcyan", "MM.plum","MM.darkslateblue")
+
+FilterGenes_control_Pmar_ZVAD <- lapply(hemo_control_Pmar_ZVAD_intramodular, lookup_annot_intramodular)
+FilterGenes_control_Pmar_ZVAD_df <- do.call(rbind,FilterGenes_control_Pmar_ZVAD) %>% mutate(group = "control_Pmar_ZVAD")
+
+## Combine hemocyte data frames
+FilterGenes_comb <- rbind(FilterGenes_control_Pmar_df,
+                          FilterGenes_control_Pmar_GDC_df,
+                          FilterGenes_control_Pmar_ZVAD_df)
+
+
+### Repeat finding of intramodular hub genes, but for P. marinus samples now 
+# annotate intramodular hub genes in each module
+# Use function to lookup all apop names for each significant module
+matrix = perk_dds_rlog_matrix
+lookup =   Perkinsus_rtracklayer
+GS1 = hemo_full_geneTraitSignificance_control_Pmar
+datKME =  hemo_datKME
+
+lookup_annot_intramodular <- function(list) {
+  FilterGenes = abs(GS1)> .2 & abs(datKME[list])>.8
+  FilterGenes_annot <- data.frame("ID" = dimnames(data.frame(matrix))[[2]][FilterGenes]) %>% left_join(., lookup) %>% mutate(mod_names = list)
+}
+
+
+# control_Pmar
+# modules of interest fitting criteria above
+# red = cor = 0.44
+# lightcyan = 0.6
+# darkseagreen4 = 0.4 
+# antiquewhite2 = 0.44
+# blue = 0.4
+hemo_control_Pmar_intramodular <- c("MM.red", "MM.lightcyan", "MM.darkseagreen4", "MM.antiquewhite2", "MM.blue")
+names(hemo_control_Pmar_intramodular) <- c("MM.red", "MM.lightcyan", "MM.darkseagreen4", "MM.antiquewhite2", "MM.blue")
+
+FilterGenes_control_Pmar <- lapply(hemo_control_Pmar_intramodular, lookup_annot_intramodular)
+FilterGenes_control_Pmar_df <- do.call(rbind,FilterGenes_control_Pmar) %>% mutate(group = "control_Pmar")
+
+
+
+
+
+#### EXPORT WGNCA MATRIX TO CALCULATE INTRAMODULAR CONNECTIVITY IN BLUEWAVES ####
+
+#Export full Matrices as tables for each experiment so that I can import the matrices in bluewaves 
+write.table(hemo_dds_rlog_matrix, file="/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/WGCNA/hemo_dds_rlog_matrix.table")
+write.table(perk_dds_rlog_matrix, file="/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/WGCNA/perk_dds_rlog_matrix.table")
+
+# Export moduleColors file for each
+save(hemo_full_moduleColors, file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/WGCNA/hemo_full_moduleColors.RData")
+save(perk_full_moduleColors, file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/WGCNA/perk_full_moduleColors.RData")
+
+# Export MEs for each
+save(hemo_full_MEs, file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/WGCNA/hemo_full_MEs.RData")
+save(perk_full_MEs, file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/WGCNA/perk_full_MEs.RData")
 
