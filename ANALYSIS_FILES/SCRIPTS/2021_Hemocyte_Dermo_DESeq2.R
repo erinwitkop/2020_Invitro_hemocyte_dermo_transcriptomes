@@ -944,7 +944,7 @@ hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list <- hemo_dds_deseq_res_Pmar_GDC_LFC
 # first join with the rna ID
 GO_universe_rna <- GO_universe %>% dplyr::rename(protein_id = seqid) %>% left_join(., unique(C_vir_rtracklayer_XP[,c("protein_id","Parent")])) %>% dplyr::rename(transcript_id = Parent)
 
-# parse out the GO terms so you can annotate them to find BP, CC, or MF using GO.db
+# find transcripts with GO terms and correctly format
 GO_universe_rna_found <- GO_universe_rna %>% filter(Ontology_term != "character(0)") %>% distinct(Ontology_term, protein_id, .keep_all = TRUE)
 nrow(GO_universe_rna_found)
 class(GO_universe_rna_found$Ontology_term) # AsIs
@@ -957,12 +957,16 @@ GO_universe_rna_found$Ontology_term <- gsub('c(', "", GO_universe_rna_found$Onto
 GO_universe_rna_found$Ontology_term <- gsub(')', "", GO_universe_rna_found$Ontology_term, fixed = TRUE)
 
 View(GO_universe_rna_found)
+# save this
+save(GO_universe_rna_found, file = "GO_universe_rna_found.RData")
 
 # format dataframe for use in topGO for custom annotations
 GO_universe_rna_found_geneID2GO <- GO_universe_rna_found %>% dplyr::select(transcript_id, Ontology_term)
 # export as text file to get tab separate file and then re-load using read mappings function
 write.table(GO_universe_rna_found_geneID2GO, file = "GO_universe_rna_found_geneID2GO.txt", sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 GO_universe_rna_found_geneID2GO_mapping <-  readMappings(file= "GO_universe_rna_found_geneID2GO.txt")
+# save as Rdata for use in WGCNA workspace
+save(GO_universe_rna_found_geneID2GO_mapping, file = "GO_universe_rna_found_geneID2GO_mapping.RData")
 
 # join GO terms for reference later and only keep the list of sig genes in each group that have a GO term
 hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_GO <- left_join(hemo_dds_deseq_res_Pmar_LFC_sig_gene_list, GO_universe_rna_found) %>% filter(!is.na(Ontology_term)) %>% distinct(transcript_id, .keep_all = TRUE)
@@ -1408,6 +1412,8 @@ nrow(Perk_Interpro_GO_terms)
 # Join with XM terms
 Perk_Interpro_GO_terms_XP <- Perk_Interpro_GO_terms %>% dplyr::rename(protein_id = seqid) %>%
   left_join(., unique(Perkinsus_rtracklayer_XP[,c("Parent","protein_id","product")])) %>% dplyr::rename(transcript_id = Parent) %>% mutate(transcript_id_product = paste(product, transcript_id, sep = "-"))
+# save this data
+save(Perk_Interpro_GO_terms_XP, file="Perk_Interpro_GO_terms_XP.RData")
 
 # Download all GO and Interproscan terms for the significant DEGs
 Perk_GO_sig_terms <- rtracklayer::readGFF("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/perk_comb_ID_sig_XP_df_lookup.fa_1.gff3")
@@ -1415,8 +1421,37 @@ Perk_Interpro_sig_terms <- rtracklayer::readGFF("/Users/erinroberts/Documents/Ph
 Perk_GO_sig_terms <- as.data.frame(Perk_GO_sig_terms)
 Perk_Interpro_sig_terms <- as.data.frame(Perk_Interpro_sig_terms)
   
-# Only need to analyze the GO terms list Perk_GO_sig_terms
 
+### Format Full GO term list for export and topGO later
+# save this
+save(Perk_GO_sig_terms_found, file = "Perk_GO_sig_terms_found.RData")
+
+# format dataframe for use in topGO for custom annotations
+
+# get the GO terms for each protein 
+Perk_GO_terms_found <- Perk_GO_sig_terms %>% filter(Ontology_term != "character(0)") %>% dplyr::rename(protein_id = seqid) %>% 
+  distinct(Ontology_term, protein_id, .keep_all = TRUE) %>% 
+    # join with XM information for topGO analysis
+  left_join(., unique(Perk_Interpro_GO_terms_XP[,c("protein_id","transcript_id")]))
+class(Perk_GO_terms_found$Ontology_term) # AsIs
+
+Perk_GO_terms_found$Ontology_term <- unlist(as.character(Perk_GO_terms_found$Ontology_term))
+class(Perk_GO_terms_found$Ontology_term)
+Perk_GO_terms_found$Ontology_term <- gsub('\\\"', "", Perk_GO_terms_found$Ontology_term, fixed = TRUE)
+Perk_GO_terms_found$Ontology_term <- gsub('\"', "", Perk_GO_terms_found$Ontology_term, fixed = TRUE)
+Perk_GO_terms_found$Ontology_term <- gsub('c(', "", Perk_GO_terms_found$Ontology_term, fixed = TRUE)
+Perk_GO_terms_found$Ontology_term <- gsub(')', "", Perk_GO_terms_found$Ontology_term, fixed = TRUE)
+Perk_GO_terms_found$Ontology_term <- gsub(' ', "", Perk_GO_terms_found$Ontology_term, fixed = TRUE)
+
+Perk_GO_terms_found_geneID2GO <- Perk_GO_terms_found %>% dplyr::select(transcript_id, Ontology_term)
+# export as text file to get tab separate file and then re-load using read mappings function
+write.table(Perk_GO_terms_found_geneID2GO, file = "Perk_GO_terms_found_geneID2GO.txt", sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+Perk_GO_terms_found_geneID2GO_mapping <-  readMappings(file= "Perk_GO_terms_found_geneID2GO.txt")
+# save as Rdata for use in WGCNA workspace
+save(Perk_GO_terms_found_geneID2GO_mapping, file = "Perk_GO_terms_found_geneID2GO_mapping.RData")
+
+
+### Make REVIGO plots of only the significant DEG perkinsus transcripts
 # get the GO terms for each protein 
 Perk_GO_sig_terms_found <- Perk_GO_sig_terms %>% filter(Ontology_term != "character(0)") %>% dplyr::rename(protein_id = seqid) %>% distinct(Ontology_term, protein_id, .keep_all = TRUE)
 class(Perk_GO_sig_terms_found$Ontology_term) # AsIs
@@ -1431,7 +1466,7 @@ Perk_GO_sig_terms_found$Ontology_term <- gsub(' ', "", Perk_GO_sig_terms_found$O
 
 View(Perk_GO_sig_terms_found)
 
-# separate each GO term into 
+# separate each GO term
 Perk_GO_sig_terms_found_sep <- Perk_GO_sig_terms_found %>%  separate_rows(Ontology_term, 1, sep = ",") 
 
 # Look up GO terms and use REVIGO to plot by frequency (note this is not an enrichment analysis..just looking at overall frequency)
@@ -2003,7 +2038,6 @@ biplot(pheno_pca_perk, showLoadings = TRUE)
 
 
 
-
 #### PERKKINSUS EXPRESSION PCA ####
 
 # Use the phenotype data and metadata tables that were supset for just the Perkinsus data above 
@@ -2305,6 +2339,9 @@ write.table(perk_dds_rlog_mat_pheno_perk_rowmeans_pca_loadings_PC2_50_Interpro_L
 assay(perk_dds_rlog)["XM_002775492.1",] # very similar expression across all challenges
 assay(perk_dds_rlog)["XM_002775509.1",] # protein phosphatase - is higher expression in GDC
 
+#### EXPORT TRANSCRIPTOME DATA AND METADATA FOR WGCNA ANALYSIS ####
+save(perk_dds_rlog, hemo_dds_rlog, file = "2021_Hemocyte_Dermo_expression_rlog_matrices.RData") 
+save(perk_coldata, hemo_coldata, file = "2021_Hemocyte_Dermo_expression_coldata.RData")
 
 
 #### BIPLOT SOURCE CODE ####
