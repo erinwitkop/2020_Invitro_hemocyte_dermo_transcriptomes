@@ -55,6 +55,9 @@ load(file="/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocy
 View(Perk_Interpro_GO_terms_XP)
 load(file= "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/GO_universe_rna_found.RData")
 
+# Import GO annotation data 
+load(file = "../GO_universe_rna_found_geneID2GO_mapping.RData")
+
 ## LOAD TRANSFORMED EXPRESSION DATA AND COLDATA ###
 
 load(file='/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/2021_Hemocyte_Dermo_expression_rlog_matrices.RData')
@@ -73,7 +76,6 @@ perk_dds_rlog_matrix <- t(perk_dds_rlog_matrix )
 head(perk_dds_rlog_matrix)
 ncol(perk_dds_rlog_matrix) 
 colnames(perk_dds_rlog_matrix)
-
 
 ### PICK SOFT THRESHOLD ###
 
@@ -355,9 +357,49 @@ nrow(perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig) #24 significant mod
 perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare <- 
   full_join(perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar_sig,perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig) %>% dplyr::select(!contains("Pvalue"))
 
+# all mod_names significant in either challenge
+perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare_mod_names <- perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare$mod_names
+
 # find those shared between all 
 perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare_shared <- drop_na(perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare)
 # 5 shared between all, all move in the same direction 
+
+## Heatmap of only the significantly correlated modules 
+# Graph and color code each the strength of association (correlation) of module eigengenes and trait
+
+# subset perk_full_moduleTraitCor, perk_full_moduleTraitPvalue, perk_full_MEs for only those modules significant in either challenge
+perk_full_moduleTraitCor_sig <- perk_full_moduleTraitCor[rownames(perk_full_moduleTraitCor) %in% perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare_mod_names,]
+perk_full_moduleTraitCor_sig <- perk_full_moduleTraitCor_sig[,-3]
+perk_full_moduleTraitPvalue_sig <- perk_full_moduleTraitPvalue[rownames(perk_full_moduleTraitPvalue) %in% perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare_mod_names,]
+perk_full_moduleTraitPvalue_sig <- perk_full_moduleTraitPvalue_sig[,-3]
+perk_full_MEs_sig <- perk_full_MEs[,colnames(perk_full_MEs) %in% perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare_mod_names]
+perk_coldata_collapse_binarize_sig <- perk_coldata_collapse_binarize[,-3]
+
+# Will display correlations and their p-values
+perk_full_textMatrix_sig = paste(signif(perk_full_moduleTraitCor_sig, 2), "\n(",
+                             signif(perk_full_moduleTraitPvalue_sig, 1), ")", sep = "");
+dim(perk_full_textMatrix_sig) = dim(perk_full_moduleTraitCor_sig)
+
+# make plot
+sizeGrWindow(10,6)
+par(mar = c(6, 8.5, 3, 3))
+# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
+# green is more negatively correlated)
+labeledHeatmap(Matrix = perk_full_moduleTraitCor_sig,
+               xLabels = c("P.mar. and GDC-0152", "P. mar. and ZVAD-fmk"),
+               yLabels = names(perk_full_MEs_sig),
+               ySymbols = names(perk_full_MEs_sig),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = perk_full_textMatrix_sig,
+               setStdMargins = FALSE,
+               cex.text = 0.5,
+               cex.lab = 0.7,
+               #zlim = c(-1,1), 
+               yColorWidth = 0.2, 
+               main = paste("P. marinus Module-Challenge Relationships"))
+# have to save manually...weird!
+
 
 #### ANNOTATE APOPTOSIS GENES IN SIGNIFICANT MODULES ####
 
@@ -775,7 +817,7 @@ head(perk_datKME)
 # Remember that module membership is highly related to intramodular connectivity
 
 # Which modules should be looked at?
-  # For hemocytes: modules that are significant for treatment, have >5 apoptosis transcripts, and have high correlation between GS and MM
+  # For hemocytes: modules that are significant for treatment, have >5 apoptosis transcripts, and have high (>0.4) correlation between GS and MM
   # For hemocytes: same as above, except no filtering of modules for apoptosis related transcripts
 # filter genes for each module of interest that have correlation between 
 
@@ -924,8 +966,8 @@ FilterGenes_Pmar_Pmar_GDC_df <- perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pma
   #blue4 = 0.53
 
 GS1 = perk_full_geneTraitSignificance_Pmar_Pmar_ZVAD
-Pmar_intramodular <- c("MM.darkseagreen2","MM.darkseagreen4","MM.lightpink3","MM.pink3","MM.navajowhite","MM.darkturquoise","MM.blue4")
-names(Pmar_intramodular) <- c("MM.darkseagreen2","MM.darkseagreen4","MM.lightpink3","MM.pink3","MM.navajowhite","MM.darkturquoise","MM.blue4")
+Pmar_intramodular <- c("MM.darkseagreen2","MM.darkseagreen4","MM.lightpink3","MM.pink3","MM.navajowhite2","MM.darkturquoise","MM.blue4")
+names(Pmar_intramodular) <- c("MM.darkseagreen2","MM.darkseagreen4","MM.lightpink3","MM.pink3","MM.navajowhite2","MM.darkturquoise","MM.blue4")
 
 FilterGenes_Pmar_Pmar_ZVAD <- lapply(Pmar_intramodular, lookup_annot_intramodular_perk)
 FilterGenes_Pmar_Pmar_ZVAD_df <- do.call(rbind,FilterGenes_Pmar_Pmar_ZVAD) %>% mutate(group = "Pmar_Pmar_ZVAD")
@@ -944,9 +986,40 @@ FilterGenes_Pmar_comb %>% group_by(mod_names, group) %>% dplyr::mutate(count = n
   # many intramodular hub
 
 # Combine with Interproscan 
-FilterGenes_Pmar_comb_Interpro <- left_join(FilterGenes_Pmar_comb[,c("Name","product","transcript_id","moduleTraitCor","moduleTraitPvalue")], 
+FilterGenes_Pmar_comb_Interpro <- left_join(FilterGenes_Pmar_comb[,c("Name","product","transcript_id","moduleTraitCor","moduleTraitPvalue","mod_names")], 
                                             Perk_Interpro_GO_terms_XP[,c("protein_id","source","transcript_id", "Ontology_term",
                                                                          "Dbxref","signature_desc")], by = "transcript_id")
+
+#### Pmar intramodular hub gene analysis for interesting modules ###
+
+# Interesting modules
+  # What is criteria for an interesting module?
+      # 1. Module is significantly correlated with challenge group
+      # 2. Module has high (>0.4) correlation between gene significance and module membership
+      # 3. Module is either uniquely and highly (>0.8) significant to the particular challenge, or lowly (<0.4) correlated with the other treatment    
+  # Based on this the following modules are interest 
+  # 1. Pmar vs GDC: the steelblue, darkorange2, lightblue4
+  # 2. Pmar vs ZVAD: the linkpink3, pink3, and navajowhite2 are of interest
+
+# filter out GDC modules from the list of intramodular hub genes (high GS and high modulemembership)
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEsteelblue")
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEdarkorange2")
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MElightblue4")
+
+# filter out ZVAD modules from the list of intramodular hub genes (high GS and high modulemembership)
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MElightpink3")
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEpink3")
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEnavajowhite2")
+
+## assess and GO terms from important module intramodular hub genes 
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO <- 
+
+  
+
+
+
+## assess GO terms from this steelblue module 
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO <- 
 
 #### EXPORT WGNCA MATRIX TO CALCULATE INTRAMODULAR CONNECTIVITY IN BLUEWAVES ####
 
