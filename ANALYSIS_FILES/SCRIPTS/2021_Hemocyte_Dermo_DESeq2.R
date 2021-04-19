@@ -1421,18 +1421,15 @@ Perk_Interpro_sig_terms <- rtracklayer::readGFF("/Users/erinroberts/Documents/Ph
 Perk_GO_sig_terms <- as.data.frame(Perk_GO_sig_terms)
 Perk_Interpro_sig_terms <- as.data.frame(Perk_Interpro_sig_terms)
   
-
-### Format Full GO term list for export and topGO later
 # save this
 save(Perk_GO_sig_terms_found, file = "Perk_GO_sig_terms_found.RData")
 
+### Format Full GO term list for export and topGO later
 # format dataframe for use in topGO for custom annotations
 
 # get the GO terms for each protein 
-Perk_GO_terms_found <- Perk_GO_sig_terms %>% filter(Ontology_term != "character(0)") %>% dplyr::rename(protein_id = seqid) %>% 
-  distinct(Ontology_term, protein_id, .keep_all = TRUE) %>% 
-    # join with XM information for topGO analysis
-  left_join(., unique(Perk_Interpro_GO_terms_XP[,c("protein_id","transcript_id")]))
+Perk_GO_terms_found <- Perk_Interpro_GO_terms_XP %>% filter(Ontology_term != "character(0)") %>% 
+  distinct(Ontology_term, protein_id, .keep_all = TRUE) 
 class(Perk_GO_terms_found$Ontology_term) # AsIs
 
 Perk_GO_terms_found$Ontology_term <- unlist(as.character(Perk_GO_terms_found$Ontology_term))
