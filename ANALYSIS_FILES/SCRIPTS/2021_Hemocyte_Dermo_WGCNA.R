@@ -24,6 +24,7 @@ library(pheatmap)
 library(gt)
 library(paletteer)
 library(rtracklayer)
+library(topGO)
 # Using R version 3.6.1
 
 # helpful WGCNA tutorials and FAQs
@@ -57,6 +58,7 @@ load(file= "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemoc
 
 # Import GO annotation data 
 load(file = "../GO_universe_rna_found_geneID2GO_mapping.RData")
+load(file = "../Perk_GO_terms_found_geneID2GO_mapping.RData")
 
 ## LOAD TRANSFORMED EXPRESSION DATA AND COLDATA ###
 
@@ -70,12 +72,14 @@ hemo_dds_rlog_matrix <- t(hemo_dds_rlog_matrix )
 head(hemo_dds_rlog_matrix)
 ncol(hemo_dds_rlog_matrix) 
 colnames(hemo_dds_rlog_matrix)
+names(hemo_dds_rlog_matrix) <- names(hemo_dds_rlog)
 
 perk_dds_rlog_matrix <- assay(perk_dds_rlog)
 perk_dds_rlog_matrix <- t(perk_dds_rlog_matrix )
 head(perk_dds_rlog_matrix)
 ncol(perk_dds_rlog_matrix) 
 colnames(perk_dds_rlog_matrix)
+names(perk_dds_rlog_matrix) <- names(perk_dds_rlog)
 
 ### PICK SOFT THRESHOLD ###
 
@@ -787,7 +791,7 @@ colnames(perk_full_Module_hub_genes_control_Pmar_ZVAD_df)[2] <- "Name"
 perk_full_Module_hub_genes_control_Pmar_ZVAD_all_control_Pmar_ZVAD <- merge(perk_full_Module_hub_genes_control_Pmar_ZVAD_df, Perkinsus_rtracklayer, by = "Name")
 perk_full_Module_hub_genes_control_Pmar_ZVAD_all_control_Pmar_ZVAD$product
 
-### EXPORT DATAFRAMES FOR ANALYSIS ####
+### DATA ANALYSIS NOTES ####
 
 # DATA TO INTERGRATE FOR VISUALIZATION IN EXCEL
   # GOALS: examine the pathways that are in modules and significantly positively correlated with challenge
@@ -990,7 +994,7 @@ FilterGenes_Pmar_comb_Interpro <- left_join(FilterGenes_Pmar_comb[,c("Name","pro
                                             Perk_Interpro_GO_terms_XP[,c("protein_id","source","transcript_id", "Ontology_term",
                                                                          "Dbxref","signature_desc")], by = "transcript_id")
 
-#### Pmar intramodular hub gene analysis for interesting modules ###
+#### Pmar intramodular hub gene analysis for interesting modules ####
 
 # Interesting modules
   # What is criteria for an interesting module?
@@ -1011,15 +1015,334 @@ FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3 <- FilterGenes_Pmar_comb_Interpro
 FilterGenes_Pmar_comb_Interpro_ZVAD_pink3 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEpink3")
 FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEnavajowhite2")
 
-## assess and GO terms from important module intramodular hub genes 
-FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO <- 
+## assess GO terms from important module intramodular hub genes 
+# first format the GO terms so I can get unique terms for each protein
 
-  
+## GDC steelblue
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO <- FilterGenes_Pmar_comb_Interpro_GDC_steelblue %>% 
+  filter(Ontology_term != "character(0)" & !is.na(transcript_id)) %>% distinct(transcript_id,Ontology_term)
+# format GO columns
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term <- unlist(as.character(FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term))
+class(FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term)
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term <- gsub('\\\"', "", FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term <- gsub('\"', "", FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term <- gsub('c(', "", FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term <- gsub(')', "", FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term <- gsub(' ', "", FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO$Ontology_term, fixed = TRUE)
+# separate rows now into separate rows and get unique GO terms for each protein
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO <- separate_rows(FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO,2,sep = ",") %>% distinct(transcript_id, Ontology_term)
+# get term frequency
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO_freq <- FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO %>% ungroup() %>% 
+  group_by(Ontology_term) %>% dplyr::count()
+
+## GDC darkorange2
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO <- FilterGenes_Pmar_comb_Interpro_GDC_darkorange2 %>% 
+  filter(Ontology_term != "character(0)" & !is.na(transcript_id)) %>% distinct(transcript_id,Ontology_term)
+# format GO columns
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term <- unlist(as.character(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term))
+class(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term)
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term <- gsub('\\\"', "", FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term <- gsub('\"', "", FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term <- gsub('c(', "", FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term <- gsub(')', "", FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term <- gsub(' ', "", FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO$Ontology_term, fixed = TRUE)
+# separate rows now into separate rows and get unique GO terms for each protein
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO <- separate_rows(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO,2,sep = ",") %>% distinct(transcript_id, Ontology_term)
+# get term frequency
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO_freq <- FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO %>% ungroup() %>% 
+  group_by(Ontology_term) %>% dplyr::count()
+
+## GDC lightblue4
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO <- FilterGenes_Pmar_comb_Interpro_GDC_lightblue4 %>% 
+  filter(Ontology_term != "character(0)" & !is.na(transcript_id)) %>% distinct(transcript_id,Ontology_term)
+# format GO columns
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term <- unlist(as.character(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term))
+class(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term)
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term <- gsub('\\\"', "", FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term <- gsub('\"', "", FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term <- gsub('c(', "", FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term <- gsub(')', "", FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term <- gsub(' ', "", FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO$Ontology_term, fixed = TRUE)
+# separate rows now into separate rows and get unique GO terms for each protein
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO <- separate_rows(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO,2,sep = ",") %>% distinct(transcript_id, Ontology_term)
+# get term frequency
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO_freq <- FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO %>% ungroup() %>% 
+  group_by(Ontology_term) %>% dplyr::count()
+
+## ZVAD lightpink3
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO <- FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3 %>% 
+  filter(Ontology_term != "character(0)" & !is.na(transcript_id)) %>% distinct(transcript_id,Ontology_term)
+# format GO columns
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term <- unlist(as.character(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term))
+class(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term)
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term <- gsub('\\\"', "", FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term <- gsub('\"', "", FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term <- gsub('c(', "", FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term <- gsub(')', "", FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term <- gsub(' ', "", FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO$Ontology_term, fixed = TRUE)
+# separate rows now into separate rows and get unique GO terms for each protein
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO <- separate_rows(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO,2,sep = ",") %>% distinct(transcript_id, Ontology_term)
+# get term frequency
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO_freq <- FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO %>% ungroup() %>% 
+  group_by(Ontology_term) %>% dplyr::count()
+
+## ZVAD pink3
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO <- FilterGenes_Pmar_comb_Interpro_ZVAD_pink3 %>% 
+  filter(Ontology_term != "character(0)" & !is.na(transcript_id)) %>% distinct(transcript_id,Ontology_term)
+# format GO columns
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term <- unlist(as.character(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term))
+class(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term)
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term <- gsub('\\\"', "", FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term <- gsub('\"', "", FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term <- gsub('c(', "", FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term <- gsub(')', "", FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term <- gsub(' ', "", FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO$Ontology_term, fixed = TRUE)
+# separate rows now into separate rows and get unique GO terms for each protein
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO <- separate_rows(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO,2,sep = ",") %>% distinct(transcript_id, Ontology_term)
+# get term frequency
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO_freq <- FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO %>% ungroup() %>% 
+  group_by(Ontology_term) %>% dplyr::count()
+
+## ZVAD navajowhite2
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO <- FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2 %>% 
+  filter(Ontology_term != "character(0)" & !is.na(transcript_id)) %>% distinct(transcript_id,Ontology_term)
+# format GO columns
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term <- unlist(as.character(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term))
+class(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term)
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term <- gsub('\\\"', "", FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term <- gsub('\"', "", FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term <- gsub('c(', "", FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term <- gsub(')', "", FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term, fixed = TRUE)
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term <- gsub(' ', "", FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO$Ontology_term, fixed = TRUE)
+# separate rows now into separate rows and get unique GO terms for each protein
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO <- separate_rows(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO,2,sep = ",") %>%
+  distinct(transcript_id, Ontology_term) %>% filter(!is.na(Ontology_term))
+# get term frequency
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO_freq <- FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO %>% ungroup() %>% 
+  group_by(Ontology_term) %>% dplyr::count()
+
+# export all to REVIGO to get pictures 
+write.table(FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO_freq, "FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO.txt",row.names = FALSE,quote = FALSE)
+write.table(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO_freq, "FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO.txt",row.names = FALSE,quote = FALSE)
+write.table(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO_freq, "FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO.txt",row.names = FALSE,quote = FALSE)
+write.table(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO_freq, "FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO.txt",row.names = FALSE,quote = FALSE)
+write.table(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO_freq, "FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO.txt",row.names = FALSE,quote = FALSE)
+write.table(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO_freq, "FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO.txt",row.names = FALSE,quote = FALSE)
+
+### PMAR GO ENRICHMENT FOR INTERESTING MODULE INTRAMODULAR HUB GENES ####
+Perk_geneNames <- names(Perk_GO_terms_found_geneID2GO_mapping)
+head(geneNames)
+
+## GO enrichment for just the Intramodular hub genes 
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO_only     <-    as.factor(na.omit(unique(FilterGenes_Pmar_comb_Interpro_GDC_steelblue$transcript_id)))
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO_only   <-  as.factor(na.omit(unique(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2$transcript_id)))
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO_only    <-   as.factor(na.omit(unique(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4$transcript_id)))
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO_only   <-  as.factor(na.omit(unique(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3$transcript_id)))
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO_only        <-       as.factor(na.omit(unique(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3$transcript_id)))
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO_only <- as.factor(na.omit(unique(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2$transcript_id)))
+
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO_only_factor <- factor(as.integer(Perk_geneNames %in% FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO_only))
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO_only_factor <- factor(as.integer(Perk_geneNames %in% FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO_only))
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO_only_factor <- factor(as.integer(Perk_geneNames %in% FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO_only))
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO_only_factor <- factor(as.integer(Perk_geneNames %in% FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO_only))
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO_only_factor <- factor(as.integer(Perk_geneNames %in% FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO_only))
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO_only_factor <- factor(as.integer(Perk_geneNames %in% FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO_only))
+
+names(FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO_only_factor) <- Perk_geneNames
+names(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO_only_factor) <- Perk_geneNames
+names(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO_only_factor) <- Perk_geneNames
+names(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO_only_factor) <- Perk_geneNames
+names(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO_only_factor) <- Perk_geneNames
+names(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO_only_factor) <- Perk_geneNames
+
+### Make topGO data object 
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata <- new("topGOdata", description = "GDC_steelblue Gene Enrichment", 
+                           # I want to test MF
+                           ontology = "MF",
+                           # define here the genes of interest
+                           allGenes = FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO_only_factor,
+                           nodeSize = 2,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata <- new("topGOdata", description = "GDC_darkorange2 Gene Enrichment", 
+                                                           # I want to test MF
+                                                           ontology = "MF",
+                                                           # define here the genes of interest
+                                                           allGenes = FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO_only_factor,
+                                                           nodeSize = 2,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata <- new("topGOdata", description = "GDC_lightblue4 Gene Enrichment", 
+                                                           # I want to test MF
+                                                           ontology = "MF",
+                                                           # define here the genes of interest
+                                                           allGenes = FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO_only_factor,
+                                                           nodeSize = 2,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata <- new("topGOdata", description = "ZVAD_lightpink3 Gene Enrichment", 
+                                                            # I want to test MF
+                                                            ontology = "MF",
+                                                            # define here the genes of interest
+                                                            allGenes = FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO_only_factor,
+                                                            nodeSize = 2,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata <- new("topGOdata", description = "ZVAD_pink3 Gene Enrichment", 
+                                                             # I want to test MF
+                                                             ontology = "MF",
+                                                             # define here the genes of interest
+                                                             allGenes = FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO_only_factor,
+                                                             nodeSize = 2,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata <- new("topGOdata", description = "ZVAD_navajowhite2 Gene Enrichment", 
+                                                        # I want to test MF
+                                                        ontology = "MF",
+                                                        # define here the genes of interest
+                                                        allGenes = FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO_only_factor,
+                                                        nodeSize = 2,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+#nodeSize=used to prune the GO hierarchy from the terms which have less than 1 annotated genes
+#annFUN.gene2GO = this function is used when the annotations are provided as a gene-to-GOs mapping.
+
+### Perform Encrichment tests 
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata_Fisher_Weight <- runTest(FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata, algorithm = "weight01", statistic = "fisher")
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata_Fisher_Weight <- runTest(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata, algorithm = "weight01", statistic = "fisher")
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Fisher_Weight <- runTest(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata, algorithm = "weight01", statistic = "fisher")
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_Fisher_Weight <- runTest(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata, algorithm = "weight01", statistic = "fisher")
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Fisher_Weight <- runTest(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata, algorithm = "weight01", statistic = "fisher")
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Fisher_Weight <- runTest(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata, algorithm = "weight01", statistic = "fisher")
+
+## Analyze enrichment test results 
+# see how many results we get where weight01 gives a P-value <= 0.05
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata_summary <- summary(attributes(FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata_Fisher_Weight)$score <= 0.05)
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata_summary <- summary(attributes(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata_Fisher_Weight)$score <= 0.05)
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_summary <- summary(attributes(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Fisher_Weight)$score <= 0.05)
+  # 1
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_summary <- summary(attributes(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_Fisher_Weight)$score <= 0.05)
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_summary <- summary(attributes(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Fisher_Weight)$score <= 0.05)
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_summary <- summary(attributes(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Fisher_Weight)$score <= 0.05)
+
+# only the GDC lightblue4 has any significantly enriched GO terms, for either MF or MF
+  # two terms for MF, one term for MF
+
+#print out the top results, though only GDC_lightblue4 is sig
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 10)
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 10)
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 10)
+
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 10)
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 10)
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 10)
+
+#### PMAR GO ENRICHMENT FOR INTERESTING MODULE ALL TRANSCRIPTS ####
+## GO enrichment for all genes in the module
+# get full list of genes for each module 
+GDC_steelblue_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="steelblue"] # only 127 in the module 
+GDC_steelblue_all_genes <- as.factor(GDC_steelblue_all_genes[!is.na(GDC_steelblue_all_genes)])
+
+GDC_darkorange2_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="darkorange2"] 
+GDC_darkorange2_all_genes <- as.factor(GDC_darkorange2_all_genes[!is.na(GDC_darkorange2_all_genes)])
+
+GDC_lightblue4_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="lightblue4"]  
+GDC_lightblue4_all_genes <- as.factor(GDC_lightblue4_all_genes[!is.na(GDC_lightblue4_all_genes)])
+
+ZVAD_lightpink3_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="lightpink3"]  
+ZVAD_lightpink3_all_genes <- as.factor(ZVAD_lightpink3_all_genes[!is.na(ZVAD_lightpink3_all_genes)])
+
+ZVAD_pink3_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="pink3"]  
+ZVAD_pink3_all_genes <- as.factor(ZVAD_pink3_all_genes[!is.na(ZVAD_pink3_all_genes)])
+
+ZVAD_navajowhite2_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="navajowhite2"]  
+ZVAD_navajowhite2_all_genes <- ZVAD_navajowhite2_all_genes[!is.na(ZVAD_navajowhite2_all_genes)]
+
+GDC_steelblue_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_steelblue_all_genes))
+GDC_darkorange2_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_darkorange2_all_genes))
+GDC_lightblue4_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_lightblue4_all_genes))
+ZVAD_lightpink3_all_genes_factor <- factor(as.integer(Perk_geneNames %in% ZVAD_lightpink3_all_genes))
+ZVAD_pink3_all_genes_factor <- factor(as.integer(Perk_geneNames %in% ZVAD_pink3_all_genes))
+ZVAD_navajowhite2_all_genes_factor <- factor(as.integer(Perk_geneNames %in% ZVAD_navajowhite2_all_genes))
+
+names(GDC_steelblue_all_genes_factor) <- Perk_geneNames
+names(GDC_darkorange2_all_genes_factor) <- Perk_geneNames
+names(GDC_lightblue4_all_genes_factor) <- Perk_geneNames
+names(ZVAD_lightpink3_all_genes_factor) <- Perk_geneNames
+names(ZVAD_pink3_all_genes_factor) <- Perk_geneNames
+names(ZVAD_navajowhite2_all_genes_factor) <- Perk_geneNames
+
+### Make topGO data object 
+GDC_steelblue_GOdata <- new("topGOdata", description = "GDC_steelblue Gene Enrichment", 
+                                                           # I want to test MF
+                                                           ontology = "MF",
+                                                           # define here the genes of interest
+                                                           allGenes = GDC_steelblue_all_genes_factor,
+                                                           nodeSize = 2,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+GDC_darkorange2_GOdata <- new("topGOdata", description = "GDC_darkorange2 Gene Enrichment", 
+                                                             # I want to test MF
+                                                             ontology = "MF",
+                                                             # define here the genes of interest
+                                                             allGenes = GDC_darkorange2_all_genes_factor,
+                                                             nodeSize = 2,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+GDC_lightblue4_GOdata <- new("topGOdata", description = "GDC_lightblue4 Gene Enrichment", 
+                                                            # I want to test MF
+                                                            ontology = "MF",
+                                                            # define here the genes of interest
+                                                            allGenes = GDC_lightblue4_all_genes_factor,
+                                                            nodeSize = 2,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+ZVAD_lightpink3_GOdata <- new("topGOdata", description = "ZVAD_lightpink3 Gene Enrichment", 
+                                                             # I want to test MF
+                                                             ontology = "MF",
+                                                             # define here the genes of interest
+                                                             allGenes = ZVAD_lightpink3_all_genes_factor,
+                                                             nodeSize = 2,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+ZVAD_pink3_GOdata <- new("topGOdata", description = "ZVAD_pink3 Gene Enrichment", 
+                                                        # I want to test MF
+                                                        ontology = "MF",
+                                                        # define here the genes of interest
+                                                        allGenes = ZVAD_pink3_all_genes_factor,
+                                                        nodeSize = 2,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+ZVAD_navajowhite2_GOdata <- new("topGOdata", description = "ZVAD_navajowhite2 Gene Enrichment", 
+                                                               # I want to test MF
+                                                               ontology = "MF",
+                                                               # define here the genes of interest
+                                                               allGenes = ZVAD_navajowhite2_all_genes_factor,
+                                                               nodeSize = 2,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+#nodeSize=used to prune the GO hierarchy from the terms which have less than 1 annotated genes
+#annFUN.gene2GO = this function is used when the annotations are provided as a gene-to-GOs mapping.
+
+### Perform Encrichment tests 
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata_Fisher_Weight <- runTest(FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata, algorithm = "weight01", statistic = "fisher")
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata_Fisher_Weight <- runTest(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata, algorithm = "weight01", statistic = "fisher")
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Fisher_Weight <- runTest(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata, algorithm = "weight01", statistic = "fisher")
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_Fisher_Weight <- runTest(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata, algorithm = "weight01", statistic = "fisher")
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Fisher_Weight <- runTest(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata, algorithm = "weight01", statistic = "fisher")
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Fisher_Weight <- runTest(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata, algorithm = "weight01", statistic = "fisher")
+
+## Analyze enrichment test results 
+# see how many results we get where weight01 gives a P-value <= 0.05
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata_summary <- summary(attributes(FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata_Fisher_Weight)$score <= 0.05)
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata_summary <- summary(attributes(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata_Fisher_Weight)$score <= 0.05)
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_summary <- summary(attributes(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Fisher_Weight)$score <= 0.05)
+# 1
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_summary <- summary(attributes(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_Fisher_Weight)$score <= 0.05)
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_summary <- summary(attributes(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Fisher_Weight)$score <= 0.05)
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_summary <- summary(attributes(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Fisher_Weight)$score <= 0.05)
+
+# only the GDC lightblue4 has any significantly enriched GO terms, for either MF or MF
+# two terms for MF, one term for MF
+
+#print out the top results, though only GDC_lightblue4 is sig
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 10)
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 10)
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 10)
+
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 10)
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 10)
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 10)
 
 
-
-## assess GO terms from this steelblue module 
-FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO <- 
 
 #### EXPORT WGNCA MATRIX TO CALCULATE INTRAMODULAR CONNECTIVITY IN BLUEWAVES ####
 
