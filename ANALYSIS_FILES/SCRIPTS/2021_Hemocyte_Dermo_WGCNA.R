@@ -25,6 +25,9 @@ library(gt)
 library(paletteer)
 library(rtracklayer)
 library(topGO)
+library(clusterProfiler)
+library(DOSE)
+library(viridis)
 # Using R version 3.6.1
 
 # helpful WGCNA tutorials and FAQs
@@ -59,6 +62,13 @@ load(file= "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemoc
 # Import GO annotation data 
 load(file = "../GO_universe_rna_found_geneID2GO_mapping.RData")
 load(file = "../Perk_GO_terms_found_geneID2GO_mapping.RData")
+
+# Import DEG lists
+# perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot, perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot 
+load(file = "../2021_Dermo_DEG_annot.RData")
+# hemo_dds_deseq_res_Pmar_LFC_sig_APOP, hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP, hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP
+load(file = "../2021_Hemocyte_DEG_apop_annot.RData")
+
 
 ## LOAD TRANSFORMED EXPRESSION DATA AND COLDATA ###
 
@@ -1040,13 +1050,41 @@ FilterGenes_Pmar_comb_Interpro_ZVAD_pink3 <- FilterGenes_Pmar_comb_Interpro %>% 
 FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEnavajowhite2")
 
 # How many intramodular hub genes in each with very high positive GS? Perform for interesting modules lightblue4, pink3, navajowhite2
-FilterGenes_Pmar_comb_Interpro_GDC_lightblue4 %>% distinct(transcript_id, GS) %>% filter( GS >= 0.6) %>% dplyr::count() # 137
-FilterGenes_Pmar_comb_Interpro_ZVAD_pink3  %>% distinct(transcript_id, GS) %>% filter( GS >= 0.6) %>% dplyr::count() # 51
-FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3  %>% distinct(transcript_id, GS) %>% filter( GS >= 0.6) %>% dplyr::count() # 52
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4 %>% distinct(transcript_id, GS) %>% dplyr::count() # 72
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3  %>% distinct(transcript_id, GS) %>% dplyr::count() # 30
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3  %>% distinct(transcript_id, GS) %>% dplyr::count() # 38
 
-FilterGenes_Pmar_comb_Interpro_GDC_lightblue4.8 <- FilterGenes_Pmar_comb_Interpro_GDC_lightblue4 %>% filter( GS >= 0.8)
-FilterGenes_Pmar_comb_Interpro_ZVAD_pink3.8 <- FilterGenes_Pmar_comb_Interpro_ZVAD_pink3 %>% filter( GS >= 0.8)
-FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3.8 <- FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3 %>% filter( GS >= 0.8)
+
+### ASSESS OVERLAPS WITH DEG RESULTS
+# assessing the modules I've highlighted as being most significant, GDC_lightblue4, ZVADnavajowhite2, ZVADpink3
+View(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4)
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot
+View(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot)
+
+# How many overlaps between module genes and 
+#GDC
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4$transcript_id),]
+  # 3
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2$transcript_id),]
+  # 1
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_GDC_steelblue$transcript_id),]
+  #7
+# Isolate these lines in the hub genes list
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_DEG <- FilterGenes_Pmar_comb_Interpro_GDC_steelblue[FilterGenes_Pmar_comb_Interpro_GDC_steelblue$transcript_id %in% perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id,])
+
+# ZVAD
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3$transcript_id),]
+# 3
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3$transcript_id),]
+# 3
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2$transcript_id),]
+# 2
+
+
+### PMAR GO ENRICHMENT FOR INTERESTING MODULE INTRAMODULAR HUB GENES ####
+Perk_geneNames <- names(Perk_GO_terms_found_geneID2GO_mapping)
+# topGO tutorial: https://bioconductor.org/packages/release/bioc/vignettes/topGO/inst/doc/topGO.pdf
+head(Perk_geneNames)
 
 ## assess GO terms from important module intramodular hub genes 
 # first format the GO terms so I can get unique terms for each protein
@@ -1162,11 +1200,6 @@ write.table(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GO_freq, "FilterGenes
 write.table(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO_freq, "FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GO.txt",row.names = FALSE,quote = FALSE)
 write.table(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO_freq, "FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GO.txt",row.names = FALSE,quote = FALSE)
 
-### PMAR GO ENRICHMENT FOR INTERESTING MODULE INTRAMODULAR HUB GENES ####
-Perk_geneNames <- names(Perk_GO_terms_found_geneID2GO_mapping)
-# topGO tutorial: https://bioconductor.org/packages/release/bioc/vignettes/topGO/inst/doc/topGO.pdf
-head(Perk_geneNames)
-
 ## GO enrichment for just the Intramodular hub genes 
 FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GO_only     <-    as.factor(na.omit(unique(FilterGenes_Pmar_comb_Interpro_GDC_steelblue$transcript_id)))
 FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GO_only   <-  as.factor(na.omit(unique(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2$transcript_id)))
@@ -1254,46 +1287,14 @@ FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_summary <- summary(attri
 
 #print out the top results
 FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 25)
-    #GO.ID                                        Term Annotated Significant Expected topgoFisher
-    #1  GO:0005200      structural constituent of cytoskeleton        15           2     0.13      0.0045
-    #2  GO:0005506                            iron ion binding        50           3     0.45      0.0046
-    #3  GO:0003824                          catalytic activity      3307          40    29.58      0.0059
-    #4  GO:0008410                    CoA-transferase activity         5           1     0.04      0.0333
-    #5  GO:0003934               GTP cyclohydrolase I activity         5           1     0.04      0.0333
-    #6  GO:0004857                   enzyme inhibitor activity         5           1     0.04      0.0333
-    #7  GO:0004807         triose-phosphate isomerase activity         5           1     0.04      0.0333
-    #8  GO:0016972                      thiol oxidase activity         7           1     0.06      0.0464
-    #9  GO:0016684 oxidoreductase activity, acting on perox...         7           1     0.06      0.0464
 
 FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_GDC_steelblue_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 25)
 FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_GDC_darkorange2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 25)
 
 FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 25)
 FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 25)
-  #GO.ID                                        Term Annotated Significant Expected topgoFisher
-  #1  GO:0004190        aspartic-type endopeptidase activity        68           3     0.25     0.00068
-  #2  GO:0016646 oxidoreductase activity, acting on the C...         6           1     0.02     0.01532
-  #3  GO:0003924                             GTPase activity        84           2     0.31     0.01947
-  #4  GO:0015299           solute:proton antiporter activity         9           1     0.03     0.02289
-  #5  GO:0046933 proton-transporting ATP synthase activit...        11           1     0.04     0.02791
-  #6  GO:0008536                          Ran GTPase binding        14           1     0.05     0.03539
-  #7  GO:0016765 transferase activity, transferring alkyl...        20           1     0.07     0.05019 
 
 FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res <- GenTable(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata, topgoFisher = FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 25)
-  #GO.ID                                        Term Annotated Significant Expected topgoFisher
-  #1  GO:0008168                  methyltransferase activity       109           5     1.48      0.0026
-  #2  GO:0009678 hydrogen-translocating pyrophosphatase a...        11           2     0.15      0.0040
-  #3  GO:0010181                                 FMN binding        12           2     0.16      0.0047
-  #4  GO:0004427            inorganic diphosphatase activity        16           2     0.22      0.0084
-  #5  GO:0019825                              oxygen binding        24           2     0.33      0.0185
-  #6  GO:0020037                                heme binding        66           3     0.90      0.0200
-  #7  GO:0003824                          catalytic activity      3307          47    45.00      0.0219
-  #8  GO:0043169                              cation binding       641          10     8.72      0.0332
-  #9  GO:0017076                   purine nucleotide binding       921          11    12.53      0.0338
-  #10 GO:0004198 calcium-dependent cysteine-type endopept...         5           1     0.07      0.0430
-  #11 GO:0008234            cysteine-type peptidase activity       168           5     2.29      0.0464
-  #12 GO:0008270                            zinc ion binding       228           5     3.10      0.0495
-
 
 #### PMAR GO ENRICHMENT FOR INTERESTING MODULE ALL TRANSCRIPTS ####
 ## GO enrichment for all genes in the module
@@ -1397,37 +1398,73 @@ ZVAD_navajowhite2_GOdata_summary <- summary(attributes(ZVAD_navajowhite2_GOdata_
 GDC_steelblue_GOdata_Res <- GenTable(GDC_steelblue_GOdata, topgoFisher = GDC_steelblue_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 GDC_darkorange2_GOdata_Res <- GenTable(GDC_darkorange2_GOdata, topgoFisher = GDC_darkorange2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 GDC_lightblue4_GOdata_Res <- GenTable(GDC_lightblue4_GOdata, topgoFisher = GDC_lightblue4_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
-      #GO.ID                                        Term Annotated Significant Expected topgoFisher
-      #1  GO:0005506                            iron ion binding        50           2     0.12      0.0044
-      #2  GO:0008375      acetylglucosaminyltransferase activity        11           1     0.03      0.0218
 
 ZVAD_lightpink3_GOdata_Res <- GenTable(ZVAD_lightpink3_GOdata, topgoFisher = ZVAD_lightpink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 ZVAD_pink3_GOdata_Res <- GenTable(ZVAD_pink3_GOdata, topgoFisher = ZVAD_pink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
-      #GO.ID                                        Term Annotated Significant Expected topgoFisher
-      #1  GO:0004190        aspartic-type endopeptidase activity        68           2     0.07     0.00085
-      #2  GO:0046933 proton-transporting ATP synthase activit...        11           1     0.01     0.00731
-      #3  GO:0016887                             ATPase activity       116           2     0.12     0.03838
-
 ZVAD_navajowhite2_GOdata_Res <- GenTable(ZVAD_navajowhite2_GOdata, topgoFisher = ZVAD_navajowhite2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
-      #GO.ID                                        Term Annotated Significant Expected topgoFisher
-      #1  GO:0043169                              cation binding       641           7     2.87      0.0097
-      #2  GO:0003824                          catalytic activity      3307          17    14.79      0.0099
-      #3  GO:0008483                       transaminase activity         6           1     0.03      0.0170
-      #4  GO:0004376     glycolipid mannosyltransferase activity         6           1     0.03      0.0170
-      #5  GO:0005507                          copper ion binding        10           1     0.04      0.0282
-      #6  GO:0004129               cytochrome-c oxidase activity        10           1     0.04      0.0282
-      #7  GO:0030976              thiamine pyrophosphate binding        11           1     0.05      0.0310
-      #8  GO:0008168                  methyltransferase activity       109           2     0.49      0.0384
-      #9  GO:0008138 protein tyrosine/serine/threonine phosph...        14           1     0.06      0.0393
 
 #### PMAR TOP INTERESTING MODULES GO VISUALIZATION ####
 
-## Dotplot of top modules GO terms
+### Dotplot of significantly enriched GO terms from hub modules
   # GDC_lightblue4, ZVAD navajowhite2 and ZVAD pink 3
 
-FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res
-FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res
-FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res$group <-"pink3"
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res$group <-"navajowhite2"
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res$group <-"lightblue4"
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res$treat <-"ZVAD-fmk"
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res$treat <-"ZVAD-fmk"
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res$treat <-"GDC-0152"
+
+Pmar_GO_hub_dotplot <- rbind(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res,
+                             FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res,
+                             FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res) %>% filter(topgoFisher <=0.05)
+
+# edit GO terms where the rest of the term name is cutoff 
+Pmar_GO_hub_dotplot <- Pmar_GO_hub_dotplot %>% mutate(Term = case_when(
+  GO.ID == "GO:0016646" ~ "oxidoreductase activity, acting on the CH-NH group of donors, NAD or NADP as acceptor",
+  GO.ID == "GO:0046933" ~ "proton-transporting ATP synthase activity, rotational mechanism",
+  GO.ID == "GO:0016684" ~ "oxidoreductase activity, acting on peroxide as acceptor",
+  GO.ID == "GO:0009678" ~ "pyrophosphate hydrolysis-driven proton transmembrane transporter activity",
+  GO.ID == "GO:0004198" ~ "calcium-dependent cysteine-type endopeptidase activity",
+  TRUE ~ Term
+))
+
+Pmar_GO_hub_dotplot_plot <- ggplot(Pmar_GO_hub_dotplot, aes(x = group, y = Term )) +
+  geom_point(aes(size = Significant, color = as.numeric(topgoFisher))) + 
+  scale_size_continuous(range = c(4,10)) +
+  scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
+  facet_grid(.~treat, scales = "free") + 
+  theme_minimal() +
+  labs(x = "Module Name", y = "GO Term", title = "GO Enrichment of Intramodular Hub Genes") + 
+  theme(panel.border = element_rect(color = "black", fill = "NA"),
+        axis.text.x = element_text(size = 14),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 16, face = "bold"),
+        strip.text.x = element_text(size = 16, face = "bold"),
+        title = element_text(size = 16))
+
+ggsave(Pmar_GO_hub_dotplot_plot, device = "tiff", path = "./FIGURES/", 
+       filename = "Pmar_GO_hub_dotplot_plot.tiff", width = 15, height = 10)
+
+### View interesting genes associated with particular terms
+
+# GDC_lightblue4
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res_sig_terms <- FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res %>% 
+  filter(topgoFisher <=0.05) %>% dplyr::select(GO.ID, Term) %>% dplyr::rename(Ontology_term = GO.ID)
+
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO_enriched <- left_join(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res_sig_terms, 
+                                                                       FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO) %>% left_join(., dplyr::select(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4, -Ontology_term))
+# the terms in this list are not the ones that I found interesting! 
+  # I think this has to do with bias in GO term identification?
+
+### CNET plot
+
+edox <- setReadable(edo, 'org.Hs.eg.db', 'ENTREZID')
+p1 <- cnetplot(edox, foldChange=geneList)
+## categorySize can be scaled by 'pvalue' or 'geneNum'
+p2 <- cnetplot(edox, categorySize="pvalue", foldChange=geneList)
+p3 <- cnetplot(edox, foldChange=geneList, circular = TRUE, colorEdge = TRUE)
+
 
 #### EXPORT WGNCA MATRIX TO CALCULATE INTRAMODULAR CONNECTIVITY IN BLUEWAVES ####
 
