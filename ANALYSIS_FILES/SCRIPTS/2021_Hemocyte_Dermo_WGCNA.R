@@ -41,6 +41,9 @@ annotations <- load(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_
 
 Perkinsus_rtracklayer <- readGFF("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/GCF_000006405.1_JCVI_PMG_1.0_genomic.gff")
 Perkinsus_rtracklayer <- as.data.frame(Perkinsus_rtracklayer)
+Perkinsus_rtracklayer_transcripts <- Perkinsus_rtracklayer %>% filter(!is.na(transcript_id))
+# save
+save(Perkinsus_rtracklayer_transcripts, file = "Perkinsus_rtracklayer_transcripts.RData")
 
 # C_vir_rtracklayer_transcripts
 C_vir_rtracklayer_transcripts <- C_vir_rtracklayer %>% filter(grepl("rna",ID))
@@ -308,6 +311,8 @@ hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare <- hemo_full_moduleTraitCor_Pv
   full_join(.,hemo_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_control_sig) %>% 
   full_join(.,hemo_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_control_sig) %>% dplyr::select(!contains("Pvalue"))
   
+hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare_sig_modnames <- hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare$mod_names
+
 # find those shared between all 
 hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare_shared <- drop_na(hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare)
 # 8 shared between all 
@@ -315,6 +320,43 @@ hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare_shared <- drop_na(hemo_full_mo
    # MEyellow
    # MEdarkseagreen4
    # MEplum4
+
+## Heatmap of only the significantly correlated modules 
+# Graph and color code each the strength of association (correlation) of module eigengenes and trait
+
+# subset hemo_full_moduleTraitCor, hemo_full_moduleTraitPvalue, hemo_full_MEs for only those modules significant in either challenge
+hemo_full_moduleTraitCor_sig <- hemo_full_moduleTraitCor[rownames(hemo_full_moduleTraitCor) %in% hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare_sig_modnames,]
+hemo_full_moduleTraitCor_sig <- hemo_full_moduleTraitCor_sig[,c(1:3)]
+hemo_full_moduleTraitPvalue_sig <- hemo_full_moduleTraitPvalue[rownames(hemo_full_moduleTraitPvalue) %in% hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare_sig_modnames,]
+hemo_full_moduleTraitPvalue_sig <- hemo_full_moduleTraitPvalue_sig[,c(1:3)]
+hemo_full_MEs_sig <- hemo_full_MEs[,colnames(hemo_full_MEs) %in% hemo_full_moduleTraitCor_Pval_df_Pmar_sig_compare_sig_modnames]
+hemo_coldata_collapse_binarize_sig <- hemo_coldata_collapse_binarize[,c(1:3)]
+
+# Will display correlations and their p-values
+hemo_full_textMatrix_sig = paste(signif(hemo_full_moduleTraitCor_sig, 2), "\n(",
+                                 signif(hemo_full_moduleTraitPvalue_sig, 1), ")", sep = "");
+dim(hemo_full_textMatrix_sig) = dim(hemo_full_moduleTraitCor_sig)
+
+# make plot
+sizeGrWindow(10,6)
+par(mar = c(6, 8.5, 3, 3))
+# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
+# green is more negatively correlated)
+labeledHeatmap(Matrix = hemo_full_moduleTraitCor_sig,
+               xLabels = c("Con vs. Pmar", "P.mar. GDC vs. Con", "P. mar. ZVAD vs. Con"),
+               yLabels = names(hemo_full_MEs_sig),
+               ySymbols = names(hemo_full_MEs_sig),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = hemo_full_textMatrix_sig,
+               setStdMargins = FALSE,
+               cex.text = 0.5,
+               cex.lab = 0.7,
+               #zlim = c(-1,1), 
+               yColorWidth = 0.2, 
+               main = paste("Hemocyte Module-Challenge Relationships"))
+# have to save manually...weird!
+
 
 ### Repeat for P_marinus counts 
 
@@ -718,7 +760,7 @@ lapply(perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig_list,  GS_MM_plot_
 # Hemocytes control vs Pmar
 hemo_full_colorh_control_Pmar = hemo_full_module_apop_df_5_greater_control_Pmar
 
-perk_full_Module_hub_genes_control_Pmar <- chooseTopHubInEachModule(
+hemo_full_Module_hub_genes_control_Pmar <- chooseTopHubInEachModule(
   hemo_dds_rlog_matrix, 
   hemo_full_colorh_control_Pmar, 
   power = 7,  # power used for the adjacency network
@@ -753,7 +795,6 @@ hemo_full_Module_hub_genes_control_Pmar_GDC_all_control_Pmar_GDC <- merge(hemo_f
 hemo_full_Module_hub_genes_control_Pmar_GDC_all_control_Pmar_GDC$product
 
 hemo_full_Module_hub_genes_control_Pmar_GDC_all_control_Pmar_GDC$ID %in% BIR_XP_gff_CV_uniq_XP_XM$ID # none are IAP
-
 
 # Hemocytes control vs Pmar_ZVAD
 hemo_full_colorh_control_Pmar_ZVAD = hemo_full_module_apop_df_5_greater_control_Pmar_ZVAD_list
@@ -941,14 +982,58 @@ FilterGenes_comb <- rbind(FilterGenes_control_Pmar_df,
                           FilterGenes_control_Pmar_ZVAD_df)
 
 # how many in each module per treatment?
-FilterGenes_comb %>% group_by(mod_names, group) %>% dplyr::count() %>% View()
+FilterGenes_comb_hub_count <- FilterGenes_comb %>% group_by(mod_names, group) %>% dplyr::mutate(total_hub = n()) %>% dplyr::distinct(mod_names, group, total_hub, moduleTraitCor, moduleTraitPvalue)
 
 # are any of these apoptotic?
 FilterGenes_comb_apop <- FilterGenes_comb[FilterGenes_comb$ID %in% C_vir_rtracklayer_apop_product_final$ID,] %>% 
   dplyr::select(ID, gene,product, transcript_id, mod_names, group, moduleTraitCor,moduleTraitPvalue, GS)
 
 # how many apop intramodular hub genes in each module per treatment?
-FilterGenes_comb_apop %>% group_by(mod_names, group) %>% dplyr::count() %>% View()
+FilterGenes_comb_apop_count <- FilterGenes_comb_apop %>% group_by(mod_names, group) %>% dplyr::count() %>% dplyr::rename(apop_hub = n)
+FilterGenes_comb_apop_count_mod_names <- FilterGenes_comb_apop_count %>% ungroup() %>% distinct(mod_names) 
+FilterGenes_comb_apop_count_mod_names <- FilterGenes_comb_apop_count_mod_names$mod_names
+
+FilterGenes_comb_hub_count_apop <- left_join(FilterGenes_comb_hub_count, FilterGenes_comb_apop_count)
+
+View(FilterGenes_comb_hub_count_apop )
+
+## Heatmap of only the significantly correlated modules that have apoptosis hub genes
+# Graph and color code each the strength of association (correlation) of module eigengenes and trait
+
+# subset hemo_full_moduleTraitCor, hemo_full_moduleTraitPvalue, hemo_full_MEs for only those modules significant in either challenge
+hemo_full_moduleTraitCor_sig_apop <- hemo_full_moduleTraitCor[rownames(hemo_full_moduleTraitCor) %in% FilterGenes_comb_apop_count_mod_names,]
+hemo_full_moduleTraitCor_sig_apop <- hemo_full_moduleTraitCor_sig_apop[,c(1:3)]
+hemo_full_moduleTraitPvalue_sig_apop <- hemo_full_moduleTraitPvalue[rownames(hemo_full_moduleTraitPvalue) %in% FilterGenes_comb_apop_count_mod_names,]
+hemo_full_moduleTraitPvalue_sig_apop <- hemo_full_moduleTraitPvalue_sig_apop[,c(1:3)]
+hemo_full_MEs_sig_apop <- hemo_full_MEs[,colnames(hemo_full_MEs) %in% FilterGenes_comb_apop_count_mod_names]
+hemo_coldata_collapse_binarize_sig_apop <- hemo_coldata_collapse_binarize[,c(1:3)]
+
+# Will display correlations and their p-values
+hemo_full_textMatrix_sig_apop = paste(signif(hemo_full_moduleTraitCor_sig_apop, 2), "\n(",
+                                 signif(hemo_full_moduleTraitPvalue_sig_apop, 1), ")", sep = "");
+dim(hemo_full_textMatrix_sig_apop) = dim(hemo_full_moduleTraitCor_sig_apop)
+
+# make plot
+sizeGrWindow(10,6)
+par(mar = c(6, 8.5, 3, 3))
+# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
+# green is more negatively correlated)
+labeledHeatmap(Matrix = hemo_full_moduleTraitCor_sig_apop,
+               xLabels = c("Con vs. Pmar", "P.mar. GDC vs. Con", "P. mar. ZVAD vs. Con"),
+               yLabels = names(hemo_full_MEs_sig_apop),
+               ySymbols = names(hemo_full_MEs_sig_apop),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = hemo_full_textMatrix_sig_apop,
+               setStdMargins = FALSE,
+               cex.text = 0.5,
+               cex.lab = 0.7,
+               #zlim = c(-1,1), 
+               yColorWidth = 0.2, 
+               main = paste("Hemocyte Module-Challenge Relationships"))
+# have to save manually...weird!
+
+
 
 ### Repeat finding of intramodular hub genes, but for P. marinus samples now 
 # annotate intramodular hub genes in each module
@@ -1031,6 +1116,59 @@ FilterGenes_Pmar_comb %>% group_by(mod_names, group) %>% dplyr::mutate(count = n
 FilterGenes_Pmar_comb_Interpro <- left_join(FilterGenes_Pmar_comb[,c("Name","product","transcript_id","moduleTraitCor","moduleTraitPvalue","mod_names","GS")], 
                                             Perk_Interpro_GO_terms_XP[,c("protein_id","source","transcript_id", "Ontology_term",
                                                                          "Dbxref","signature_desc")], by = "transcript_id")
+
+#### Hemocyte intramodular hub gene analysis for interesting modules ####
+
+# Interesting modules
+# What is criteria for an interesting module?
+# 1. Module is significantly correlated with challenge group
+# 2. Module has high (>0.6) correlation between gene significance and module membership
+# 3. Module is either uniquely and highly (>0.8) significant to the particular challenge, or lowly (<0.4) correlated with the other treatment    
+# Based on this the following modules are interest 
+# 1. Pmar vs GDC: the steelblue, darkorange2, lightblue4
+# 2. Pmar vs ZVAD: the linkpink3, pink3, and navajowhite2 are of interest
+
+# filter out GDC modules from the list of intramodular hub genes (high GS and high modulemembership)
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEsteelblue")
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEdarkorange2")
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MElightblue4")
+
+# filter out ZVAD modules from the list of intramodular hub genes (high GS and high modulemembership)
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MElightpink3")
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEpink3")
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEnavajowhite2")
+
+# How many intramodular hub genes in each with very high positive GS? Perform for interesting modules lightblue4, pink3, navajowhite2
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4 %>% distinct(transcript_id, GS) %>% dplyr::count() # 72
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3  %>% distinct(transcript_id, GS) %>% dplyr::count() # 30
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3  %>% distinct(transcript_id, GS) %>% dplyr::count() # 38
+
+
+### ASSESS OVERLAPS WITH DEG RESULTS
+# assessing the modules I've highlighted as being most significant, GDC_lightblue4, ZVADnavajowhite2, ZVADpink3
+View(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4)
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot
+View(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot)
+
+# How many overlaps between module genes and 
+#GDC
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4$transcript_id),]
+# 3
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2$transcript_id),]
+# 1
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_GDC_steelblue$transcript_id),]
+#7
+# Isolate these lines in the hub genes list
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue_DEG <- FilterGenes_Pmar_comb_Interpro_GDC_steelblue[FilterGenes_Pmar_comb_Interpro_GDC_steelblue$transcript_id %in% perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id,]
+
+# ZVAD
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3$transcript_id),]
+# 3
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3$transcript_id),]
+# 3
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2$transcript_id),]
+# 2
+
 
 #### Pmar intramodular hub gene analysis for interesting modules ####
 
