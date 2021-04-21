@@ -1119,55 +1119,254 @@ FilterGenes_Pmar_comb_Interpro <- left_join(FilterGenes_Pmar_comb[,c("Name","pro
 
 #### Hemocyte intramodular hub gene analysis for interesting modules ####
 
-# Interesting modules
-# What is criteria for an interesting module?
-# 1. Module is significantly correlated with challenge group
-# 2. Module has high (>0.6) correlation between gene significance and module membership
-# 3. Module is either uniquely and highly (>0.8) significant to the particular challenge, or lowly (<0.4) correlated with the other treatment    
-# Based on this the following modules are interest 
-# 1. Pmar vs GDC: the steelblue, darkorange2, lightblue4
-# 2. Pmar vs ZVAD: the linkpink3, pink3, and navajowhite2 are of interest
-
-# filter out GDC modules from the list of intramodular hub genes (high GS and high modulemembership)
-FilterGenes_Pmar_comb_Interpro_GDC_steelblue <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEsteelblue")
-FilterGenes_Pmar_comb_Interpro_GDC_darkorange2 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEdarkorange2")
-FilterGenes_Pmar_comb_Interpro_GDC_lightblue4 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MElightblue4")
-
-# filter out ZVAD modules from the list of intramodular hub genes (high GS and high modulemembership)
-FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MElightpink3")
-FilterGenes_Pmar_comb_Interpro_ZVAD_pink3 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEpink3")
-FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEnavajowhite2")
-
-# How many intramodular hub genes in each with very high positive GS? Perform for interesting modules lightblue4, pink3, navajowhite2
-FilterGenes_Pmar_comb_Interpro_GDC_lightblue4 %>% distinct(transcript_id, GS) %>% dplyr::count() # 72
-FilterGenes_Pmar_comb_Interpro_ZVAD_pink3  %>% distinct(transcript_id, GS) %>% dplyr::count() # 30
-FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3  %>% distinct(transcript_id, GS) %>% dplyr::count() # 38
-
 
 ### ASSESS OVERLAPS WITH DEG RESULTS
-# assessing the modules I've highlighted as being most significant, GDC_lightblue4, ZVADnavajowhite2, ZVADpink3
-View(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4)
-perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot
-View(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot)
 
-# How many overlaps between module genes and 
-#GDC
-perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4$transcript_id),]
-# 3
-perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2$transcript_id),]
-# 1
-perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_GDC_steelblue$transcript_id),]
-#7
-# Isolate these lines in the hub genes list
-FilterGenes_Pmar_comb_Interpro_GDC_steelblue_DEG <- FilterGenes_Pmar_comb_Interpro_GDC_steelblue[FilterGenes_Pmar_comb_Interpro_GDC_steelblue$transcript_id %in% perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id,]
+# find the hits for each treatment group and then count the number of hits in each modules
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP_sig_modules <- FilterGenes_comb[FilterGenes_comb$transcript_id %in% hemo_dds_deseq_res_Pmar_LFC_sig_APOP$transcript_id,] %>% 
+  filter(group == "control_Pmar") %>% 
+  group_by(mod_names) %>% dplyr::mutate(module_count = n()) %>% dplyr::select(product, transcript_id, mod_names, group, moduleTraitCor, moduleTraitPvalue, GS, module_count)
 
-# ZVAD
-perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3$transcript_id),]
-# 3
-perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3$transcript_id),]
-# 3
-perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2$transcript_id),]
-# 2
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_sig_modules <- FilterGenes_comb[FilterGenes_comb$transcript_id %in% hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP$transcript_id,] %>% 
+  filter(group == "control_Pmar_GDC") %>% 
+  group_by(mod_names) %>% dplyr::mutate(module_count = n()) %>% dplyr::select(product, transcript_id, mod_names, group, moduleTraitCor, moduleTraitPvalue, GS, module_count)
+
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_sig_modules <- FilterGenes_comb[FilterGenes_comb$transcript_id %in% hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP$transcript_id,] %>% 
+  filter(group == "control_Pmar_ZVAD") %>% 
+  group_by(mod_names) %>% dplyr::mutate(module_count = n()) %>% dplyr::select(product, transcript_id, mod_names, group, moduleTraitCor, moduleTraitPvalue, GS, module_count)
+
+
+# how many overlaps?
+hemo_dds_deseq_res_Pmar_LFC_sig_APOP_sig_modules %>% distinct(module_count, mod_names, group) %>% arrange(desc(module_count))
+    #mod_names       group        module_count
+    #<chr>           <chr>               <int>
+    #1 MEantiquewhite2 control_Pmar            2
+    #2 MElightcyan     control_Pmar            1
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_sig_modules %>% distinct(module_count, mod_names, group) %>% arrange(desc(module_count)) # the GDC 
+    #mod_names       group            module_count
+    #<chr>           <chr>                   <int>
+    #1 MEnavajowhite2  control_Pmar_GDC           19
+    #2 MEyellow        control_Pmar_GDC           18
+    #3 MEblack         control_Pmar_GDC           17
+    #4 MEdarkred       control_Pmar_GDC           16
+    #5 MElightpink3    control_Pmar_GDC           15
+    #6 MEmediumpurple3 control_Pmar_GDC            6
+    #7 MEpaleturquoise control_Pmar_GDC            5
+    #8 MEdarkorange    control_Pmar_GDC            4
+    #9 MEantiquewhite2 control_Pmar_GDC            3
+    #10 MEcyan          control_Pmar_GDC            3
+    #11 MElightcyan     control_Pmar_GDC            1
+    #12 MEplum          control_Pmar_GDC            1
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_sig_modules %>% distinct(module_count, mod_names, group) %>% arrange(desc(module_count))
+    #mod_names    group             module_count
+    #<chr>        <chr>                    <int>
+    #1 MEyellow     control_Pmar_ZVAD            2
+    #2 MEorangered4 control_Pmar_ZVAD            1
+
+
+#### Hemocyte GO enrichment for interesting module all transcripts  ####
+## GO enrichment for all genes in the module
+# get full list of genes for each module 
+GDC_steelblue_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="steelblue"] # only 127 in the module 
+GDC_steelblue_all_genes <- as.factor(GDC_steelblue_all_genes[!is.na(GDC_steelblue_all_genes)])
+
+GDC_darkorange2_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="darkorange2"] 
+GDC_darkorange2_all_genes <- as.factor(GDC_darkorange2_all_genes[!is.na(GDC_darkorange2_all_genes)])
+
+GDC_lightblue4_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="lightblue4"]  
+GDC_lightblue4_all_genes <- as.factor(GDC_lightblue4_all_genes[!is.na(GDC_lightblue4_all_genes)])
+
+ZVAD_lightpink3_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="lightpink3"]  
+ZVAD_lightpink3_all_genes <- as.factor(ZVAD_lightpink3_all_genes[!is.na(ZVAD_lightpink3_all_genes)])
+
+ZVAD_pink3_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="pink3"]  
+ZVAD_pink3_all_genes <- as.factor(ZVAD_pink3_all_genes[!is.na(ZVAD_pink3_all_genes)])
+
+ZVAD_navajowhite2_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="navajowhite2"]  
+ZVAD_navajowhite2_all_genes <- ZVAD_navajowhite2_all_genes[!is.na(ZVAD_navajowhite2_all_genes)]
+
+GDC_steelblue_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_steelblue_all_genes))
+GDC_darkorange2_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_darkorange2_all_genes))
+GDC_lightblue4_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_lightblue4_all_genes))
+ZVAD_lightpink3_all_genes_factor <- factor(as.integer(Perk_geneNames %in% ZVAD_lightpink3_all_genes))
+ZVAD_pink3_all_genes_factor <- factor(as.integer(Perk_geneNames %in% ZVAD_pink3_all_genes))
+ZVAD_navajowhite2_all_genes_factor <- factor(as.integer(Perk_geneNames %in% ZVAD_navajowhite2_all_genes))
+
+names(GDC_steelblue_all_genes_factor) <- Perk_geneNames
+names(GDC_darkorange2_all_genes_factor) <- Perk_geneNames
+names(GDC_lightblue4_all_genes_factor) <- Perk_geneNames
+names(ZVAD_lightpink3_all_genes_factor) <- Perk_geneNames
+names(ZVAD_pink3_all_genes_factor) <- Perk_geneNames
+names(ZVAD_navajowhite2_all_genes_factor) <- Perk_geneNames
+
+### Make topGO data object 
+GDC_steelblue_GOdata <- new("topGOdata", description = "GDC_steelblue Gene Enrichment", 
+                            # I want to test MF
+                            ontology = "MF",
+                            # define here the genes of interest
+                            allGenes = GDC_steelblue_all_genes_factor,
+                            nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+GDC_darkorange2_GOdata <- new("topGOdata", description = "GDC_darkorange2 Gene Enrichment", 
+                              # I want to test MF
+                              ontology = "MF",
+                              # define here the genes of interest
+                              allGenes = GDC_darkorange2_all_genes_factor,
+                              nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+GDC_lightblue4_GOdata <- new("topGOdata", description = "GDC_lightblue4 Gene Enrichment", 
+                             # I want to test MF
+                             ontology = "MF",
+                             # define here the genes of interest
+                             allGenes = GDC_lightblue4_all_genes_factor,
+                             nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+ZVAD_lightpink3_GOdata <- new("topGOdata", description = "ZVAD_lightpink3 Gene Enrichment", 
+                              # I want to test MF
+                              ontology = "MF",
+                              # define here the genes of interest
+                              allGenes = ZVAD_lightpink3_all_genes_factor,
+                              nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+ZVAD_pink3_GOdata <- new("topGOdata", description = "ZVAD_pink3 Gene Enrichment", 
+                         # I want to test MF
+                         ontology = "MF",
+                         # define here the genes of interest
+                         allGenes = ZVAD_pink3_all_genes_factor,
+                         nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+ZVAD_navajowhite2_GOdata <- new("topGOdata", description = "ZVAD_navajowhite2 Gene Enrichment", 
+                                # I want to test MF
+                                ontology = "MF",
+                                # define here the genes of interest
+                                allGenes = ZVAD_navajowhite2_all_genes_factor,
+                                nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+#nodeSize=used to prune the GO hierarchy from the terms which have less than 1 annotated genes
+#annFUN.gene2GO = this function is used when the annotations are provided as a gene-to-GOs mapping.
+
+### Perform Encrichment tests 
+GDC_steelblue_GOdata_Fisher_Weight <- runTest(GDC_steelblue_GOdata, algorithm = "weight01", statistic = "fisher")
+GDC_darkorange2_GOdata_Fisher_Weight <- runTest(GDC_darkorange2_GOdata, algorithm = "weight01", statistic = "fisher")
+GDC_lightblue4_GOdata_Fisher_Weight <- runTest(GDC_lightblue4_GOdata, algorithm = "weight01", statistic = "fisher")
+ZVAD_lightpink3_GOdata_Fisher_Weight <- runTest(ZVAD_lightpink3_GOdata, algorithm = "weight01", statistic = "fisher")
+ZVAD_pink3_GOdata_Fisher_Weight <- runTest(ZVAD_pink3_GOdata, algorithm = "weight01", statistic = "fisher")
+ZVAD_navajowhite2_GOdata_Fisher_Weight <- runTest(ZVAD_navajowhite2_GOdata, algorithm = "weight01", statistic = "fisher")
+
+## Analyze enrichment test results 
+# see how many results we get where weight01 gives a P-value <= 0.05
+GDC_steelblue_GOdata_summary <- summary(attributes(GDC_steelblue_GOdata_Fisher_Weight)$score <= 0.05) # 9 sig
+GDC_darkorange2_GOdata_summary <- summary(attributes(GDC_darkorange2_GOdata_Fisher_Weight)$score <= 0.05) # 8 sig
+GDC_lightblue4_GOdata_summary <- summary(attributes(GDC_lightblue4_GOdata_Fisher_Weight)$score <= 0.05) # 4 sig
+ZVAD_lightpink3_GOdata_summary <- summary(attributes(ZVAD_lightpink3_GOdata_Fisher_Weight)$score <= 0.05) # 9 sig
+ZVAD_pink3_GOdata_summary <- summary(attributes(ZVAD_pink3_GOdata_Fisher_Weight)$score <= 0.05) # 3 sig
+ZVAD_navajowhite2_GOdata_summary <- summary(attributes(ZVAD_navajowhite2_GOdata_Fisher_Weight)$score <= 0.05) # 11
+
+#print out the top results, though only GDC_lightblue4 is sig
+GDC_steelblue_GOdata_Res <- GenTable(GDC_steelblue_GOdata, topgoFisher = GDC_steelblue_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
+GDC_darkorange2_GOdata_Res <- GenTable(GDC_darkorange2_GOdata, topgoFisher = GDC_darkorange2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
+GDC_lightblue4_GOdata_Res <- GenTable(GDC_lightblue4_GOdata, topgoFisher = GDC_lightblue4_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
+
+ZVAD_lightpink3_GOdata_Res <- GenTable(ZVAD_lightpink3_GOdata, topgoFisher = ZVAD_lightpink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
+ZVAD_pink3_GOdata_Res <- GenTable(ZVAD_pink3_GOdata, topgoFisher = ZVAD_pink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
+ZVAD_navajowhite2_GOdata_Res <- GenTable(ZVAD_navajowhite2_GOdata, topgoFisher = ZVAD_navajowhite2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
+
+#### Hemocyte top interesting modules GO visualization ####
+
+### Dotplot of significantly enriched GO terms from hub modules
+# GDC_lightblue4, ZVAD navajowhite2 and ZVAD pink 3
+
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res$group <-"pink3"
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res$group <-"navajowhite2"
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res$group <-"lightblue4"
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res$treat <-"ZVAD-fmk"
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res$treat <-"ZVAD-fmk"
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res$treat <-"GDC-0152"
+
+Pmar_GO_hub_dotplot <- rbind(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res,
+                             FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res,
+                             FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res) %>% filter(topgoFisher <=0.05)
+
+# edit GO terms where the rest of the term name is cutoff 
+Pmar_GO_hub_dotplot <- Pmar_GO_hub_dotplot %>% mutate(Term = case_when(
+  GO.ID == "GO:0016646" ~ "oxidoreductase activity, acting on the CH-NH group of donors, NAD or NADP as acceptor",
+  GO.ID == "GO:0046933" ~ "proton-transporting ATP synthase activity, rotational mechanism",
+  GO.ID == "GO:0016684" ~ "oxidoreductase activity, acting on peroxide as acceptor",
+  GO.ID == "GO:0009678" ~ "pyrophosphate hydrolysis-driven proton transmembrane transporter activity",
+  GO.ID == "GO:0004198" ~ "calcium-dependent cysteine-type endopeptidase activity",
+  TRUE ~ Term
+))
+
+Pmar_GO_hub_dotplot_plot <- ggplot(Pmar_GO_hub_dotplot, aes(x = group, y = Term )) +
+  geom_point(aes(size = Significant, color = as.numeric(topgoFisher))) + 
+  scale_size_continuous(range = c(4,10)) +
+  scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
+  facet_grid(.~treat, scales = "free") + 
+  theme_minimal() +
+  labs(x = "Module Name", y = "GO Term", title = "GO Enrichment of Intramodular Hub Genes") + 
+  theme(panel.border = element_rect(color = "black", fill = "NA"),
+        axis.text.x = element_text(size = 14),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 16, face = "bold"),
+        strip.text.x = element_text(size = 16, face = "bold"),
+        title = element_text(size = 16))
+
+ggsave(Pmar_GO_hub_dotplot_plot, device = "tiff", path = "./FIGURES/", 
+       filename = "Pmar_GO_hub_dotplot_plot.tiff", width = 15, height = 10)
+
+### View interesting genes associated with particular terms
+
+# GDC_lightblue4
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res_sig_terms <- FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res %>% 
+  filter(topgoFisher <=0.05) %>% dplyr::select(GO.ID, Term) %>% dplyr::rename(Ontology_term = GO.ID)
+
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO_enriched <- left_join(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res_sig_terms, 
+                                                                       FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO) %>% left_join(., dplyr::select(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4, -Ontology_term))
+# the terms in this list are not the ones that I found interesting! 
+# I think this has to do with bias in GO term identification?
+
+
+### GO figure from enrichment analysis of all module genes
+GDC_steelblue_GOdata_Res$group <- "steelblue"
+GDC_darkorange2_GOdata_Res$group <- "darkorange2"
+GDC_lightblue4_GOdata_Res$group <- "lightblue4"
+ZVAD_lightpink3_GOdata_Res$group <- "lightpink3"
+ZVAD_pink3_GOdata_Res$group <-"pink3"
+ZVAD_navajowhite2_GOdata_Res $group <-"navajowhite2"
+
+GDC_steelblue_GOdata_Res$treat <- "GDC-0152"
+GDC_darkorange2_GOdata_Res$treat <- "GDC-0152"
+GDC_lightblue4_GOdata_Res$treat <- "GDC-0152"
+ZVAD_lightpink3_GOdata_Res$treat <- "ZVAD-fmk"
+ZVAD_pink3_GOdata_Res$treat <-"ZVAD-fmk"
+ZVAD_navajowhite2_GOdata_Res $treat <-"ZVAD-fmk"
+
+Pmar_GO_all_dotplot <- rbind(GDC_steelblue_GOdata_Res,
+                             GDC_darkorange2_GOdata_Res,
+                             GDC_lightblue4_GOdata_Res,
+                             ZVAD_lightpink3_GOdata_Res,
+                             ZVAD_pink3_GOdata_Res,
+                             ZVAD_navajowhite2_GOdata_Res) %>% filter(topgoFisher <=0.05)
+
+# edit GO terms where the rest of the term name is cutoff 
+
+Pmar_GO_all_dotplot_plot <- ggplot(Pmar_GO_all_dotplot, aes(x = group, y = Term )) +
+  geom_point(aes(size = Significant, color = as.numeric(topgoFisher))) + 
+  scale_size_continuous(range = c(4,10)) +
+  scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
+  facet_grid(.~treat, scales = "free") + 
+  theme_minimal() +
+  labs(x = "Module Name", y = "GO Term", title = "GO Enrichment of Module Genes") + 
+  theme(panel.border = element_rect(color = "black", fill = "NA"),
+        axis.text.x = element_text(size = 14),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 16, face = "bold"),
+        strip.text.x = element_text(size = 16, face = "bold"),
+        title = element_text(size = 16))
+
+ggsave(Pmar_GO_all_dotplot_plot, device = "tiff", path = "./FIGURES/", 
+       filename = "Pmar_GO_all_dotplot_plot.tiff", width = 15, height = 10)
+
 
 
 #### Pmar intramodular hub gene analysis for interesting modules ####
