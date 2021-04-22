@@ -1495,8 +1495,7 @@ hemo_GO_all_heatmap <- ComplexHeatmap::Heatmap(Hemo_GO_all_dotplot_heatmap, bord
 ComplexHeatmap::draw(hemo_GO_all_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
 dev.off()
 
-## Heatmap with just the interesting modules identified in my powerpoint
-
+## Heatmap with just the interesting modules identified in my powerpoint (those that also have significant apoptosis phenotype where relevant)
 Hemo_GO_all_dotplot_subset <- rbind(
   hemo_MEnavajowhite2_GOdata_Res,
   hemo_MEblack_GOdata_Res ,
@@ -1512,9 +1511,9 @@ Hemo_GO_all_dotplot_subset <- rbind(
 Hemo_GO_all_dotplot_subset_heatmap <- Hemo_GO_all_dotplot_subset %>% mutate(GO_term = paste(GO.ID, Term, sep = "_")) %>% 
   dplyr::select(GO_term, Significant, group) %>% spread(group, Significant) %>%  mutate_if(is.numeric , replace_na, replace = 0) %>% 
   column_to_rownames(., var= "GO_term") 
-Hemo_GO_all_dotplot_subset_heatmap <- as.matrix(Hemo_GO_all_dotplot_subset_heatmap)
+Hemo_GO_all_dotplot_subset_heatmap_mat <- as.matrix(Hemo_GO_all_dotplot_subset_heatmap)
 
-hemo_labels =c("black","blue","darkgreen","darkred","darkseagreen4", "darkslateblue", "lightpink3","orangered4" )
+hemo_labels =c("black","blue","darkgreen","darkred","darkseagreen4", "darkslateblue", "lightpink3","navajowhite2",  "orangered4"  )
 # create named vector to hold column names
 hemo_column_labels = structure(paste0(hemo_labels), names = paste0(colnames(Hemo_GO_all_dotplot_subset_heatmap )))
 
@@ -1523,11 +1522,11 @@ library(circlize)
 col_fun = colorRamp2(c(0, 50,100,400), c("white", "red", "orange", "yellow"))
 
 pdf("./FIGURES/hemo_GO_all_heatmap_subset.pdf", width = 12, height = 10)
-hemo_GO_all_heatmap_subset <- ComplexHeatmap::Heatmap(Hemo_GO_all_dotplot_subset_heatmap, border = TRUE, 
+hemo_GO_all_heatmap_subset <- ComplexHeatmap::Heatmap(Hemo_GO_all_dotplot_subset_heatmap_mat, border = TRUE, 
                                                column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
                                                row_title = "GO Term", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
                                                row_dend_width = unit(2, "cm"),
-                                               row_labels = row.names(Hemo_GO_all_dotplot_subset_heatmap),
+                                               row_labels = row.names(Hemo_GO_all_dotplot_subset_heatmap_mat),
                                                column_labels = hemo_column_labels[colnames(Hemo_GO_all_dotplot_subset_heatmap)],
                                                # apply split by k-meams clustering to highlight groups
                                                row_km = 3, column_km = 4, row_names_gp = gpar(fontsize = 8),
@@ -1537,6 +1536,24 @@ hemo_GO_all_heatmap_subset <- ComplexHeatmap::Heatmap(Hemo_GO_all_dotplot_subset
                                                rect_gp = gpar(col = "black", lwd = 1))
 ComplexHeatmap::draw(hemo_GO_all_heatmap_subset, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
 dev.off()
+
+# plot as dotplot
+Hemo_GO_all_dotplot_subset_plot <- ggplot(Hemo_GO_all_dotplot_subset, aes(x = group, y = Term )) +
+  geom_point(aes(size = Significant, color = as.numeric(topgoFisher))) + 
+  scale_size_continuous(range = c(4,10)) +
+  scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
+  facet_grid(.~type, scales = "free_x",space = "free_x") + 
+  theme_minimal() +
+  labs(x = "Module Name", y = "GO Term", title = "GO Enrichment of Significant Modules") + 
+  theme(panel.border = element_rect(color = "black", fill = "NA"),
+        axis.text.x = element_text(size = 14),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 16, face = "bold"),
+        strip.text.x = element_text(size = 16, face = "bold"),
+        title = element_text(size = 16))
+
+ggsave(Hemo_GO_all_dotplot_subset_plot, device = "tiff", path = "./FIGURES/", 
+       filename = "Hemo_GO_all_dotplot_subset_plot.tiff", width = 20, height = 12, limitsize = FALSE)
 
 
 #### Pmar intramodular hub gene analysis for interesting modules ####
