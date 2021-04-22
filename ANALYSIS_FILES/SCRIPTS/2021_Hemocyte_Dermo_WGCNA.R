@@ -1167,143 +1167,294 @@ hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_sig_modules %>% distinct(module_count,
 #### Hemocyte GO enrichment for interesting module all transcripts  ####
 ## GO enrichment for all genes in the module
 # get full list of genes for each module 
-GDC_steelblue_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="steelblue"] # only 127 in the module 
-GDC_steelblue_all_genes <- as.factor(GDC_steelblue_all_genes[!is.na(GDC_steelblue_all_genes)])
+hemo_geneNames <- names(GO_universe_rna_found_geneID2GO_mapping)
 
-GDC_darkorange2_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="darkorange2"] 
-GDC_darkorange2_all_genes <- as.factor(GDC_darkorange2_all_genes[!is.na(GDC_darkorange2_all_genes)])
+FilterGenes_comb_apop_count_mod_names
 
-GDC_lightblue4_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="lightblue4"]  
-GDC_lightblue4_all_genes <- as.factor(GDC_lightblue4_all_genes[!is.na(GDC_lightblue4_all_genes)])
+hemo_MEantiquewhite2 <- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors =="steelblue"]
+hemo_MEblack   <- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "black"]
+hemo_MEblue   <- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "blue"]
+hemo_MEcyan   <- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "cyan"]
+hemo_MEdarkgreen  <- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "darkgreen"]
+hemo_MEdarkorange  <- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "darkorange"]
+hemo_MEdarkred  <- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "darkred"]
+hemo_MEdarkseagreen4<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "darkseagreen4"]
+hemo_MEdarkslateblue<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "darkslateblue"]
+hemo_MElightcyan<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "lightcyan"]
+hemo_MElightpink3<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "lightpink3"]
+hemo_MEmediumpurple3<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "mediumpurple3"]
+hemo_MEnavajowhite2<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "navajowhite2"]
+hemo_MEorangered4<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "orangered4"]
+hemo_MEpaleturquoise<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "paleturquoise"]
+hemo_MEplum<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "plum"]
+hemo_MEred<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "red"]
+hemo_MEyellow<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "yellow"]
 
-ZVAD_lightpink3_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="lightpink3"]  
-ZVAD_lightpink3_all_genes <- as.factor(ZVAD_lightpink3_all_genes[!is.na(ZVAD_lightpink3_all_genes)])
+hemo_MEantiquewhite2 <- as.factor(hemo_MEantiquewhite2[!is.na(hemo_MEantiquewhite2)])
+hemo_MEblack <- as.factor(hemo_MEblack[!is.na(hemo_MEblack)])
+hemo_MEblue  <- as.factor(hemo_MEblue [!is.na(hemo_MEblue )])
+hemo_MEcyan  <- as.factor(hemo_MEcyan [!is.na(hemo_MEcyan )])
+hemo_MEdarkgreen <- as.factor(hemo_MEdarkgreen[!is.na(hemo_MEdarkgreen)])
+hemo_MEdarkorange <- as.factor(hemo_MEdarkorange[!is.na(hemo_MEdarkorange)])
+hemo_MEdarkred <- as.factor(hemo_MEdarkred[!is.na(hemo_MEdarkred)])
+hemo_MEdarkseagreen4 <- as.factor(hemo_MEdarkseagreen4[!is.na(hemo_MEdarkseagreen4)])
+hemo_MEdarkslateblue <- as.factor(hemo_MEdarkslateblue[!is.na(hemo_MEdarkslateblue)])
+hemo_MElightcyan <- as.factor(hemo_MElightcyan[!is.na(hemo_MElightcyan)])
+hemo_MElightpink3 <- as.factor(hemo_MElightpink3[!is.na(hemo_MElightpink3)])
+hemo_MEmediumpurple3 <- as.factor(hemo_MEmediumpurple3[!is.na(hemo_MEmediumpurple3)])
+hemo_MEnavajowhite2 <- as.factor(hemo_MEnavajowhite2[!is.na(hemo_MEnavajowhite2)])
+hemo_MEorangered4 <- as.factor(hemo_MEorangered4[!is.na(hemo_MEorangered4)])
+hemo_MEpaleturquoise <- as.factor(hemo_MEpaleturquoise[!is.na(hemo_MEpaleturquoise)])
+hemo_MEplum <- as.factor(hemo_MEplum[!is.na(hemo_MEplum)])
+hemo_MEred <- as.factor(hemo_MEred[!is.na(hemo_MEred)])
+hemo_MEyellow <- as.factor(hemo_MEyellow[!is.na(hemo_MEyellow)])
 
-ZVAD_pink3_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="pink3"]  
-ZVAD_pink3_all_genes <- as.factor(ZVAD_pink3_all_genes[!is.na(ZVAD_pink3_all_genes)])
+hemo_MEantiquewhite2_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEantiquewhite2))
+hemo_MEblack_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEblack))
+hemo_MEblue_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEblue))
+hemo_MEcyan_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEcyan))
+hemo_MEdarkgreen_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEdarkgreen))
+hemo_MEdarkorange_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEdarkorange))
+hemo_MEdarkred_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEdarkred))
+hemo_MEdarkseagreen4_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEdarkseagreen4))
+hemo_MEdarkslateblue_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEdarkslateblue))
+hemo_MElightcyan_factor <- factor(as.integer(hemo_geneNames %in% hemo_MElightcyan))
+hemo_MElightpink3_factor <- factor(as.integer(hemo_geneNames %in% hemo_MElightpink3))
+hemo_MEmediumpurple3_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEmediumpurple3))
+hemo_MEnavajowhite2_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEnavajowhite2))
+hemo_MEorangered4_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEorangered4))
+hemo_MEpaleturquoise_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEpaleturquoise))
+hemo_MEplum_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEplum))
+hemo_MEred_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEred))
+hemo_MEyellow_factor <- factor(as.integer(hemo_geneNames %in% hemo_MEyellow))
 
-ZVAD_navajowhite2_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="navajowhite2"]  
-ZVAD_navajowhite2_all_genes <- ZVAD_navajowhite2_all_genes[!is.na(ZVAD_navajowhite2_all_genes)]
-
-GDC_steelblue_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_steelblue_all_genes))
-GDC_darkorange2_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_darkorange2_all_genes))
-GDC_lightblue4_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_lightblue4_all_genes))
-ZVAD_lightpink3_all_genes_factor <- factor(as.integer(Perk_geneNames %in% ZVAD_lightpink3_all_genes))
-ZVAD_pink3_all_genes_factor <- factor(as.integer(Perk_geneNames %in% ZVAD_pink3_all_genes))
-ZVAD_navajowhite2_all_genes_factor <- factor(as.integer(Perk_geneNames %in% ZVAD_navajowhite2_all_genes))
-
-names(GDC_steelblue_all_genes_factor) <- Perk_geneNames
-names(GDC_darkorange2_all_genes_factor) <- Perk_geneNames
-names(GDC_lightblue4_all_genes_factor) <- Perk_geneNames
-names(ZVAD_lightpink3_all_genes_factor) <- Perk_geneNames
-names(ZVAD_pink3_all_genes_factor) <- Perk_geneNames
-names(ZVAD_navajowhite2_all_genes_factor) <- Perk_geneNames
+names(hemo_MEantiquewhite2_factor) <- hemo_geneNames
+names(hemo_MEblack_factor) <- hemo_geneNames
+names(hemo_MEblue_factor) <- hemo_geneNames
+names(hemo_MEcyan_factor) <- hemo_geneNames
+names(hemo_MEdarkgreen_factor) <- hemo_geneNames
+names(hemo_MEdarkorange_factor) <- hemo_geneNames
+names(hemo_MEdarkred_factor) <- hemo_geneNames
+names(hemo_MEdarkseagreen4_factor) <- hemo_geneNames
+names(hemo_MEdarkslateblue_factor) <- hemo_geneNames
+names(hemo_MElightcyan_factor) <- hemo_geneNames
+names(hemo_MElightpink3_factor) <- hemo_geneNames
+names(hemo_MEmediumpurple3_factor) <- hemo_geneNames
+names(hemo_MEnavajowhite2_factor) <- hemo_geneNames
+names(hemo_MEorangered4_factor) <- hemo_geneNames
+names(hemo_MEpaleturquoise_factor) <- hemo_geneNames
+names(hemo_MEplum_factor) <- hemo_geneNames
+names(hemo_MEred_factor) <- hemo_geneNames
+names(hemo_MEyellow_factor) <- hemo_geneNames
 
 ### Make topGO data object 
-GDC_steelblue_GOdata <- new("topGOdata", description = "GDC_steelblue Gene Enrichment", 
-                            # I want to test MF
-                            ontology = "MF",
-                            # define here the genes of interest
-                            allGenes = GDC_steelblue_all_genes_factor,
-                            nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
-
-GDC_darkorange2_GOdata <- new("topGOdata", description = "GDC_darkorange2 Gene Enrichment", 
-                              # I want to test MF
-                              ontology = "MF",
-                              # define here the genes of interest
-                              allGenes = GDC_darkorange2_all_genes_factor,
-                              nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
-
-GDC_lightblue4_GOdata <- new("topGOdata", description = "GDC_lightblue4 Gene Enrichment", 
-                             # I want to test MF
-                             ontology = "MF",
-                             # define here the genes of interest
-                             allGenes = GDC_lightblue4_all_genes_factor,
-                             nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
-
-ZVAD_lightpink3_GOdata <- new("topGOdata", description = "ZVAD_lightpink3 Gene Enrichment", 
-                              # I want to test MF
-                              ontology = "MF",
-                              # define here the genes of interest
-                              allGenes = ZVAD_lightpink3_all_genes_factor,
-                              nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
-
-ZVAD_pink3_GOdata <- new("topGOdata", description = "ZVAD_pink3 Gene Enrichment", 
-                         # I want to test MF
-                         ontology = "MF",
-                         # define here the genes of interest
-                         allGenes = ZVAD_pink3_all_genes_factor,
-                         nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
-
-ZVAD_navajowhite2_GOdata <- new("topGOdata", description = "ZVAD_navajowhite2 Gene Enrichment", 
-                                # I want to test MF
+hemo_MEantiquewhite2_GOdata <- new("topGOdata", description = "gene enrichment",
+                                   ontology = "MF",
+                                   allGenes = hemo_MEantiquewhite2_factor,
+                                   nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEblack_GOdata <- new("topGOdata", description = "gene enrichment",
+                           ontology = "MF",
+                           allGenes = hemo_MEblack_factor,
+                           nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEblue_GOdata <- new("topGOdata", description = "gene enrichment",
+                          ontology = "MF",
+                          allGenes = hemo_MEblue_factor,
+                          nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEcyan_GOdata <- new("topGOdata", description = "gene enrichment",
+                          ontology = "MF",
+                          allGenes = hemo_MEcyan_factor,
+                          nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEdarkgreen_GOdata <- new("topGOdata", description ="gene enrichment",
+                               ontology = "MF",
+                               allGenes = hemo_MEdarkgreen_factor,
+                               nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEdarkorange_GOdata <- new("topGOdata", description ="gene enrichment",
                                 ontology = "MF",
-                                # define here the genes of interest
-                                allGenes = ZVAD_navajowhite2_all_genes_factor,
-                                nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+                                allGenes = hemo_MEdarkorange_factor,
+                                nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEdarkred_GOdata <- new("topGOdata", description ="gene enrichment",
+                             ontology = "MF",
+                             allGenes = hemo_MEdarkred_factor,
+                             nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEdarkseagreen4_GOdata <- new("topGOdata", description ="gene enrichment",
+                                   ontology = "MF",
+                                   allGenes = hemo_MEdarkseagreen4_factor,
+                                   nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEdarkslateblue_GOdata <- new("topGOdata", description ="gene enrichment",
+                                   ontology = "MF",
+                                   allGenes = hemo_MEdarkslateblue_factor,
+                                   nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MElightcyan_GOdata <- new("topGOdata", description ="gene enrichment",
+                               ontology = "MF",
+                               allGenes = hemo_MElightcyan_factor,
+                               nodeSize = 5, annot = annFUN.gene2GO, gene2GO =GO_universe_rna_found_geneID2GO_mapping )
+hemo_MElightpink3_GOdata <- new("topGOdata", description ="gene enrichment",
+                                ontology = "MF",
+                                allGenes = hemo_MElightpink3_factor,
+                                nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEmediumpurple3_GOdata <- new("topGOdata", description ="gene enrichment",
+                                   ontology = "MF",
+                                   allGenes = hemo_MEmediumpurple3_factor,
+                                   nodeSize = 5, annot = annFUN.gene2GO, gene2GO =GO_universe_rna_found_geneID2GO_mapping )
+hemo_MEnavajowhite2_GOdata <- new("topGOdata", description= "gene enrichment",
+                                  ontology = "MF",
+                                  allGenes = hemo_MEnavajowhite2_factor,
+                                  nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEorangered4_GOdata <- new("topGOdata", description ="gene enrichment",
+                                ontology = "MF",
+                                allGenes = hemo_MEorangered4_factor,
+                                nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEpaleturquoise_GOdata <- new("topGOdata", description ="gene enrichment",
+                                   ontology = "MF",
+                                   allGenes = hemo_MEpaleturquoise_factor,
+                                   nodeSize = 5, annot = annFUN.gene2GO, gene2GO =GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEplum_GOdata <- new("topGOdata", description ="gene enrichment",
+                                 ontology = "MF",
+                                 allGenes = hemo_MEplum_factor,
+                                 nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEred_GOdata <- new("topGOdata", description = "gene enrichment",
+                                ontology = "MF",
+                                allGenes = hemo_MEred_factor,
+                                nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+hemo_MEyellow_GOdata <- new("topGOdata", description ="gene enrichment",
+                            ontology = "MF",
+                            allGenes = hemo_MEyellow_factor,
+                            nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 
 #nodeSize=used to prune the GO hierarchy from the terms which have less than 1 annotated genes
 #annFUN.gene2GO = this function is used when the annotations are provided as a gene-to-GOs mapping.
 
 ### Perform Encrichment tests 
-GDC_steelblue_GOdata_Fisher_Weight <- runTest(GDC_steelblue_GOdata, algorithm = "weight01", statistic = "fisher")
-GDC_darkorange2_GOdata_Fisher_Weight <- runTest(GDC_darkorange2_GOdata, algorithm = "weight01", statistic = "fisher")
-GDC_lightblue4_GOdata_Fisher_Weight <- runTest(GDC_lightblue4_GOdata, algorithm = "weight01", statistic = "fisher")
-ZVAD_lightpink3_GOdata_Fisher_Weight <- runTest(ZVAD_lightpink3_GOdata, algorithm = "weight01", statistic = "fisher")
-ZVAD_pink3_GOdata_Fisher_Weight <- runTest(ZVAD_pink3_GOdata, algorithm = "weight01", statistic = "fisher")
-ZVAD_navajowhite2_GOdata_Fisher_Weight <- runTest(ZVAD_navajowhite2_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEantiquewhite2_GOdata_Fisher_Weight <- runTest(hemo_MEantiquewhite2_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEblack_GOdata_Fisher_Weight <- runTest(hemo_MEblack_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEblue_GOdata_Fisher_Weight <- runTest(hemo_MEblue_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEcyan_GOdata_Fisher_Weight <- runTest(hemo_MEcyan_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEdarkgreen_GOdata_Fisher_Weight <- runTest(hemo_MEdarkgreen_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEdarkorange_GOdata_Fisher_Weight <- runTest(hemo_MEdarkorange_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEdarkred_GOdata_Fisher_Weight <- runTest(hemo_MEdarkred_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEdarkseagreen4_GOdata_Fisher_Weight <- runTest(hemo_MEdarkseagreen4_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEdarkslateblue_GOdata_Fisher_Weight <- runTest(hemo_MEdarkslateblue_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MElightcyan_GOdata_Fisher_Weight <- runTest(hemo_MElightcyan_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MElightpink3_GOdata_Fisher_Weight <- runTest(hemo_MElightpink3_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEmediumpurple3_GOdata_Fisher_Weight <- runTest(hemo_MEmediumpurple3_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEnavajowhite2_GOdata_Fisher_Weight <- runTest(hemo_MEnavajowhite2_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEorangered4_GOdata_Fisher_Weight <- runTest(hemo_MEorangered4_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEpaleturquoise_GOdata_Fisher_Weight <- runTest(hemo_MEpaleturquoise_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEplum_GOdata_Fisher_Weight <- runTest(hemo_MEplum_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEred_GOdata_Fisher_Weight <- runTest(hemo_MEred_GOdata, algorithm = "weight01", statistic = "fisher")
+hemo_MEyellow_GOdata_Fisher_Weight <- runTest(hemo_MEyellow_GOdata, algorithm = "weight01", statistic = "fisher")
 
 ## Analyze enrichment test results 
 # see how many results we get where weight01 gives a P-value <= 0.05
-GDC_steelblue_GOdata_summary <- summary(attributes(GDC_steelblue_GOdata_Fisher_Weight)$score <= 0.05) # 9 sig
-GDC_darkorange2_GOdata_summary <- summary(attributes(GDC_darkorange2_GOdata_Fisher_Weight)$score <= 0.05) # 8 sig
-GDC_lightblue4_GOdata_summary <- summary(attributes(GDC_lightblue4_GOdata_Fisher_Weight)$score <= 0.05) # 4 sig
-ZVAD_lightpink3_GOdata_summary <- summary(attributes(ZVAD_lightpink3_GOdata_Fisher_Weight)$score <= 0.05) # 9 sig
-ZVAD_pink3_GOdata_summary <- summary(attributes(ZVAD_pink3_GOdata_Fisher_Weight)$score <= 0.05) # 3 sig
-ZVAD_navajowhite2_GOdata_summary <- summary(attributes(ZVAD_navajowhite2_GOdata_Fisher_Weight)$score <= 0.05) # 11
+hemo_MEantiquewhite2_GOdata_summary <- summary(attributes(hemo_MEantiquewhite2_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEblack_GOdata_summary <- summary(attributes(hemo_MEblack_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEblue_GOdata_summary <- summary(attributes(hemo_MEblue_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEcyan_GOdata_summary <- summary(attributes(hemo_MEcyan_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEdarkgreen_GOdata_summary <- summary(attributes(hemo_MEdarkgreen_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEdarkorange_GOdata_summary <- summary(attributes(hemo_MEdarkorange_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEdarkred_GOdata_summary <- summary(attributes(hemo_MEdarkred_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEdarkseagreen4_GOdata_summary <- summary(attributes(hemo_MEdarkseagreen4_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEdarkslateblue_GOdata_summary <- summary(attributes(hemo_MEdarkslateblue_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MElightcyan_GOdata_summary <- summary(attributes(hemo_MElightcyan_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MElightpink3_GOdata_summary <- summary(attributes(hemo_MElightpink3_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEmediumpurple3_GOdata_summary <- summary(attributes(hemo_MEmediumpurple3_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEnavajowhite2_GOdata_summary <- summary(attributes(hemo_MEnavajowhite2_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEorangered4_GOdata_summary <- summary(attributes(hemo_MEorangered4_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEpaleturquoise_GOdata_summary <- summary(attributes(hemo_MEpaleturquoise_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEplum_GOdata_summary <- summary(attributes(hemo_MEplum_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEred_GOdata_summary <- summary(attributes(hemo_MEred_GOdata_Fisher_Weight)$score <= 0.05)
+hemo_MEyellow_GOdata_summary <- summary(attributes(hemo_MEyellow_GOdata_Fisher_Weight)$score <= 0.05)
 
 #print out the top results, though only GDC_lightblue4 is sig
-GDC_steelblue_GOdata_Res <- GenTable(GDC_steelblue_GOdata, topgoFisher = GDC_steelblue_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
-GDC_darkorange2_GOdata_Res <- GenTable(GDC_darkorange2_GOdata, topgoFisher = GDC_darkorange2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
-GDC_lightblue4_GOdata_Res <- GenTable(GDC_lightblue4_GOdata, topgoFisher = GDC_lightblue4_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
-
-ZVAD_lightpink3_GOdata_Res <- GenTable(ZVAD_lightpink3_GOdata, topgoFisher = ZVAD_lightpink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
-ZVAD_pink3_GOdata_Res <- GenTable(ZVAD_pink3_GOdata, topgoFisher = ZVAD_pink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
-ZVAD_navajowhite2_GOdata_Res <- GenTable(ZVAD_navajowhite2_GOdata, topgoFisher = ZVAD_navajowhite2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
+hemo_MEantiquewhite2_GOdata_Res <- GenTable(hemo_MEantiquewhite2_GOdata, topgoFisher = hemo_MEantiquewhite2_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEblack_GOdata_Res <- GenTable(hemo_MEblack_GOdata, topgoFisher = hemo_MEblack_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEblue_GOdata_Res <- GenTable(hemo_MEblue_GOdata, topgoFisher = hemo_MEblue_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEcyan_GOdata_Res <- GenTable(hemo_MEcyan_GOdata, topgoFisher = hemo_MEcyan_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEdarkgreen_GOdata_Res <- GenTable(hemo_MEdarkgreen_GOdata, topgoFisher = hemo_MEdarkgreen_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEdarkorange_GOdata_Res <- GenTable(hemo_MEdarkorange_GOdata, topgoFisher = hemo_MEdarkorange_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEdarkred_GOdata_Res <- GenTable(hemo_MEdarkred_GOdata, topgoFisher = hemo_MEdarkred_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEdarkseagreen4_GOdata_Res <- GenTable(hemo_MEdarkseagreen4_GOdata, topgoFisher = hemo_MEdarkseagreen4_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEdarkslateblue_GOdata_Res <- GenTable(hemo_MEdarkslateblue_GOdata, topgoFisher = hemo_MEdarkslateblue_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MElightcyan_GOdata_Res <- GenTable(hemo_MElightcyan_GOdata, topgoFisher = hemo_MElightcyan_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MElightpink3_GOdata_Res <- GenTable(hemo_MElightpink3_GOdata, topgoFisher = hemo_MElightpink3_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEmediumpurple3_GOdata_Res <- GenTable(hemo_MEmediumpurple3_GOdata, topgoFisher = hemo_MEmediumpurple3_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEnavajowhite2_GOdata_Res <- GenTable(hemo_MEnavajowhite2_GOdata, topgoFisher = hemo_MEnavajowhite2_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEorangered4_GOdata_Res <- GenTable(hemo_MEorangered4_GOdata, topgoFisher = hemo_MEorangered4_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEpaleturquoise_GOdata_Res <- GenTable(hemo_MEpaleturquoise_GOdata, topgoFisher = hemo_MEpaleturquoise_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEplum_GOdata_Res <- GenTable(hemo_MEplum_GOdata, topgoFisher = hemo_MEplum_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEred_GOdata_Res <- GenTable(hemo_MEred_GOdata, topgoFisher = hemo_MEred_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
+hemo_MEyellow_GOdata_Res <- GenTable(hemo_MEyellow_GOdata, topgoFisher = hemo_MEyellow_GOdata_Fisher_Weight, orderBy = "topgoFisher",topNodes = 20)
 
 #### Hemocyte top interesting modules GO visualization ####
 
 ### Dotplot of significantly enriched GO terms from hub modules
-# GDC_lightblue4, ZVAD navajowhite2 and ZVAD pink 3
+hemo_MEantiquewhite2_GOdata_Res$group <- "antiquewhite2"
+hemo_MEblack_GOdata_Res$group <- "black"
+hemo_MEblue_GOdata_Res$group <- "blue"
+hemo_MEcyan_GOdata_Res$group <- "cyan"
+hemo_MEdarkgreen_GOdata_Res$group <- "darkgreen"
+hemo_MEdarkorange_GOdata_Res$group <- "darkorange"
+hemo_MEdarkred_GOdata_Res$group <- "darkred"
+hemo_MEdarkseagreen4_GOdata_Res$group <- "darkseagreen4"
+hemo_MEdarkslateblue_GOdata_Res$group <- "darkslateblue"
+hemo_MElightcyan_GOdata_Res$group <- "lightcyan"
+hemo_MElightpink3_GOdata_Res$group <- "lightpink3"
+hemo_MEmediumpurple3_GOdata_Res$group <- "mediumpurple3"
+hemo_MEnavajowhite2_GOdata_Res$group <- "navajowhite2"
+hemo_MEorangered4_GOdata_Res$group <- "orangered4"
+hemo_MEpaleturquoise_GOdata_Res$group <- "paleturquoise"
+hemo_MEplum_GOdata_Res$group <- "plum"
+hemo_MEred_GOdata_Res$group <- "red"
+hemo_MEyellow_GOdata_Res$group <- "yellow"
 
-FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res$group <-"pink3"
-FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res$group <-"navajowhite2"
-FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res$group <-"lightblue4"
-FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res$treat <-"ZVAD-fmk"
-FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res$treat <-"ZVAD-fmk"
-FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res$treat <-"GDC-0152"
+hemo_MEred_GOdata_Res$type <- "Pmar_sig_all_same"
+hemo_MElightcyan_GOdata_Res$type <- "Pmar_sig_all_same"
+hemo_MEantiquewhite2_GOdata_Res$type <- "Pmar_sig_all_same"
+hemo_MEyellow_GOdata_Res$type <- "Pmar_sig_all_diff"
+hemo_MEdarkseagreen4_GOdata_Res$type <- "Pmar_sig_all_diff"
 
-Pmar_GO_hub_dotplot <- rbind(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3_GOdata_Res,
-                             FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res,
-                             FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res) %>% filter(topgoFisher <=0.05)
+hemo_MEnavajowhite2_GOdata_Res$type <- "GDC_and_ZVAD_diff"
+hemo_MEplum_GOdata_Res$type <- "GDC_and_ZVAD_down"
+hemo_MEcyan_GOdata_Res$type <- "GDC_and_ZVAD_down"
+hemo_MEmediumpurple3_GOdata_Res$type <- "GDC_and_ZVAD_down"
 
-# edit GO terms where the rest of the term name is cutoff 
-Pmar_GO_hub_dotplot <- Pmar_GO_hub_dotplot %>% mutate(Term = case_when(
-  GO.ID == "GO:0016646" ~ "oxidoreductase activity, acting on the CH-NH group of donors, NAD or NADP as acceptor",
-  GO.ID == "GO:0046933" ~ "proton-transporting ATP synthase activity, rotational mechanism",
-  GO.ID == "GO:0016684" ~ "oxidoreductase activity, acting on peroxide as acceptor",
-  GO.ID == "GO:0009678" ~ "pyrophosphate hydrolysis-driven proton transmembrane transporter activity",
-  GO.ID == "GO:0004198" ~ "calcium-dependent cysteine-type endopeptidase activity",
-  TRUE ~ Term
-))
+hemo_MEpaleturquoise_GOdata_Res$type <- "GDC_only"
+hemo_MEdarkorange_GOdata_Res$type <- "GDC_only"
+hemo_MEdarkgreen_GOdata_Res$type <- "GDC_only"
+hemo_MEdarkred_GOdata_Res$type <- "GDC_only"
+hemo_MElightpink3_GOdata_Res$type <- "GDC_only"
+hemo_MEblack_GOdata_Res$type <- "GDC_only"
 
-Pmar_GO_hub_dotplot_plot <- ggplot(Pmar_GO_hub_dotplot, aes(x = group, y = Term )) +
+hemo_MEblue_GOdata_Res$type <- "control_Pmar"
+hemo_MEdarkslateblue_GOdata_Res$type <- "ZVAD_only"
+hemo_MEorangered4_GOdata_Res$type <- "ZVAD_only"
+
+Hemo_GO_all_dotplot <- rbind(hemo_MEantiquewhite2_GOdata_Res,
+                             hemo_MEblack_GOdata_Res ,
+                             hemo_MEblue_GOdata_Res,
+                             hemo_MEcyan_GOdata_Res,
+                             hemo_MEdarkgreen_GOdata_Res,
+                             hemo_MEdarkorange_GOdata_Res,
+                             hemo_MEdarkred_GOdata_Res,
+                             hemo_MEdarkseagreen4_GOdata_Res,
+                             hemo_MEdarkslateblue_GOdata_Res,
+                             hemo_MElightcyan_GOdata_Res,
+                             hemo_MElightpink3_GOdata_Res,
+                             hemo_MEmediumpurple3_GOdata_Res,
+                             hemo_MEnavajowhite2_GOdata_Res,
+                             hemo_MEorangered4_GOdata_Res,
+                             hemo_MEpaleturquoise_GOdata_Res,
+                             hemo_MEplum_GOdata_Res,
+                             hemo_MEred_GOdata_Res,
+                             hemo_MEyellow_GOdata_Res) %>% filter(topgoFisher <=0.05 & Significant >5) 
+
+Hemo_GO_all_dotplot_plot <- ggplot(Hemo_GO_all_dotplot, aes(x = group, y = Term )) +
   geom_point(aes(size = Significant, color = as.numeric(topgoFisher))) + 
   scale_size_continuous(range = c(4,10)) +
   scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
-  facet_grid(.~treat, scales = "free") + 
+  facet_grid(.~type, scales = "free") + 
   theme_minimal() +
-  labs(x = "Module Name", y = "GO Term", title = "GO Enrichment of Intramodular Hub Genes") + 
+  labs(x = "Module Name", y = "GO Term", title = "GO Enrichment of Significant Modules") + 
   theme(panel.border = element_rect(color = "black", fill = "NA"),
         axis.text.x = element_text(size = 14),
         axis.text.y = element_text(size = 14),
@@ -1311,8 +1462,36 @@ Pmar_GO_hub_dotplot_plot <- ggplot(Pmar_GO_hub_dotplot, aes(x = group, y = Term 
         strip.text.x = element_text(size = 16, face = "bold"),
         title = element_text(size = 16))
 
-ggsave(Pmar_GO_hub_dotplot_plot, device = "tiff", path = "./FIGURES/", 
-       filename = "Pmar_GO_hub_dotplot_plot.tiff", width = 15, height = 10)
+ggsave(Hemo_GO_all_dotplot_plot, device = "tiff", path = "./FIGURES/", 
+       filename = "Hemo_GO_all_dotplot_plot.tiff", width = 70, height = 30, limitsize = FALSE)
+
+### Plot as heatmap to help show overlaps
+Hemo_GO_all_dotplot_heatmap <- Hemo_GO_all_dotplot %>% mutate(GO_term = paste(GO.ID, Term, sep = "_")) %>% 
+  dplyr::select(GO_term, Significant, group) %>% spread(group, Significant) %>% column_to_rownames(., var= "GO_term")  %>%
+  mutate_if(is.numeric , replace_na, replace = 0)
+Hemo_GO_all_dotplot_heatmap <- as.matrix(Hemo_GO_all_dotplot_heatmap)
+
+hemo_labels =c("antiquewhite2", "black"    ,     "blue"       ,   "cyan"         , "darkgreen"   ,  "darkorange" ,   "darkred"      , "darkseagreen4",
+                "darkslateblue", "lightcyan",     "lightpink3" ,   "mediumpurple3", "navajowhite2",  "orangered4" ,   "paleturquoise", "plum"         ,
+                "red"          , "yellow")
+# create named vector to hold column names
+hemo_column_labels = structure(paste0(hemo_labels), names = paste0(colnames(Hemo_GO_all_dotplot_heatmap )))
+
+pdf("./FIGURES/hemo_GO_all_heatmap.pdf", width = 12, height = 10)
+hemo_GO_all_heatmap <- ComplexHeatmap::Heatmap(Hemo_GO_all_dotplot_heatmap, border = TRUE, 
+                                         column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_title = "GO Term", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_dend_width = unit(2, "cm"),
+                                         column_labels = hemo_column_labels[colnames(Hemo_GO_all_dotplot_heatmap)],
+                                         # apply split by k-meams clustering to highlight groups
+                                         row_km = 3, column_km = 2, row_names_gp = gpar(fontsize = 8),
+                                         column_names_gp = gpar(fontsize = 10),
+                                         heatmap_legend_param = list(title = "Number Significant"))
+ComplexHeatmap::draw(hemo_GO_all_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+dev.off()
+
+
+
 
 ### View interesting genes associated with particular terms
 
@@ -1655,7 +1834,7 @@ ZVAD_pink3_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="pi
 ZVAD_pink3_all_genes <- as.factor(ZVAD_pink3_all_genes[!is.na(ZVAD_pink3_all_genes)])
 
 ZVAD_navajowhite2_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="navajowhite2"]  
-ZVAD_navajowhite2_all_genes <- ZVAD_navajowhite2_all_genes[!is.na(ZVAD_navajowhite2_all_genes)]
+ZVAD_navajowhite2_all_genes <- as.factor(ZVAD_navajowhite2_all_genes[!is.na(ZVAD_navajowhite2_all_genes)])
 
 GDC_steelblue_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_steelblue_all_genes))
 GDC_darkorange2_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_darkorange2_all_genes))
