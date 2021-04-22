@@ -1033,8 +1033,6 @@ labeledHeatmap(Matrix = hemo_full_moduleTraitCor_sig_apop,
                main = paste("Hemocyte Module-Challenge Relationships"))
 # have to save manually...weird!
 
-
-
 ### Repeat finding of intramodular hub genes, but for P. marinus samples now 
 # annotate intramodular hub genes in each module
 # Use function to lookup all apop names for each significant module
@@ -1467,8 +1465,8 @@ ggsave(Hemo_GO_all_dotplot_plot, device = "tiff", path = "./FIGURES/",
 
 ### Plot as heatmap to help show overlaps
 Hemo_GO_all_dotplot_heatmap <- Hemo_GO_all_dotplot %>% mutate(GO_term = paste(GO.ID, Term, sep = "_")) %>% 
-  dplyr::select(GO_term, Significant, group) %>% spread(group, Significant) %>% column_to_rownames(., var= "GO_term")  %>%
-  mutate_if(is.numeric , replace_na, replace = 0)
+  dplyr::select(GO_term, Significant, group) %>% spread(group, Significant) %>%  mutate_if(is.numeric , replace_na, replace = 0) %>% 
+  column_to_rownames(., var= "GO_term") 
 Hemo_GO_all_dotplot_heatmap <- as.matrix(Hemo_GO_all_dotplot_heatmap)
 
 hemo_labels =c("antiquewhite2", "black"    ,     "blue"       ,   "cyan"         , "darkgreen"   ,  "darkorange" ,   "darkred"      , "darkseagreen4",
@@ -1477,75 +1475,68 @@ hemo_labels =c("antiquewhite2", "black"    ,     "blue"       ,   "cyan"        
 # create named vector to hold column names
 hemo_column_labels = structure(paste0(hemo_labels), names = paste0(colnames(Hemo_GO_all_dotplot_heatmap )))
 
+# set custom colors
+library(circlize)
+col_fun = colorRamp2(c(0, 50,100,400), c("white", "red", "orange", "yellow"))
+
 pdf("./FIGURES/hemo_GO_all_heatmap.pdf", width = 12, height = 10)
 hemo_GO_all_heatmap <- ComplexHeatmap::Heatmap(Hemo_GO_all_dotplot_heatmap, border = TRUE, 
                                          column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
                                          row_title = "GO Term", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
                                          row_dend_width = unit(2, "cm"),
+                                         row_labels = row.names(Hemo_GO_all_dotplot_heatmap),
                                          column_labels = hemo_column_labels[colnames(Hemo_GO_all_dotplot_heatmap)],
                                          # apply split by k-meams clustering to highlight groups
-                                         row_km = 3, column_km = 2, row_names_gp = gpar(fontsize = 8),
+                                         row_km = 3, column_km = 4, row_names_gp = gpar(fontsize = 8),
                                          column_names_gp = gpar(fontsize = 10),
-                                         heatmap_legend_param = list(title = "Number Significant"))
+                                         heatmap_legend_param = list(title = "Number Significant"),
+                                         col=col_fun,
+                                         rect_gp = gpar(col = "black", lwd = 1))
 ComplexHeatmap::draw(hemo_GO_all_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
 dev.off()
 
+## Heatmap with just the interesting modules identified in my powerpoint
 
+Hemo_GO_all_dotplot_subset <- rbind(
+  hemo_MEnavajowhite2_GOdata_Res,
+  hemo_MEblack_GOdata_Res ,
+  hemo_MEdarkred_GOdata_Res,
+  hemo_MElightpink3_GOdata_Res,
+  hemo_MEdarkgreen_GOdata_Res,
+  hemo_MEblue_GOdata_Res,
+  hemo_MEdarkseagreen4_GOdata_Res,
+  hemo_MEdarkslateblue_GOdata_Res,
+  hemo_MEorangered4_GOdata_Res) %>% filter(topgoFisher <=0.05 & Significant >1) 
 
+### Plot as heatmap to help show overlaps
+Hemo_GO_all_dotplot_subset_heatmap <- Hemo_GO_all_dotplot_subset %>% mutate(GO_term = paste(GO.ID, Term, sep = "_")) %>% 
+  dplyr::select(GO_term, Significant, group) %>% spread(group, Significant) %>%  mutate_if(is.numeric , replace_na, replace = 0) %>% 
+  column_to_rownames(., var= "GO_term") 
+Hemo_GO_all_dotplot_subset_heatmap <- as.matrix(Hemo_GO_all_dotplot_subset_heatmap)
 
-### View interesting genes associated with particular terms
+hemo_labels =c("black","blue","darkgreen","darkred","darkseagreen4", "darkslateblue", "lightpink3","orangered4" )
+# create named vector to hold column names
+hemo_column_labels = structure(paste0(hemo_labels), names = paste0(colnames(Hemo_GO_all_dotplot_subset_heatmap )))
 
-# GDC_lightblue4
-FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res_sig_terms <- FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res %>% 
-  filter(topgoFisher <=0.05) %>% dplyr::select(GO.ID, Term) %>% dplyr::rename(Ontology_term = GO.ID)
+# set custom colors
+library(circlize)
+col_fun = colorRamp2(c(0, 50,100,400), c("white", "red", "orange", "yellow"))
 
-FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO_enriched <- left_join(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res_sig_terms, 
-                                                                       FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO) %>% left_join(., dplyr::select(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4, -Ontology_term))
-# the terms in this list are not the ones that I found interesting! 
-# I think this has to do with bias in GO term identification?
-
-
-### GO figure from enrichment analysis of all module genes
-GDC_steelblue_GOdata_Res$group <- "steelblue"
-GDC_darkorange2_GOdata_Res$group <- "darkorange2"
-GDC_lightblue4_GOdata_Res$group <- "lightblue4"
-ZVAD_lightpink3_GOdata_Res$group <- "lightpink3"
-ZVAD_pink3_GOdata_Res$group <-"pink3"
-ZVAD_navajowhite2_GOdata_Res $group <-"navajowhite2"
-
-GDC_steelblue_GOdata_Res$treat <- "GDC-0152"
-GDC_darkorange2_GOdata_Res$treat <- "GDC-0152"
-GDC_lightblue4_GOdata_Res$treat <- "GDC-0152"
-ZVAD_lightpink3_GOdata_Res$treat <- "ZVAD-fmk"
-ZVAD_pink3_GOdata_Res$treat <-"ZVAD-fmk"
-ZVAD_navajowhite2_GOdata_Res $treat <-"ZVAD-fmk"
-
-Pmar_GO_all_dotplot <- rbind(GDC_steelblue_GOdata_Res,
-                             GDC_darkorange2_GOdata_Res,
-                             GDC_lightblue4_GOdata_Res,
-                             ZVAD_lightpink3_GOdata_Res,
-                             ZVAD_pink3_GOdata_Res,
-                             ZVAD_navajowhite2_GOdata_Res) %>% filter(topgoFisher <=0.05)
-
-# edit GO terms where the rest of the term name is cutoff 
-
-Pmar_GO_all_dotplot_plot <- ggplot(Pmar_GO_all_dotplot, aes(x = group, y = Term )) +
-  geom_point(aes(size = Significant, color = as.numeric(topgoFisher))) + 
-  scale_size_continuous(range = c(4,10)) +
-  scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
-  facet_grid(.~treat, scales = "free") + 
-  theme_minimal() +
-  labs(x = "Module Name", y = "GO Term", title = "GO Enrichment of Module Genes") + 
-  theme(panel.border = element_rect(color = "black", fill = "NA"),
-        axis.text.x = element_text(size = 14),
-        axis.text.y = element_text(size = 14),
-        axis.title = element_text(size = 16, face = "bold"),
-        strip.text.x = element_text(size = 16, face = "bold"),
-        title = element_text(size = 16))
-
-ggsave(Pmar_GO_all_dotplot_plot, device = "tiff", path = "./FIGURES/", 
-       filename = "Pmar_GO_all_dotplot_plot.tiff", width = 15, height = 10)
-
+pdf("./FIGURES/hemo_GO_all_heatmap_subset.pdf", width = 12, height = 10)
+hemo_GO_all_heatmap_subset <- ComplexHeatmap::Heatmap(Hemo_GO_all_dotplot_subset_heatmap, border = TRUE, 
+                                               column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                               row_title = "GO Term", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                               row_dend_width = unit(2, "cm"),
+                                               row_labels = row.names(Hemo_GO_all_dotplot_subset_heatmap),
+                                               column_labels = hemo_column_labels[colnames(Hemo_GO_all_dotplot_subset_heatmap)],
+                                               # apply split by k-meams clustering to highlight groups
+                                               row_km = 3, column_km = 4, row_names_gp = gpar(fontsize = 8),
+                                               column_names_gp = gpar(fontsize = 10),
+                                               heatmap_legend_param = list(title = "Number Significant"),
+                                               col=col_fun,
+                                               rect_gp = gpar(col = "black", lwd = 1))
+ComplexHeatmap::draw(hemo_GO_all_heatmap_subset, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+dev.off()
 
 
 #### Pmar intramodular hub gene analysis for interesting modules ####
@@ -2084,7 +2075,44 @@ hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare <-
 
 # find those shared between all 
 hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare_shared <- drop_na(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare)
-# 12 shared between both...the arcine transform does make a difference! Correlation values are very similar for both, in general slightly lower correlation for arcsine 
+# 12 shared between both...the arcine transform does not make a difference! Correlation values are very similar for both, in general slightly lower correlation for arcsine 
+
+## Plot only those modules with significant apoptosis members as before
+## Heatmap of only the significantly correlated modules that have apoptosis hub genes
+# Graph and color code each the strength of association (correlation) of module eigengenes and trait
+
+# subset hemo_full_moduleTraitCor, hemo_full_moduleTraitPvalue, hemo_full_MEs for only those modules significant in either challenge
+hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_apop_moduleTraitCor[rownames(hemo_full_apop_moduleTraitCor) %in% FilterGenes_comb_apop_count_mod_names,]
+hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_moduleTraitCor_sig_apop_pheno[,c(1:3,7)]
+hemo_full_moduleTraitPvalue_sig_apop_pheno <- hemo_full_apop_moduleTraitPvalue[rownames(hemo_full_apop_moduleTraitPvalue) %in% FilterGenes_comb_apop_count_mod_names,]
+hemo_full_moduleTraitPvalue_sig_apop_pheno <- hemo_full_moduleTraitPvalue_sig_apop_pheno[,c(1:3,7)]
+hemo_full_MEs_sig_apop_pheno <- hemo_full_MEs[,colnames(hemo_full_MEs) %in% FilterGenes_comb_apop_count_mod_names]
+hemo_coldata_collapse_binarize_sig_apop_pheno <- hemo_coldata_collapse_binarize_apop_perk[,c(1:3,7)]
+
+# Will display correlations and their p-values
+hemo_full_textMatrix_sig_apop_pheno = paste(signif(hemo_full_moduleTraitCor_sig_apop_pheno, 2), "\n(",
+                                      signif(hemo_full_moduleTraitPvalue_sig_apop_pheno, 1), ")", sep = "");
+dim(hemo_full_textMatrix_sig_apop_pheno) = dim(hemo_full_moduleTraitCor_sig_apop_pheno)
+
+# make plot
+sizeGrWindow(10,6)
+par(mar = c(6, 8.5, 3, 3))
+# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
+# green is more negatively correlated)
+labeledHeatmap(Matrix = hemo_full_moduleTraitCor_sig_apop_pheno,
+               xLabels = c("Con vs. Pmar", "P.mar. GDC vs. Con", "P. mar. ZVAD vs. Con", "Apoptosis Percentage"),
+               yLabels = names(hemo_full_MEs_sig_apop_pheno),
+               ySymbols = names(hemo_full_MEs_sig_apop_pheno),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = hemo_full_textMatrix_sig_apop_pheno,
+               setStdMargins = FALSE,
+               cex.text = 0.5,
+               cex.lab = 0.7,
+               #zlim = c(-1,1), 
+               yColorWidth = 0.2, 
+               main = paste("Hemocyte Module-Challenge Relationships"))
+# have to save manually...weird!
 
 ### Repeat for P_marinus counts 
 
@@ -2193,6 +2221,51 @@ labeledHeatmap(Matrix = perk_full_apop_moduleTraitCor_sig,
 ### Gene relationship to trait and important modules: Gene Significance and Module Membership ####
 
 ## calculate gene trait significance for each treatment
+# Apoptosis  percentage 
+hemo_full_apop = as.data.frame(hemo_coldata_collapse_binarize_apop_perk$Percent_of_this_plot_APOP_hemo_perk);
+names(hemo_full_apop) = "Hemo_apop"
+hemo_full_geneTraitSignificance_apop = as.data.frame(cor(hemo_dds_rlog_matrix,hemo_full_apop, use = "p"))
+hemo_full_GSPvalue_apop = as.data.frame(corPvalueStudent(as.matrix(hemo_full_geneTraitSignificance_apop), hemo_full_nSamples))
+
+names(hemo_full_geneTraitSignificance_apop) = paste("GS.", names(hemo_full_apop), sep="")
+names(hemo_full_GSPvalue_apop) = paste("p.GS.", names(hemo_full_apop), sep="")
+
+hemo_full_apop_moduleTraitPvalue_df
+
+# Hemo APOP percentage
+hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_list <-  as.character(unlist(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig$mod_names))
+hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_list <- str_remove(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_list, "ME")
+
+GS_MM_plot_hemo_apop <- function(list) {
+  hemo_full_module = list 
+  hemo_full_column = match(hemo_full_module, hemo_full_modNames)
+  hemo_full_moduleGenes = hemo_full_moduleColors==hemo_full_module
+  sizeGrWindow(7, 7);
+  par(mfrow = c(1,1));
+  verboseScatterplot(abs(hemo_full_geneModuleMembership [hemo_full_moduleGenes, hemo_full_column]),
+                     abs(hemo_full_geneTraitSignificance_apop[hemo_full_moduleGenes, 1]),
+                     xlab = paste("Module Membership in", hemo_full_module, "module"),
+                     ylab = "Gene significance for challenge",
+                     main = paste("Module membership vs. gene significance\n"),
+                     cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = hemo_full_module)
+  quartz.save(paste("./FIGURES/hemo_Pmar_apop_perc",list, sep ="_"), type = "png", device = dev.cur(), dpi = 100)
+}
+lapply(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_list,  GS_MM_plot_hemo_apop)
+
+## modules with a good correlation between GS and module membership (looking at those with higher than 0.4 correlation)
+# high correlation of GS and MM illustrates that genes highly significantly associated with a trait are often also the most important (central) elements of modules associated with the trait
+  # >0.6
+    # navajowhite2 = 0.63
+    # lightpink3 = 0.61
+    # tan4 = 0.64
+  # 0.4 -0.6
+    # royalblue = 0.43
+    # palevioletred1 = 0.54
+    # darkgreen = 0.44
+    # mediumpurple1 = 0.56
+    # darkred = 0.53
+
+## calculate gene trait significance for each treatment
 # Pmar vs Apop percentage 
 perk_full_apop = as.data.frame(perk_coldata_collapse_binarize_apop_perk$Percent_of_this_plot_APOP_hemo_perk);
 names(perk_full_apop) = "Pmar_apop"
@@ -2236,7 +2309,6 @@ lapply(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_list,  GS_MM_plo
   # purple = 0.47
   # lightblue4 = 0.4
   # grey = 0.45
-
 
 #### EXPORT WGNCA MATRIX TO CALCULATE INTRAMODULAR CONNECTIVITY IN BLUEWAVES ####
 
