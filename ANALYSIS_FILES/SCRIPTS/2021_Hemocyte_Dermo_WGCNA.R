@@ -1134,6 +1134,23 @@ hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_sig_modules <- FilterGenes_comb[Filter
   group_by(mod_names) %>% dplyr::mutate(module_count = n()) %>% dplyr::select(product, transcript_id, mod_names, group, moduleTraitCor, moduleTraitPvalue, GS, module_count)
 
 
+# any apoptosis transcripts found in every GDC responsive module ? (black, navajowhite2, darkred, lightpink3)
+mod_list <- c("MEblack", "MEnavajowhite2", "MEdarkred", "MElightpink3")
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_sig_modules_sig_shared_important <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_sig_modules %>% filter(mod_names %in% mod_list) %>% 
+distinct(product, mod_names, transcript_id) %>% ungroup() %>% 
+group_by(transcript_id) %>% dplyr::mutate(count = n()) %>% filter(count == 4) %>% distinct(product, transcript_id)
+  #product                                                                               transcript_id 
+  #<chr>                                                                                 <chr>         
+  # 1 heat shock protein 70 B2-like                                                       XM_022462566.1
+  #2 heat shock protein 70 B2-like                                                         XM_022459720.1
+  #3 BAG family molecular chaperone regulator 3-like                                       XM_022437229.1
+  #4 baculoviral IAP repeat-containing protein 8-like                                      XM_022436216.1
+  #5 eukaryotic translation initiation factor 2-alpha kinase 3-like, transcript variant X2 XM_022485990.1
+
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_sig_modules_sig_shared <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_sig_modules %>% filter(mod_names %in% mod_list) %>% 
+  distinct(product, mod_names, transcript_id) %>% ungroup() %>% 
+  group_by(transcript_id) %>% dplyr::mutate(count = n()) 
+
 # how many overlaps?
 hemo_dds_deseq_res_Pmar_LFC_sig_APOP_sig_modules %>% distinct(module_count, mod_names, group) %>% arrange(desc(module_count))
     #mod_names       group        module_count
@@ -1247,75 +1264,75 @@ names(hemo_MEyellow_factor) <- hemo_geneNames
 
 ### Make topGO data object 
 hemo_MEantiquewhite2_GOdata <- new("topGOdata", description = "gene enrichment",
-                                   ontology = "MF",
+                                   ontology = "BP",
                                    allGenes = hemo_MEantiquewhite2_factor,
                                    nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEblack_GOdata <- new("topGOdata", description = "gene enrichment",
-                           ontology = "MF",
+                           ontology = "BP",
                            allGenes = hemo_MEblack_factor,
                            nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEblue_GOdata <- new("topGOdata", description = "gene enrichment",
-                          ontology = "MF",
+                          ontology = "BP",
                           allGenes = hemo_MEblue_factor,
                           nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEcyan_GOdata <- new("topGOdata", description = "gene enrichment",
-                          ontology = "MF",
+                          ontology = "BP",
                           allGenes = hemo_MEcyan_factor,
                           nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEdarkgreen_GOdata <- new("topGOdata", description ="gene enrichment",
-                               ontology = "MF",
+                               ontology = "BP",
                                allGenes = hemo_MEdarkgreen_factor,
                                nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEdarkorange_GOdata <- new("topGOdata", description ="gene enrichment",
-                                ontology = "MF",
+                                ontology = "BP",
                                 allGenes = hemo_MEdarkorange_factor,
                                 nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEdarkred_GOdata <- new("topGOdata", description ="gene enrichment",
-                             ontology = "MF",
+                             ontology = "BP",
                              allGenes = hemo_MEdarkred_factor,
                              nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEdarkseagreen4_GOdata <- new("topGOdata", description ="gene enrichment",
-                                   ontology = "MF",
+                                   ontology = "BP",
                                    allGenes = hemo_MEdarkseagreen4_factor,
                                    nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEdarkslateblue_GOdata <- new("topGOdata", description ="gene enrichment",
-                                   ontology = "MF",
+                                   ontology = "BP",
                                    allGenes = hemo_MEdarkslateblue_factor,
                                    nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MElightcyan_GOdata <- new("topGOdata", description ="gene enrichment",
-                               ontology = "MF",
+                               ontology = "BP",
                                allGenes = hemo_MElightcyan_factor,
                                nodeSize = 5, annot = annFUN.gene2GO, gene2GO =GO_universe_rna_found_geneID2GO_mapping )
 hemo_MElightpink3_GOdata <- new("topGOdata", description ="gene enrichment",
-                                ontology = "MF",
+                                ontology = "BP",
                                 allGenes = hemo_MElightpink3_factor,
                                 nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEmediumpurple3_GOdata <- new("topGOdata", description ="gene enrichment",
-                                   ontology = "MF",
+                                   ontology = "BP",
                                    allGenes = hemo_MEmediumpurple3_factor,
                                    nodeSize = 5, annot = annFUN.gene2GO, gene2GO =GO_universe_rna_found_geneID2GO_mapping )
 hemo_MEnavajowhite2_GOdata <- new("topGOdata", description= "gene enrichment",
-                                  ontology = "MF",
+                                  ontology = "BP",
                                   allGenes = hemo_MEnavajowhite2_factor,
                                   nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEorangered4_GOdata <- new("topGOdata", description ="gene enrichment",
-                                ontology = "MF",
+                                ontology = "BP",
                                 allGenes = hemo_MEorangered4_factor,
                                 nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEpaleturquoise_GOdata <- new("topGOdata", description ="gene enrichment",
-                                   ontology = "MF",
+                                   ontology = "BP",
                                    allGenes = hemo_MEpaleturquoise_factor,
                                    nodeSize = 5, annot = annFUN.gene2GO, gene2GO =GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEplum_GOdata <- new("topGOdata", description ="gene enrichment",
-                                 ontology = "MF",
+                                 ontology = "BP",
                                  allGenes = hemo_MEplum_factor,
                                  nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEred_GOdata <- new("topGOdata", description = "gene enrichment",
-                                ontology = "MF",
+                                ontology = "BP",
                                 allGenes = hemo_MEred_factor,
                                 nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 hemo_MEyellow_GOdata <- new("topGOdata", description ="gene enrichment",
-                            ontology = "MF",
+                            ontology = "BP",
                             allGenes = hemo_MEyellow_factor,
                             nodeSize = 5, annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
 
@@ -1446,11 +1463,11 @@ Hemo_GO_all_dotplot <- rbind(hemo_MEantiquewhite2_GOdata_Res,
                              hemo_MEred_GOdata_Res,
                              hemo_MEyellow_GOdata_Res) %>% filter(topgoFisher <=0.05 & Significant >5) 
 
-Hemo_GO_all_dotplot_plot <- ggplot(Hemo_GO_all_dotplot, aes(x = group, y = Term )) +
+Hemo_GO_all_dotplot_plot <- ggplot(, aes(x = group, y = Term )) +
   geom_point(aes(size = Significant, color = as.numeric(topgoFisher))) + 
   scale_size_continuous(range = c(4,10)) +
   scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
-  facet_grid(.~type, scales = "free") + 
+  facet_grid(.~type, scales = "free_x") + 
   theme_minimal() +
   labs(x = "Module Name", y = "GO Term", title = "GO Enrichment of Significant Modules") + 
   theme(panel.border = element_rect(color = "black", fill = "NA"),
@@ -1461,7 +1478,7 @@ Hemo_GO_all_dotplot_plot <- ggplot(Hemo_GO_all_dotplot, aes(x = group, y = Term 
         title = element_text(size = 16))
 
 ggsave(Hemo_GO_all_dotplot_plot, device = "tiff", path = "./FIGURES/", 
-       filename = "Hemo_GO_all_dotplot_plot.tiff", width = 70, height = 30, limitsize = FALSE)
+       filename = "Hemo_GO_all_dotplot_plot.tiff", width = 40, height = 10, limitsize = FALSE)
 
 ### Plot as heatmap to help show overlaps
 Hemo_GO_all_dotplot_heatmap <- Hemo_GO_all_dotplot %>% mutate(GO_term = paste(GO.ID, Term, sep = "_")) %>% 
@@ -1553,7 +1570,7 @@ Hemo_GO_all_dotplot_subset_plot <- ggplot(Hemo_GO_all_dotplot_subset, aes(x = gr
         title = element_text(size = 16))
 
 ggsave(Hemo_GO_all_dotplot_subset_plot, device = "tiff", path = "./FIGURES/", 
-       filename = "Hemo_GO_all_dotplot_subset_plot.tiff", width = 20, height = 12, limitsize = FALSE)
+       filename = "Hemo_GO_all_dotplot_subset_plot_BP.tiff", width = 20, height = 12, limitsize = FALSE)
 
 
 #### Pmar intramodular hub gene analysis for interesting modules ####
@@ -2026,6 +2043,29 @@ Pmar_GO_all_dotplot_plot <- ggplot(Pmar_GO_all_dotplot, aes(x = group, y = Term 
 ggsave(Pmar_GO_all_dotplot_plot, device = "tiff", path = "./FIGURES/", 
        filename = "Pmar_GO_all_dotplot_plot.tiff", width = 15, height = 10)
 
+#### Assess Pmar SOD ####
+
+## Lau et al., 2018 SOD primers are best hit for 4 iron-dependent superoxide dismutase proteins
+SOD_list <- c("XM_002768746.1", "XM_002768745.1", "XM_002765900.1", "XM_002765899.1")
+# search in the hub gene lists
+
+# these SOD enzymes are not hub genes 
+FilterGenes_Pmar_comb_Interpro_GDC_steelblue %>% filter(transcript_id %in% SOD_list) # 0
+FilterGenes_Pmar_comb_Interpro_GDC_darkorange2 %>% filter(transcript_id %in% SOD_list) # 0
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4 %>% filter(transcript_id %in% SOD_list) # 0
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3 %>% filter(transcript_id %in% SOD_list) # 0
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3 %>% filter(transcript_id %in% SOD_list) # 0
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2 %>% filter(transcript_id %in% SOD_list) # 0
+ 
+# Check in all genes in each module
+GDC_steelblue_all_genes[GDC_steelblue_all_genes %in% SOD_list]
+GDC_darkorange2_all_genes[GDC_darkorange2_all_genes %in% SOD_list]
+GDC_lightblue4_all_genes[GDC_lightblue4_all_genes %in% SOD_list]
+ZVAD_lightpink3_all_genes[ZVAD_lightpink3_all_genes %in% SOD_list]
+ZVAD_pink3_all_genes[ZVAD_pink3_all_genes %in% SOD_list]
+ZVAD_navajowhite2_all_genes[ZVAD_navajowhite2_all_genes %in% SOD_list]
+
+# no SOD in any of these modules
 
 #### QUANTIFY MODULE ASSOCIATIONS WITH CHALLENGE AND PHENOTYPE ####
 
