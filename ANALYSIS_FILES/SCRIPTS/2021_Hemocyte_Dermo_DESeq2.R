@@ -1428,22 +1428,31 @@ perk_anno <- as.data.frame(colData(perk_dds_rlog)[, c("condition")])
 rownames(perk_anno) <- colnames(perk_mat_SOD)
 colnames(perk_anno)[1] <- "Condition"
 
-pdf("./FIGURES/perk_mat_SOD1.pdf", width = 12, height = 12)
+pdf("./FIGURES/perk_mat_SOD1.pdf", width = 10, height = 5)
 pheatmap(perk_mat_SOD , annotation_col = perk_anno)
 dev.off()
 
-#### Plot transformed counts of the most highly expressed transcripts in each sample ####
+#### Plot transformed counts distribution to find the most highly expressed transcripts ####
 
 perk_dds_rlog_assay <- as.data.frame(assay(perk_dds_rlog)) %>% rownames_to_column(.,var = "transcript_id")
 perk_dds_rlog_assay_gather <- tidyr::gather(perk_dds_rlog_assay, key = "sample_name", value = "transformed_counts", -transcript_id)
 
 # what is the median expression of each gene?
-perk_dds_rlog_assay_gather_median <- perk_dds_rlog_assay_gather %>% group_by(transcript_id) %>% mutate(median_counts = median(transformed_counts))
+perk_dds_rlog_assay_gather_median <- perk_dds_rlog_assay_gather %>% group_by(transcript_id) %>% mutate(median_counts = median(transformed_counts)) %>% 
+  ungroup() %>%
+  distinct(transcript_id, median_counts)
+nrow(perk_dds_rlog_assay_gather_median)
 
-# assess spread of the median expression
-ggplot(perk_dds_rlog_assay_gather_median , aes(x= transcript_id, y = median_counts)) + geom_point()
+# assess spread of the median expression using density plot, plotting counts of how many transcripts have that median count number
+ggplot(perk_dds_rlog_assay_gather_median , aes(x= median_counts)) + geom_density(aes(y = ..count..))
 
+# what is the median counts for the top 5% of those expressed?
+quantile(perk_dds_rlog_assay_gather_median$median_counts, 0.95) #  95% 11.84057
+quantile(perk_dds_rlog_assay_gather_median$median_counts, 0.90) #   90% 10.76544
 
+# how many transcripts are above the 90% quantile
+perk_dds_rlog_assay_gather_median_90 <-  perk_dds_rlog_assay_gather_median %>% filter(median_counts >=10.76545 ) 
+nrow(perk_dds_rlog_assay_gather_median_90) # 1685 top expressed genes 
 
 ### Volcano plots of significant genes ####
 # compute significance 
