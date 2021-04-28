@@ -36,7 +36,6 @@ library(GOSim)
 library(GO.db)
 library(PCAtools)
 
-
 #### LOADING SAVED GENOME, APOPTOSIS NAMES, IAP XP LISTS ####
 Apoptosis_frames <- load(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/C_gig_C_vir_apoptosis_products.RData")
 annotations <- load(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/C_gig_C_vir_annotations.RData")
@@ -473,13 +472,19 @@ ggsave(hemo_volcano, file = "./FIGURES/hemo_volcano_plot", device = "tiff", heig
 
 # annot all 
 hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot <- hemo_dds_deseq_res_Pmar_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
-  left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene, transcript_id), by = "ID")
+  left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene, transcript_id), by = "ID") %>% mutate(group = "control_Pmar")
 
 hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
-  left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene,transcript_id), by = "ID")
+  left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene,transcript_id), by = "ID") %>% mutate(group = "control_Pmar_ZVAD")
 
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
-  left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene,transcript_id), by = "ID")
+  left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene,transcript_id), by = "ID") %>% mutate(group = "control_Pmar_GDC")
+
+# combine annot
+hemo_dds_deseq_res_Pmar_LFC_sig_annot_comb <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot,
+                                                    hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot,
+                                                    hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot)
+hemo_dds_deseq_res_Pmar_LFC_sig_annot_comb_1 <- hemo_dds_deseq_res_Pmar_LFC_sig_annot_comb %>% filter(log2FoldChange >= 1.0 | log2FoldChange <= -1.0)
 
 # annote those greater than 5
 hemo_dds_deseq_res_Pmar_LFC_sig_volcano_5_annot <- hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 5.0 | log2FoldChange <= -5.0)
@@ -936,9 +941,9 @@ GO_universe <- as.data.frame(GO_universe)
 nrow(GO_universe) # 164675 lines 
 
 # get list of gene identifiers and gene significance values, focusing just on the GDC vs control and ZVAD vs control 
-hemo_dds_deseq_res_Pmar_LFC_sig_gene_list <- hemo_dds_deseq_res_Pmar_LFC_sig_ID %>% dplyr::select(ID, padj) %>% dplyr::rename(transcript_id = ID)
-hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID %>% dplyr::select(ID, padj) %>% dplyr::rename(transcript_id = ID)
-hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID %>% dplyr::select(ID, padj) %>% dplyr::rename(transcript_id = ID)
+hemo_dds_deseq_res_Pmar_LFC_sig_gene_list <- hemo_dds_deseq_res_Pmar_LFC_sig_ID %>% dplyr::select(ID, padj, log2FoldChange, product) %>% dplyr::rename(transcript_id = ID)
+hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_ID %>% dplyr::select(ID, padj, log2FoldChange, product) %>% dplyr::rename(transcript_id = ID)
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_ID %>% dplyr::select(ID, padj, log2FoldChange,product) %>% dplyr::rename(transcript_id = ID)
 
 ## get gene universe list of GO terms and GO identifiers 
 # first join with the rna ID
@@ -1047,6 +1052,71 @@ write.csv(Pmar_GDC_control_Res , file = "Pmar_GDC_control_Res_GO.csv")
 # Plot results in REVIGO
 
 # are there common significant terms across all? 
+
+## Repeat but for biological process 
+Pmar_control_GOdata_BP <- new("topGOdata", description = "Pmar vs control Gene Enrichment", 
+                           ontology = "BP",
+                           # define here the genes of interest
+                           allGenes = hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_factor,
+                           nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+
+Pmar_ZVAD_control_GOdata_BP <- new("topGOdata", description = "Pmar vs control Gene Enrichment", 
+                                ontology = "BP",
+                                # define here the genes of interest
+                                allGenes = hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_gene_list_factor,
+                                nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+
+Pmar_GDC_control_GOdata_BP <- new("topGOdata", description = "Pmar vs control Gene Enrichment", 
+                               ontology = "BP",
+                               # define here the genes of interest
+                               allGenes = hemo_dds_deseq_res_Pmar_GDC_LFC_sig_gene_list_factor,
+                               nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = GO_universe_rna_found_geneID2GO_mapping)
+
+#nodeSize=used to prune the GO hierarchy from the terms which have less than 1 annotated genes
+#annFUN.gene2GO = this function is used when the annotations are provided as a gene-to-GOs mapping.
+
+### Perform Encrichment tests 
+Pmar_control_Fisher_Weight_BP <- runTest(Pmar_control_GOdata_BP, algorithm = "weight01", statistic = "fisher")
+Pmar_ZVAD_control_Fisher_Weight_BP <- runTest(Pmar_ZVAD_control_GOdata_BP, algorithm = "weight01", statistic = "fisher")
+Pmar_GDC_control_Fisher_Weight_BP <- runTest(Pmar_GDC_control_GOdata_BP, algorithm = "weight01", statistic = "fisher")
+
+## Analyze enrichment test results 
+
+# see how many results we get where weight01 gives a P-value <= 0.05:
+Pmar_control_summary_BP <- summary(attributes(Pmar_control_Fisher_Weight_BP)$score <= 0.05)
+# 14 significant
+
+Pmar_ZVAD_control_summary_BP <- summary(attributes(Pmar_ZVAD_control_Fisher_Weight_BP)$score <= 0.05)
+# 16 significant
+
+Pmar_GDC_control_summary_BP <- summary(attributes(Pmar_GDC_control_Fisher_Weight_BP)$score <= 0.05)
+# 37 significant
+
+#print out the top significant results
+Pmar_control_Res_BP <- GenTable(Pmar_control_GOdata_BP, topgoFisher = Pmar_control_Fisher_Weight_BP, orderBy = "topgoFisher", topNodes = 14)
+Pmar_ZVAD_control_Res_BP <- GenTable(Pmar_ZVAD_control_GOdata_BP, topgoFisher = Pmar_ZVAD_control_Fisher_Weight_BP, orderBy = "topgoFisher", topNodes = 16)
+Pmar_GDC_control_Res_BP <- GenTable(Pmar_GDC_control_GOdata_BP, topgoFisher = Pmar_GDC_control_Fisher_Weight_BP, orderBy = "topgoFisher", topNodes = 37)
+
+write.csv(Pmar_control_Res_BP , file = "Pmar_control_Res_GO_BP.csv")
+write.csv(Pmar_ZVAD_control_Res_BP , file = "Pmar_ZVAD_control_Res_GO_BP.csv")
+write.csv(Pmar_GDC_control_Res_BP , file = "Pmar_GDC_control_Res_GO_BP.csv")
+
+### Assess interesting GO terms found
+
+## Control_Pmar interesting GO terms
+  # DNA catabolic process GO:0006308
+      # 1. DNase I signature XP_022325792.1
+  # serine endopeptidase inhibitor activity
+      # 3 proteins Inter-alpha-trypsin inhibitor heavy chain C-terminus
+  # GO:0019783 ubiquitin-like protein-specific protease...this must be a sub term as it is not in my original list
+  # peptidase activity
+
+## Control_Pmar_GDC interesting GO terms
+   # GO:0055114, oxidation-reduction process
+        # could be involved in reactive oxygen species...
+
+
+hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_GO
 
 #### PERKINSUS TRANSCRIPTOME ANALYSIS ####
 
@@ -1315,7 +1385,8 @@ ComplexHeatmap::draw(Perk_heatmap, heatmap_legend_side = "left", padding = unit(
 
 dev.off()
 
-## Plot transcformed counts across each sample ####
+
+## Plot transformed counts across each sample ####
 # example codes from RNAseq workflow: https://www.bioconductor.org/packages/devel/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#other-comparisons
 
 perk_comb_ID <-  rbind(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot,
@@ -1338,6 +1409,41 @@ colnames(perk_anno)[1] <- "Condition"
 pdf("./FIGURES/perk_mat1.pdf", width = 12, height = 12)
 pheatmap(perk_mat , annotation_col = perk_anno)
 dev.off()
+
+### Plot SOD transformed counts across each sample ####
+
+## Lau et al., 2018 SOD primers are best hit for 4 iron-dependent superoxide dismutase proteins
+SOD_list <- c("XM_002768746.1", "XM_002768745.1", "XM_002765900.1", "XM_002765899.1")
+
+# find rownames matching these IDs
+perk_mat_SOD <- assay(perk_dds_rlog)[SOD_list,]
+perk_mat_SOD <- as.data.frame(perk_mat_SOD) %>% mutate(transcript_id = rownames(.)) %>% 
+  left_join(., unique(Perkinsus_rtracklayer[,c("product","transcript_id")]), by = "transcript_id") %>% filter(!is.na(product)) %>%
+  mutate(transcript_product = paste(product, transcript_id, sep = "-")) %>% dplyr::select(-product, -transcript_id)
+rownames(perk_mat_SOD) <- perk_mat_SOD$transcript_product
+perk_mat_SOD <- perk_mat_SOD[,-10]
+perk_mat_SOD <- as.mat_matrix(perk_mat_SOD)  
+
+perk_anno <- as.data.frame(colData(perk_dds_rlog)[, c("condition")])
+rownames(perk_anno) <- colnames(perk_mat_SOD)
+colnames(perk_anno)[1] <- "Condition"
+
+pdf("./FIGURES/perk_mat_SOD1.pdf", width = 12, height = 12)
+pheatmap(perk_mat_SOD , annotation_col = perk_anno)
+dev.off()
+
+#### Plot transformed counts of the most highly expressed transcripts in each sample ####
+
+perk_dds_rlog_assay <- as.data.frame(assay(perk_dds_rlog)) %>% rownames_to_column(.,var = "transcript_id")
+perk_dds_rlog_assay_gather <- tidyr::gather(perk_dds_rlog_assay, key = "sample_name", value = "transformed_counts", -transcript_id)
+
+# what is the median expression of each gene?
+perk_dds_rlog_assay_gather_median <- perk_dds_rlog_assay_gather %>% group_by(transcript_id) %>% mutate(median_counts = median(transformed_counts))
+
+# assess spread of the median expression
+ggplot(perk_dds_rlog_assay_gather_median , aes(x= transcript_id, y = median_counts)) + geom_point()
+
+
 
 ### Volcano plots of significant genes ####
 # compute significance 
@@ -1561,7 +1667,7 @@ write.table(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro_all, file = "per
 write.table(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_all, file = "perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_all.txt", sep= "\t", row.names = FALSE)
 
 
-#### HEMOCYTE PCA ANALYSIS ####
+#### HEMOCYTE PCA ANALYSIS WITH PHENOTYPE ####
 
 # helpful PCA plot tutorial
 #https://bioconductor.org/packages/release/bioc/vignettes/PCAtools/inst/doc/PCAtools.html
@@ -1591,6 +1697,9 @@ PCA_pheno_2020_all <- PCA_pheno_2020 %>%
     Treat == "Dermo_ZVAD" ~ "Dermo_ZVAD_R1_001",
     Treat == "Dermo" ~ "Dermo_R1_001",
     TRUE ~ NA_character_)) %>% mutate(Sample_Name = paste(ID,Treat, sep = "_"))
+
+# SAVE THIS PHENOTYPE DATA FOR USE IN WGCNA ANALYSIS
+save(PCA_pheno_2020_all , file = "PCA_pheno_2020_all.RData")
 
 #### HEMOCYTE APOPTOSIS EXPRESSION PCA ###
 
@@ -2337,9 +2446,13 @@ assay(perk_dds_rlog)["XM_002775492.1",] # very similar expression across all cha
 assay(perk_dds_rlog)["XM_002775509.1",] # protein phosphatase - is higher expression in GDC
 
 #### EXPORT TRANSCRIPTOME DATA AND METADATA FOR WGCNA ANALYSIS ####
+# raw data
 save(perk_dds_rlog, hemo_dds_rlog, file = "2021_Hemocyte_Dermo_expression_rlog_matrices.RData") 
 save(perk_coldata, hemo_coldata, file = "2021_Hemocyte_Dermo_expression_coldata.RData")
 
+# DEG lists
+save(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot, perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot, file = "2021_Dermo_DEG_annot.RData")
+save(hemo_dds_deseq_res_Pmar_LFC_sig_APOP, hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP, hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP, file = "2021_Hemocyte_DEG_apop_annot.RData")
 
 #### BIPLOT SOURCE CODE ####
 #' Draw a bi-plot, comparing 2 selected principal components / eigenvectors.
