@@ -1690,6 +1690,77 @@ perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_all  <- left_join(perk_dds_de
 write.table(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro_all, file = "perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_Interpro_all.txt", sep= "\t", row.names = FALSE)
 write.table(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_all, file = "perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_Interpro_all.txt", sep= "\t", row.names = FALSE)
 
+#### PERKINSUS GO ENRICHMENT BP AND MF ####
+## GO enrichment for all genes in the module
+Perk_geneNames <- names(Perk_GO_terms_found_geneID2GO_mapping)
+# topGO tutorial: https://bioconductor.org/packages/release/bioc/vignettes/topGO/inst/doc/topGO.pdf
+head(Perk_geneNames)
+
+# get full list of genes for each treatment
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_genes <- perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_original$transcript_id
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_genes <- perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_original$transcript_id
+
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_genes <- as.factor(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_genes)
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_genes <- as.factor(perk_dds_deseq_res_Pmar_GDC_LFC_sig_genes)
+
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_genes_factor <- factor(as.integer(Perk_geneNames %in% perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_genes))
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_genes_factor <-  factor(as.integer(Perk_geneNames %in% perk_dds_deseq_res_Pmar_GDC_LFC_sig_genes))
+
+names(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_genes_factor) <- Perk_geneNames
+names(perk_dds_deseq_res_Pmar_GDC_LFC_sig_genes_factor) <- Perk_geneNames
+
+### Make topGO data object 
+perk_ZVAD_GOdata_MF <- new("topGOdata", description = "ZVAD Gene Enrichment", 
+                            # I want to test MF
+                            ontology = "MF",
+                            # define here the genes of interest
+                            allGenes = perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_genes_factor,
+                            nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+perk_GDC_GOdata_MF <- new("topGOdata", description = "GDC Gene Enrichment", 
+                              # I want to test MF
+                              ontology = "MF",
+                              # define here the genes of interest
+                              allGenes = perk_dds_deseq_res_Pmar_GDC_LFC_sig_genes_factor,
+                              nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+perk_ZVAD_GOdata_BP <- new("topGOdata", description = "ZVAD Gene Enrichment", 
+                           # I want to test MF
+                           ontology = "BP",
+                           # define here the genes of interest
+                           allGenes = perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_genes_factor,
+                           nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+perk_GDC_GOdata_BP <- new("topGOdata", description = "GDC Gene Enrichment", 
+                          # I want to test MF
+                          ontology = "BP",
+                          # define here the genes of interest
+                          allGenes = perk_dds_deseq_res_Pmar_GDC_LFC_sig_genes_factor,
+                          nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+#nodeSize=used to prune the GO hierarchy from the terms which have less than 1 annotated genes
+#annFUN.gene2GO = this function is used when the annotations are provided as a gene-to-GOs mapping.
+
+### Perform Encrichment tests 
+perk_ZVAD_GOdata_MF_Fisher_Weight <- runTest(perk_ZVAD_GOdata_MF, algorithm = "weight01", statistic = "fisher") 
+perk_ZVAD_GOdata_BP_Fisher_Weight <- runTest(perk_ZVAD_GOdata_BP, algorithm = "weight01", statistic = "fisher") 
+perk_GDC_GOdata_MF_Fisher_Weight <- runTest(perk_GDC_GOdata_MF, algorithm = "weight01", statistic = "fisher") 
+perk_GDC_GOdata_BP_Fisher_Weight <- runTest(perk_GDC_GOdata_BP, algorithm = "weight01", statistic = "fisher") 
+
+
+## Analyze enrichment test results 
+# see how many results we get where weight01 gives a P-value <= 0.05
+perk_ZVAD_GOdata_MF_summary <- summary(attributes(perk_ZVAD_GOdata_MF_Fisher_Weight)$score <= 0.05) # 5 sig
+perk_ZVAD_GOdata_BP_summary <- summary(attributes(perk_ZVAD_GOdata_BP_Fisher_Weight)$score <= 0.05) # 4 sig
+perk_GDC_GOdata_MF_summary <- summary(attributes(perk_GDC_GOdata_MF_Fisher_Weight)$score <= 0.05) # 5 sig
+perk_GDC_GOdata_BP_summary <- summary(attributes(perk_GDC_GOdata_BP_Fisher_Weight)$score <= 0.05) # 4 sig
+
+#print out the top results, though only GDC_lightblue4 is sig
+perk_ZVAD_GOdata_MF_Res <- GenTable(perk_ZVAD_GOdata_MF, topgoFisher = perk_ZVAD_GOdata_MF_Fisher_Weight, orderBy = "topgoFisher", topNodes = 5)
+perk_ZVAD_GOdata_BP_Res <- GenTable(perk_ZVAD_GOdata_BP, topgoFisher = perk_ZVAD_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 4)
+perk_GDC_GOdata_MF_Res <- GenTable(perk_GDC_GOdata_MF, topgoFisher = perk_GDC_GOdata_MF_Fisher_Weight, orderBy = "topgoFisher", topNodes = 5)
+perk_GDC_GOdata_BP_Res <- GenTable(perk_GDC_GOdata_BP, topgoFisher = perk_GDC_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 4)
+
 
 #### HEMOCYTE PCA ANALYSIS WITH PHENOTYPE ####
 
@@ -2483,6 +2554,7 @@ save(hemo_dds_deseq_res_Pmar_LFC_sig_APOP, hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_
 # GOAL:
     # Export two data frames with all treatments, each for the hemocyte experiment and for the perkinsus experiment
     # one table will have all the significant DEGs, the padj, the LFC, and whether it is an apoptosis DEG
+    # one table that has all the Interproscan terms added to it. The one perkinsus table will already have the interproscan terms
     # one table will have all the significantly enriched GO terms from those DEGs for each treatment
 
 ## Hemocyte experiment
@@ -2496,6 +2568,7 @@ C_vir_hemo_apop <- C_vir_hemo_apop %>% mutate(type = "apoptosis")
 
 # join DFs
 hemo_dds_deseq_res_Pmar_LFC_sig_annot_comb_apop_labeled <- left_join(hemo_dds_deseq_res_Pmar_LFC_sig_annot_comb, C_vir_hemo_apop[,c("type","transcript_id")])
+# 767 of the proteins here are uncharacterized! Makes it important to also make a dataframe with the Interproscan annotations 
 
 # Compile hemocyte experiment GO enrichment for all DEGs, for both BP and MF
 Pmar_control_Res_BP$type <- "BP"
@@ -2527,12 +2600,30 @@ Perk_comb_all
 # df with Interproscan annotations
 Perk_comb_all_Interpro <- left_join(Perk_comb_all,unique(Perk_Interpro_GO_terms_XP[,c("protein_id","transcript_id","Name","Dbxref","signature_desc")]),by = "transcript_id") 
 # remove consensus disorder predictions because I'm not getting into interpretting these
-Perk_comb_all_Interpro <- Perk_comb_all_Interpro %>% filter(signature_desc !="consensus disorder prediction")
+Perk_comb_all_Interpro_slim <- Perk_comb_all_Interpro %>% filter(signature_desc !="consensus disorder prediction") %>% filter(Dbxref != "character(0)") %>% 
+  filter(!is.na(Name)) %>% filter(signature_desc != "character(0)") %>%
+  distinct(transcript_id, Dbxref, .keep_all = TRUE)
 
+# Export Perkinsus GO enrichment data 
+perk_ZVAD_GOdata_MF_Res$type <- "MF"
+perk_ZVAD_GOdata_BP_Res$type <- "BP"
+perk_GDC_GOdata_MF_Res$type <- "MF"
+perk_GDC_GOdata_BP_Res$type <- "BP"
 
+perk_ZVAD_GOdata_MF_Res$treatment <- "perk_ZVAD"
+perk_ZVAD_GOdata_BP_Res$treatment <- "perk_ZVAD"
+perk_GDC_GOdata_MF_Res $treatment <- "perk_GDC"
+perk_GDC_GOdata_BP_Res $treatment <- "perk_GDC"
+
+perk_GO_comb <- rbind(perk_ZVAD_GOdata_MF_Res,
+                      perk_ZVAD_GOdata_BP_Res,
+                      perk_GDC_GOdata_MF_Res ,
+                      perk_GDC_GOdata_BP_Res)
 # export all
 write.table(hemo_dds_deseq_res_Pmar_LFC_sig_annot_comb_apop_labeled, file = "hemo_DEG_apop.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
 write.table(Hemo_Pmar_GO_comb, file = "Hemo_Pmar_GO_comb.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
+write.table(Perk_comb_all_Interpro_slim, file = "Perk_comb_all_Interpro_slim.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
+write.table(perk_GO_comb, file = "perk_GO_comb.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
 
 
 #### BIPLOT SOURCE CODE ####
