@@ -493,7 +493,8 @@ hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_5_annot <- hemo_dds_deseq_res_Pmar_
 
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_5_annot <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 5.0 | log2FoldChange <= -5.0)
 
-### Extract list of significant Apoptosis Genes (not less than or greater than 1 LFC) using merge
+### Extract list of significant Apoptosis Genes ####
+# (not less than or greater than 1 LFC) using merge
 
 # Pmar vs control
 hemo_dds_deseq_res_Pmar_LFC_sig_APOP <- merge(hemo_dds_deseq_res_Pmar_LFC_sig, C_vir_rtracklayer_apop_product_final, by = "ID")
@@ -668,6 +669,9 @@ ggsave(hemo_Pmar_dds_deseq_res_Pmar_GDC_Pmar_LFC_sig_APOP_plot_IAP,  file = "/Us
 ### Upset plot heatmap of significant apoptosis expression across all treatments  ####
 
 # combine all dataframes
+C_vir_hemo_apop <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_APOP,
+                         hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP,
+                         hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP)
 C_vir_hemo_comb <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_APOP,
                          hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP,
                          hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP) %>% mutate(transcript_product = paste(product, transcript_id)) %>%
@@ -1322,7 +1326,11 @@ perk_dds_deseq_res_Pmar_GDC_LFC_sig $transcript_id <- row.names(perk_dds_deseq_r
 perk_dds_deseq_res_Pmar_GDC_LFC_sig  <- as.data.frame(perk_dds_deseq_res_Pmar_GDC_LFC_sig)
 nrow(perk_dds_deseq_res_Pmar_GDC_LFC_sig)  #39
 
-# Annotate these genes
+# Annotate these genes 
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_original <- merge(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig, unique(dplyr::select(Perkinsus_rtracklayer, transcript_id, product)))
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_original <- merge(perk_dds_deseq_res_Pmar_GDC_LFC_sig, unique(dplyr::select(Perkinsus_rtracklayer,transcript_id, product)))
+
+# alter the product name for easier plotting for the conserved hypothetical proteins
 perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot <- merge(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig, unique(dplyr::select(Perkinsus_rtracklayer, transcript_id, product))) %>% 
   mutate(product = case_when(product == "conserved hypothetical protein" | product == "hypothetical protein" ~ paste(product, transcript_id, sep = "-"),
                              product != "conserved hypothetical protein" | product != "hypothetical protein" ~ product))
@@ -1359,6 +1367,13 @@ perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$condition <- "P_mar_ZVAD_vs_Pmar"
 perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$condition <- "P_mar_GDC_vs_Pmar"
 
 # combine all dataframes
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_original $condition <- "P_mar_ZVAD_vs_Pmar"
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_original $condition <- "P_mar_GDC_vs_Pmar"
+
+Perk_comb_all <- rbind(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_original,
+                       perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_original)
+
+# note this DF has the product names altered so that hypothetical proteins are labelled with their transcript ID for easier plotting
 Perk_comb <- rbind(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot,
                    perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot) %>%
   dplyr::select(product, condition, log2FoldChange)
@@ -2462,6 +2477,63 @@ save(perk_coldata, hemo_coldata, file = "2021_Hemocyte_Dermo_expression_coldata.
 # DEG lists
 save(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot, perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot, file = "2021_Dermo_DEG_annot.RData")
 save(hemo_dds_deseq_res_Pmar_LFC_sig_APOP, hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP, hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP, file = "2021_Hemocyte_DEG_apop_annot.RData")
+
+#### EXPORT COMPILED DATA TO SPREADSHEETS ####
+
+# GOAL:
+    # Export two data frames with all treatments, each for the hemocyte experiment and for the perkinsus experiment
+    # one table will have all the significant DEGs, the padj, the LFC, and whether it is an apoptosis DEG
+    # one table will have all the significantly enriched GO terms from those DEGs for each treatment
+
+## Hemocyte experiment
+  # df for all apop DEGs
+C_vir_hemo_apop
+  # df for all DEGs
+hemo_dds_deseq_res_Pmar_LFC_sig_annot_comb
+
+# add apoptosis label for the apoptosis DEGs
+C_vir_hemo_apop <- C_vir_hemo_apop %>% mutate(type = "apoptosis")
+
+# join DFs
+hemo_dds_deseq_res_Pmar_LFC_sig_annot_comb_apop_labeled <- left_join(hemo_dds_deseq_res_Pmar_LFC_sig_annot_comb, C_vir_hemo_apop[,c("type","transcript_id")])
+
+# Compile hemocyte experiment GO enrichment for all DEGs, for both BP and MF
+Pmar_control_Res_BP$type <- "BP"
+Pmar_ZVAD_control_Res_BP$type <- "BP"
+Pmar_GDC_control_Res_BP $type <- "BP"
+
+Pmar_control_Res$type <- "MF"
+Pmar_ZVAD_control_Res$type <- "MF"
+Pmar_GDC_control_Res$type <- "MF"
+
+Pmar_control_Res_BP$treatment <- "control_Pmar"
+Pmar_ZVAD_control_Res_BP$treatment <- "control_Pmar_ZVAD"
+Pmar_GDC_control_Res_BP $treatment <- "control_Pmar_GDC"
+
+Pmar_control_Res$treatment <- "control_Pmar"
+Pmar_ZVAD_control_Res$treatment <- "control_Pmar_ZVAD"
+Pmar_GDC_control_Res$treatment <- "control_Pmar_GDC"
+
+Hemo_Pmar_GO_comb <- rbind(Pmar_control_Res,
+                           Pmar_ZVAD_control_Res,
+                           Pmar_GDC_control_Res,
+                           Pmar_control_Res_BP,
+                           Pmar_ZVAD_control_Res_BP,
+                           Pmar_GDC_control_Res_BP)
+
+## Repeat for Perkinsus data
+# df for all DEGs, note this dataframe has the original product names
+Perk_comb_all
+# df with Interproscan annotations
+Perk_comb_all_Interpro <- left_join(Perk_comb_all,unique(Perk_Interpro_GO_terms_XP[,c("protein_id","transcript_id","Name","Dbxref","signature_desc")]),by = "transcript_id") 
+# remove consensus disorder predictions because I'm not getting into interpretting these
+Perk_comb_all_Interpro <- Perk_comb_all_Interpro %>% filter(signature_desc !="consensus disorder prediction")
+
+
+# export all
+write.table(hemo_dds_deseq_res_Pmar_LFC_sig_annot_comb_apop_labeled, file = "hemo_DEG_apop.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
+write.table(Hemo_Pmar_GO_comb, file = "Hemo_Pmar_GO_comb.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
+
 
 #### BIPLOT SOURCE CODE ####
 #' Draw a bi-plot, comparing 2 selected principal components / eigenvectors.
