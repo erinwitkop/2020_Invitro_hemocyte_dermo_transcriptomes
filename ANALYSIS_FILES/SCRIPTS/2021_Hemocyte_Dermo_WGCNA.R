@@ -1048,7 +1048,7 @@ lookup_annot_intramodular_perk <- function(list) {
   module_name = str_remove(list, "MM.")
   mod_list <- names(matrix)[moduleColors == module_name]
   FilterGenes = abs(GS1)> .6 & abs(datKME[list])>.8
-  FilterGenes_annot <- data.frame("ID" = dimnames(data.frame(matrix))[[2]][FilterGenes]) %>% left_join(., lookup) %>% mutate(mod_names = list) %>% filter(ID %in% mod_list)
+  FilterGenes_annot <- data.frame("Name" = dimnames(data.frame(matrix))[[2]][FilterGenes]) %>% left_join(., lookup) %>% mutate(mod_names = list) %>% filter(Name %in% mod_list)
 }
 
 # Pmar_vs_Pmar_GDC
@@ -2579,11 +2579,6 @@ lapply(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_list,  GS_MM_plo
   # purple = 0.47
   # lightblue4 = 0.4
   # grey = 0.45
-
-#### COUNT TOTAL GENES IN INTERESTING MODULES ####
-
-names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "navajowhite2"]
-table(hemo_full_moduleColors == "navajowhite2") # TRUE = 263
 
 #### EXPORT COMPILED DATA TO SPREADSHEETS ####
 
