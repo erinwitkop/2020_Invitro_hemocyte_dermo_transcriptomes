@@ -883,12 +883,15 @@ head(perk_datKME)
 
 # annotate intramodular hub genes in each module
 matrix = hemo_dds_rlog_matrix
+moduleColors = hemo_full_moduleColors
 lookup =   C_vir_rtracklayer_transcripts
 datKME =  hemo_datKME
 
 lookup_annot_intramodular <- function(list) {
+module_name = str_remove(list, "MM.")
+mod_list <- names(matrix)[moduleColors == module_name]
 FilterGenes = abs(GS1)> .6 & abs(datKME[list])>.8
-FilterGenes_annot <- data.frame("ID" = dimnames(data.frame(matrix))[[2]][FilterGenes]) %>% left_join(., lookup) %>% mutate(mod_names = list)
+FilterGenes_annot <- data.frame("ID" = dimnames(data.frame(matrix))[[2]][FilterGenes]) %>% left_join(., lookup) %>% mutate(mod_names = list) %>% filter(ID %in% mod_list)
 }
 
 ## Hemocytes first
@@ -1039,10 +1042,13 @@ labeledHeatmap(Matrix = hemo_full_moduleTraitCor_sig_apop,
 matrix = perk_dds_rlog_matrix
 lookup =   Perkinsus_rtracklayer
 datKME =  perk_datKME
+moduleColors = perk_full_moduleColors
 
 lookup_annot_intramodular_perk <- function(list) {
+  module_name = str_remove(list, "MM.")
+  mod_list <- names(matrix)[moduleColors == module_name]
   FilterGenes = abs(GS1)> .6 & abs(datKME[list])>.8
-  FilterGenes_annot <- data.frame("Name" = dimnames(data.frame(matrix))[[2]][FilterGenes]) %>% left_join(., lookup) %>% mutate(mod_names = list)
+  FilterGenes_annot <- data.frame("ID" = dimnames(data.frame(matrix))[[2]][FilterGenes]) %>% left_join(., lookup) %>% mutate(mod_names = list) %>% filter(ID %in% mod_list)
 }
 
 # Pmar_vs_Pmar_GDC
@@ -1139,13 +1145,7 @@ mod_list <- c("MEblack", "MEnavajowhite2", "MEdarkred", "MElightpink3")
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_sig_modules_sig_shared_important <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_sig_modules %>% filter(mod_names %in% mod_list) %>% 
 distinct(product, mod_names, transcript_id) %>% ungroup() %>% 
 group_by(transcript_id) %>% dplyr::mutate(count = n()) %>% filter(count == 4) %>% distinct(product, transcript_id)
-  #product                                                                               transcript_id 
-  #<chr>                                                                                 <chr>         
-  # 1 heat shock protein 70 B2-like                                                       XM_022462566.1
-  #2 heat shock protein 70 B2-like                                                         XM_022459720.1
-  #3 BAG family molecular chaperone regulator 3-like                                       XM_022437229.1
-  #4 baculoviral IAP repeat-containing protein 8-like                                      XM_022436216.1
-  #5 eukaryotic translation initiation factor 2-alpha kinase 3-like, transcript variant X2 XM_022485990.1
+# 0
 
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_sig_modules_sig_shared <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_sig_modules %>% filter(mod_names %in% mod_list) %>% 
   distinct(product, mod_names, transcript_id) %>% ungroup() %>% 
@@ -1153,25 +1153,18 @@ hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_sig_modules_sig_shared <- hemo_dds_dese
 
 # how many overlaps?
 hemo_dds_deseq_res_Pmar_LFC_sig_APOP_sig_modules %>% distinct(module_count, mod_names, group) %>% arrange(desc(module_count))
-    #mod_names       group        module_count
-    #<chr>           <chr>               <int>
-    #1 MEantiquewhite2 control_Pmar            2
-    #2 MElightcyan     control_Pmar            1
+# 0
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP_sig_modules %>% distinct(module_count, mod_names, group) %>% arrange(desc(module_count)) # the GDC 
-    #mod_names       group            module_count
-    #<chr>           <chr>                   <int>
-    #1 MEnavajowhite2  control_Pmar_GDC           19
-    #2 MEyellow        control_Pmar_GDC           18
-    #3 MEblack         control_Pmar_GDC           17
-    #4 MEdarkred       control_Pmar_GDC           16
-    #5 MElightpink3    control_Pmar_GDC           15
-    #6 MEmediumpurple3 control_Pmar_GDC            6
-    #7 MEpaleturquoise control_Pmar_GDC            5
-    #8 MEdarkorange    control_Pmar_GDC            4
-    #9 MEantiquewhite2 control_Pmar_GDC            3
-    #10 MEcyan          control_Pmar_GDC            3
-    #11 MElightcyan     control_Pmar_GDC            1
-    #12 MEplum          control_Pmar_GDC            1
+ #mod_names       group            module_count
+ #<chr>           <chr>                   <int>
+ #  1 MEyellow        control_Pmar_GDC           14
+ #2 MEnavajowhite2  control_Pmar_GDC            5
+ #3 MElightpink3    control_Pmar_GDC            2
+ #4 MEcyan          control_Pmar_GDC            1
+ #5 MEdarkred       control_Pmar_GDC            1
+ #6 MEpaleturquoise control_Pmar_GDC            1
+ #7 MEblack         control_Pmar_GDC            1
+ #8 MEdarkorange    control_Pmar_GDC            1
 hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_APOP_sig_modules %>% distinct(module_count, mod_names, group) %>% arrange(desc(module_count))
     #mod_names    group             module_count
     #<chr>        <chr>                    <int>
@@ -1197,8 +1190,8 @@ hemo_MEdarkseagreen4<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "da
 hemo_MEdarkslateblue<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "darkslateblue"]
 hemo_MElightcyan<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "lightcyan"]
 hemo_MElightpink3<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "lightpink3"]
-hemo_MEmediumpurple3<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "mediumpurple3"]
-hemo_MEnavajowhite2<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "navajowhite2"]
+hemo_MEmediumpurple3 <- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "mediumpurple3"]
+hemo_MEnavajowhite2 <- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "navajowhite2"]
 hemo_MEorangered4<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "orangered4"]
 hemo_MEpaleturquoise<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "paleturquoise"]
 hemo_MEplum<- names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "plum"]
@@ -2256,6 +2249,13 @@ Pmar_GO_all_dotplot_plot <- ggplot(Pmar_GO_all_dotplot, aes(x = group, y = Term 
 ggsave(Pmar_GO_all_dotplot_plot, device = "tiff", path = "./FIGURES/", 
        filename = "Pmar_GO_all_dotplot_plot.tiff", width = 15, height = 10)
 
+#### Select Pmar hub genes based on overlap with GO enrichment terms ####
+
+  # In order to narrow down my list of interesting GO terms for Perkinsus, I will interrogate enriched GO terms and which enzymes of interest are in them
+  # specifically things like endopeptidases, carboxypeptidases, methylases, and any redox related enzymes 
+  # these will be my lists of interesting parts of the cytoscape network to interrogate
+
+
 #### Assess Pmar SOD ####
 
 ## Lau et al., 2018 SOD primers are best hit for 4 iron-dependent superoxide dismutase proteins
@@ -2580,6 +2580,11 @@ lapply(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_list,  GS_MM_plo
   # lightblue4 = 0.4
   # grey = 0.45
 
+#### COUNT TOTAL GENES IN INTERESTING MODULES ####
+
+names(hemo_dds_rlog_matrix)[hemo_full_moduleColors == "navajowhite2"]
+table(hemo_full_moduleColors == "navajowhite2") # TRUE = 263
+
 #### EXPORT COMPILED DATA TO SPREADSHEETS ####
 
 # GOAL:
@@ -2602,7 +2607,8 @@ hemo_mod_list <- c("MEnavajowhite2", "MEblue", "MEyellow","MEdarkslateblue", "ME
 FilterGenes_comb_apop_labeled <- left_join(FilterGenes_comb, FilterGenes_comb_apop[,c("apop","transcript_id")]) %>% 
   dplyr::select(ID,gene,product,transcript_id,mod_names,group,moduleTraitCor,moduleTraitPvalue,GS, apop) %>%
     # filter out only the module of interest
-    filter(mod_names %in% hemo_mod_list)
+    filter(mod_names %in% hemo_mod_list) %>% 
+  distinct(ID, mod_names, group, .keep_all = TRUE)
 
 # Compile hemocyte experiment GO enrichment for all important modules (run with all genes, not just the hub genes), for both BP and MF
 # using only my pruned list of most important modules: MEnavajowhite2, MEblue, MEyellow,MEdarkslateblue, MEorangered4
@@ -2675,23 +2681,52 @@ hemo_hub_gene_ids_MEyellow <- FilterGenes_comb_apop_labeled %>% filter(mod_names
 hemo_hub_gene_ids_MEdarkslateblue <- FilterGenes_comb_apop_labeled %>% filter(mod_names == "MEdarkslateblue") %>% dplyr::select(ID)
 hemo_hub_gene_ids_MEorangered4 <- FilterGenes_comb_apop_labeled %>% filter(mod_names == "MEorangered4") %>% dplyr::select(ID)
 
-write.table(hemo_hub_gene_ids_MEnavajowhite2, file = "./Cytoscape_files/hemo_hub_gene_ids_MEnavajowhite2.txt",sep = "\t", row.names = FALSE, col.names = FALSE)
-write.table(hemo_hub_gene_ids_MEblue, file = "./Cytoscape_files/hemo_hub_gene_ids_MEblue.txt",sep = "\t", row.names = FALSE, col.names = FALSE)
-write.table(hemo_hub_gene_ids_MEyellow, file = "./Cytoscape_files/hemo_hub_gene_ids_MEyellow.txt",sep = "\t", row.names = FALSE, col.names = FALSE)
-write.table(hemo_hub_gene_ids_MEdarkslateblue, file = "./Cytoscape_files/hemo_hub_gene_ids_MEdarkslateblue.txt",sep = "\t", row.names = FALSE, col.names = FALSE)
-write.table(hemo_hub_gene_ids_MEorangered4, file = "./Cytoscape_files/hemo_hub_gene_ids_MEorangered4.txt",sep = "\t", row.names = FALSE, col.names = FALSE)
+write.table(hemo_hub_gene_ids_MEnavajowhite2, file = "./Cytoscape_files/hemo_hub_gene_ids_MEnavajowhite2.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(hemo_hub_gene_ids_MEblue, file = "./Cytoscape_files/hemo_hub_gene_ids_MEblue.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(hemo_hub_gene_ids_MEyellow, file = "./Cytoscape_files/hemo_hub_gene_ids_MEyellow.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(hemo_hub_gene_ids_MEdarkslateblue, file = "./Cytoscape_files/hemo_hub_gene_ids_MEdarkslateblue.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(hemo_hub_gene_ids_MEorangered4, file = "./Cytoscape_files/hemo_hub_gene_ids_MEorangered4.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 
-# repeat for perkinsus: modules of interest lightblue4, lightpink3, navajowhite2,
+# export as labeled list indicating hub genes and apop genes
+hemo_hub_gene_ids_MEnavajowhite2_apop_hub <- FilterGenes_comb_apop_labeled %>% filter(mod_names == "MEnavajowhite2") %>% mutate(hub = "yes") %>%
+  dplyr::select(ID, apop, hub) %>% mutate(apop = case_when(is.na(apop) ~ "non_apop", TRUE ~ "apop"))
+hemo_hub_gene_ids_MEblue_apop_hub <- FilterGenes_comb_apop_labeled %>% filter(mod_names == "MEblue") %>% mutate(hub = "yes") %>%
+  dplyr::select(ID, apop, hub) %>% mutate(apop = case_when(is.na(apop) ~ "non_apop", TRUE ~ "apop"))
+hemo_hub_gene_ids_MEyellow_apop_hub <- FilterGenes_comb_apop_labeled %>% filter(mod_names == "MEyellow") %>% mutate(hub = "yes") %>%
+  dplyr::select(ID, apop, hub) %>% mutate(apop = case_when(is.na(apop) ~ "non_apop", TRUE ~ "apop"))
+hemo_hub_gene_ids_MEdarkslateblue_apop_hub <- FilterGenes_comb_apop_labeled %>% filter(mod_names == "MEdarkslateblue")%>% mutate(hub = "yes") %>%
+  dplyr::select(ID, apop, hub) %>% mutate(apop = case_when(is.na(apop) ~ "non_apop", TRUE ~ "apop"))
+hemo_hub_gene_ids_MEorangered4_apop_hub <- FilterGenes_comb_apop_labeled %>% filter(mod_names == "MEorangered4") %>% mutate(hub = "yes") %>%
+  dplyr::select(ID, apop, hub) %>% mutate(apop = case_when(is.na(apop) ~ "non_apop", TRUE ~ "apop"))
+
+write.table(hemo_hub_gene_ids_MEnavajowhite2_apop_hub, file = "./Cytoscape_files/hemo_hub_gene_ids_MEnavajowhite2_apop_hub.txt",sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.table(hemo_hub_gene_ids_MEblue_apop_hub, file = "./Cytoscape_files/hemo_hub_gene_ids_MEblue_apop_hub.txt",sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.table(hemo_hub_gene_ids_MEyellow_apop_hub, file = "./Cytoscape_files/hemo_hub_gene_ids_MEyellow_apop_hub.txt",sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.table(hemo_hub_gene_ids_MEdarkslateblue_apop_hub, file = "./Cytoscape_files/hemo_hub_gene_ids_MEdarkslateblue_apop_hub.txt",sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.table(hemo_hub_gene_ids_MEorangered4_apop_hub, file = "./Cytoscape_files/hemo_hub_gene_ids_MEorangered4_apop_hub.txt",sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+
+## Repeat for Perkinsus: modules of interest lightblue4, lightpink3, navajowhite2,
 perk_hub_gene_ids_MElightblue4 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MElightblue4") %>% dplyr::select(Name)
 perk_hub_gene_ids_MElightpink3 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MElightpink3") %>% dplyr::select(Name)
 perk_hub_gene_ids_MEnavajowhite2 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MEnavajowhite2") %>% dplyr::select(Name)
 
-write.table(perk_hub_gene_ids_MElightblue4, file = "./Cytoscape_files/perk_hub_gene_ids_MElightblue4.txt",sep = "\t", row.names = FALSE, col.names = FALSE)
-write.table(perk_hub_gene_ids_MElightpink3, file = "./Cytoscape_files/perk_hub_gene_ids_MElightpink3.txt",sep = "\t", row.names = FALSE, col.names = FALSE)
-write.table(perk_hub_gene_ids_MEnavajowhite2, file = "./Cytoscape_files/perk_hub_gene_ids_MEnavajowhite2.txt",sep = "\t", row.names = FALSE, col.names = FALSE)
+write.table(perk_hub_gene_ids_MElightblue4, file = "./Cytoscape_files/perk_hub_gene_ids_MElightblue4.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(perk_hub_gene_ids_MElightpink3, file = "./Cytoscape_files/perk_hub_gene_ids_MElightpink3.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(perk_hub_gene_ids_MEnavajowhite2, file = "./Cytoscape_files/perk_hub_gene_ids_MEnavajowhite2.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 
+# export with labels for hub vs enzymes of interest to use in cytoscape
+# join with the lists for the enzymes of interest from "Select Pmar hub genes based on overlap with GO enrichment terms"
+# just like I subset the total hemocyte networks based on apoptosis, here I will subset the 
+perk_hub_gene_ids_MElightblue4_hub <- FilterGenes_Pmar_comb %>% filter(mod_names == "MElightblue4") %>% mutate(hub = "yes") %>%
+  dplyr::select(Name,hub)
+perk_hub_gene_ids_MElightpink3_hub <- FilterGenes_Pmar_comb %>% filter(mod_names == "MElightpink3") %>% mutate(hub = "yes") %>%
+  dplyr::select(Name, hub)
+perk_hub_gene_ids_MEnavajowhite2_hub <- FilterGenes_Pmar_comb %>% filter(mod_names == "MEnavajowhite2") %>% mutate(hub = "yes") %>%
+  dplyr::select(Name,hub) 
 
-
+write.table(perk_hub_gene_ids_MElightblue4_hub, file = "./Cytoscape_files/perk_hub_gene_ids_MElightblue4_hub.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(perk_hub_gene_ids_MElightpink3_hub, file = "./Cytoscape_files/perk_hub_gene_ids_MElightpink3_hub.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(perk_hub_gene_ids_MEnavajowhite2_hub, file = "./Cytoscape_files/perk_hub_gene_ids_MEnavajowhite2_hub.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 
 #### EXPORT WGNCA MATRIX TO CALCULATE INTRAMODULAR CONNECTIVITY IN BLUEWAVES ####
 
