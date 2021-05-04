@@ -872,7 +872,6 @@ head(hemo_datKME)
 perk_datKME=signedKME(perk_dds_rlog_matrix, perk_full_MEs, outputColumnName="MM.")
 head(perk_datKME)
 
-
 #### Identify all intramodular hub genes: high gene significance and high intramodular connectivity in interesting modules ####
 # Remember that module membership is highly related to intramodular connectivity
 
@@ -1727,10 +1726,10 @@ FilterGenes_Pmar_comb_Interpro_ZVAD_pink3 <- FilterGenes_Pmar_comb_Interpro %>% 
 FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2 <- FilterGenes_Pmar_comb_Interpro %>% filter(mod_names == "MEnavajowhite2")
 
 # How many intramodular hub genes in each with very high positive GS? Perform for interesting modules lightblue4, pink3, navajowhite2
-FilterGenes_Pmar_comb_Interpro_GDC_lightblue4 %>% distinct(transcript_id, GS) %>% dplyr::count() # 72
-FilterGenes_Pmar_comb_Interpro_ZVAD_pink3  %>% distinct(transcript_id, GS) %>% dplyr::count() # 30
-FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3  %>% distinct(transcript_id, GS) %>% dplyr::count() # 38
-
+FilterGenes_Pmar_comb_Interpro_GDC_lightblue4 %>% distinct(transcript_id, GS) %>% dplyr::count() # 38
+FilterGenes_Pmar_comb_Interpro_ZVAD_pink3  %>% distinct(transcript_id, GS) %>% dplyr::count() # 21
+FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3  %>% distinct(transcript_id, GS) %>% dplyr::count() # 27
+FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2  %>% distinct(transcript_id, GS) %>% dplyr::count() # 46
 
 ### ASSESS OVERLAPS WITH DEG RESULTS
 # assessing the modules I've highlighted as being most significant, GDC_lightblue4, ZVADnavajowhite2, ZVADpink3
@@ -1738,24 +1737,25 @@ View(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4)
 perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot
 View(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot)
 
-# How many overlaps between module genes and 
+# How many overlaps between module genes and interesting modules 
 #GDC
 perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4$transcript_id),]
-  # 3
+  # 0
 perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_GDC_darkorange2$transcript_id),]
-  # 1
+  # 1, hypothetical protein-XM_002767251.1 TFIIS N-terminal domain profile.
 perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_GDC_steelblue$transcript_id),]
-  #7
+  #2, methylase hypothetical protein-XM_002783013.1
+
 # Isolate these lines in the hub genes list
 FilterGenes_Pmar_comb_Interpro_GDC_steelblue_DEG <- FilterGenes_Pmar_comb_Interpro_GDC_steelblue[FilterGenes_Pmar_comb_Interpro_GDC_steelblue$transcript_id %in% perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id,]
 
 # ZVAD
 perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3$transcript_id),]
-# 3
+# 0
 perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_pink3$transcript_id),]
-# 3
+# 0
 perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2$transcript_id),]
-# 2
+# 0
 
 ### Pmar GO enrichment for interesting module intramodular hub genes ####
 Perk_geneNames <- names(Perk_GO_terms_found_geneID2GO_mapping)
@@ -2151,8 +2151,6 @@ ZVAD_lightpink3_GOdata_BP_Res <- GenTable(ZVAD_lightpink3_GOdata_BP, topgoFisher
 ZVAD_pink3_GOdata_BP_Res <- GenTable(ZVAD_pink3_GOdata_BP, topgoFisher = ZVAD_pink3_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 ZVAD_navajowhite2_GOdata_BP_Res <- GenTable(ZVAD_navajowhite2_GOdata_BP, topgoFisher = ZVAD_navajowhite2_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 
-
-
 #### Pmar top interesting modules GO visualization ####
 
 ### Dotplot of significantly enriched GO terms from hub modules plotting just the MF
@@ -2248,13 +2246,6 @@ Pmar_GO_all_dotplot_plot <- ggplot(Pmar_GO_all_dotplot, aes(x = group, y = Term 
 
 ggsave(Pmar_GO_all_dotplot_plot, device = "tiff", path = "./FIGURES/", 
        filename = "Pmar_GO_all_dotplot_plot.tiff", width = 15, height = 10)
-
-#### Select Pmar hub genes based on overlap with GO enrichment terms ####
-
-  # In order to narrow down my list of interesting GO terms for Perkinsus, I will interrogate enriched GO terms and which enzymes of interest are in them
-  # specifically things like endopeptidases, carboxypeptidases, methylases, and any redox related enzymes 
-  # these will be my lists of interesting parts of the cytoscape network to interrogate
-
 
 #### Assess Pmar SOD ####
 
@@ -2580,6 +2571,32 @@ lapply(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_list,  GS_MM_plo
   # lightblue4 = 0.4
   # grey = 0.45
 
+#### ANNOTATE ALL GENES IN MOST INTERESTING MODULES ####
+
+# Hemocyte list: "MEnavajowhite2", "MEblue", "MEyellow","MEdarkslateblue", "MEorangered4"
+hemo_MEnavajowhite2_annot <- as.data.frame(hemo_MEnavajowhite2) %>% dplyr::rename("ID" = "hemo_MEnavajowhite2") %>% left_join(., C_vir_rtracklayer_transcripts)
+hemo_MEblue_annot <- as.data.frame(hemo_MEblue) %>% dplyr::rename("ID" = "hemo_MEblue") %>% left_join(., C_vir_rtracklayer_transcripts)
+hemo_MEyellow_annot <- as.data.frame(hemo_MEyellow) %>% dplyr::rename("ID" = "hemo_MEyellow") %>% left_join(., C_vir_rtracklayer_transcripts)
+hemo_MEdarkslateblue_annot <- as.data.frame(hemo_MEdarkslateblue) %>% dplyr::rename("ID" = "hemo_MEdarkslateblue") %>% left_join(., C_vir_rtracklayer_transcripts)
+hemo_MEorangered4_annot <- as.data.frame(hemo_MEorangered4) %>% dplyr::rename("ID" = "hemo_MEorangered4") %>% left_join(., C_vir_rtracklayer_transcripts)
+
+# Annotate apoptosis from all 
+hemo_MEnavajowhite2_annot_apop <- as.data.frame(hemo_MEnavajowhite2) %>% dplyr::rename("ID" = "hemo_MEnavajowhite2") %>% left_join(., C_vir_rtracklayer_apop_product_final) %>% filter(!is.na(product))
+  # 8 total apop genes including caspase 2 and caspase 8, TNFRSF5, AP-1
+hemo_MEblue_annot_apop <- as.data.frame(hemo_MEblue) %>% dplyr::rename("ID" = "hemo_MEblue") %>% left_join(., C_vir_rtracklayer_apop_product_final) %>% filter(!is.na(product))
+  # 41 total apoptosis genes including many NF-kB pathway
+hemo_MEyellow_annot_apop <- as.data.frame(hemo_MEyellow) %>% dplyr::rename("ID" = "hemo_MEyellow") %>% left_join(., C_vir_rtracklayer_apop_product_final) %>% filter(!is.na(product))
+  # 51 total apoptosis - many IAPs, ER stress response, some TLR and TNFR
+hemo_MEdarkslateblue_annot_apop <- as.data.frame(hemo_MEdarkslateblue) %>% dplyr::rename("ID" = "hemo_MEdarkslateblue") %>% left_join(., C_vir_rtracklayer_apop_product_final) %>% filter(!is.na(product))
+  # 8 total apoptosis, TRAF2, cytochrome c, GADD45a, cathepsin B could suggest
+hemo_MEorangered4_annot_apop <- as.data.frame(hemo_MEorangered4) %>% dplyr::rename("ID" = "hemo_MEorangered4") %>% left_join(., C_vir_rtracklayer_apop_product_final) %>% filter(!is.na(product))
+  # also only 8 apoptosis transcripts, caspase7, TLR2, TLR4, TLR13, IFI27, calpain-7
+
+## Annotate all perkinsus interesting perkinsus
+GDC_lightblue4_all_genes_annot <- as.data.frame(GDC_lightblue4_all_genes) %>% dplyr::rename("transcript_id" = "GDC_lightblue4_all_genes") %>% left_join(., Perk_Interpro_GO_terms_XP)
+ZVAD_lightpink3_all_genes_annot <- as.data.frame(ZVAD_lightpink3_all_genes) %>% dplyr::rename("transcript_id" = "ZVAD_lightpink3_all_genes") %>% left_join(., Perk_Interpro_GO_terms_XP)
+ZVAD_navajowhite2_all_genes_annot <- as.data.frame(ZVAD_navajowhite2_all_genes) %>% dplyr::rename("transcript_id" = "ZVAD_navajowhite2_all_genes") %>% left_join(., Perk_Interpro_GO_terms_XP)
+
 #### EXPORT COMPILED DATA TO SPREADSHEETS ####
 
 # GOAL:
@@ -2664,6 +2681,71 @@ write.table(FilterGenes_comb_apop_labeled, file = "FilterGenes_comb_apop_labeled
 write.table(Hemo_GO_export_subset_all, file = "Hemo_GO_export_subset_all.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
 write.table(FilterGenes_Pmar_comb_Interpro_slim, file = "FilterGenes_Pmar_comb_Interpro_slim_HUB_GENES.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
 write.table(Pmar_GO_hub_export_all, file = "Pmar_GO_hub_export_all.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
+
+#### Select Pmar hub genes for further analysis based on overlap with GO enrichment terms ####
+
+# In order to narrow down my list of interesting GO terms for Perkinsus, I will interrogate enriched GO terms and which enzymes of interest are in them
+# specifically things like endopeptidases, carboxypeptidases, methylases, and any redox related enzymes 
+# these will be my lists of interesting parts of the cytoscape network to interrogate
+# Focusing on my modules of interest
+# GDC related:
+#   Lightblue4
+# ZVAD related:
+#   Navajowhite2
+#   lightpink3
+Pmar_GO_hub_export_all_GO_list_lightblue4 <- Pmar_GO_hub_export_all %>% filter(group == "lightblue4") %>% dplyr::select(GO.ID)
+Pmar_GO_hub_export_all_GO_list_lightblue4 <- as.character(unlist(Pmar_GO_hub_export_all_GO_list_lightblue4))
+
+Pmar_GO_hub_export_all_GO_list_lightpink3 <- Pmar_GO_hub_export_all %>% filter(group == "lightpink3") %>% dplyr::select(GO.ID)
+Pmar_GO_hub_export_all_GO_list_lightpink3 <- as.character(unlist(Pmar_GO_hub_export_all_GO_list_lightpink3))
+
+Pmar_GO_hub_export_all_GO_list_navajowhite2 <- Pmar_GO_hub_export_all %>% filter(group == "navajowhite2") %>% dplyr::select(GO.ID)
+Pmar_GO_hub_export_all_GO_list_navajowhite2 <- as.character(unlist(Pmar_GO_hub_export_all_GO_list_navajowhite2))
+
+# get lists of hub genes that overlap with enriched GO terms in either BP or MF
+Pmar_GO_hub_export_all_Interpro_hub_genes_lightblue4_list <- FilterGenes_Pmar_comb_Interpro_slim %>% filter(mod_names == "MElightblue4") %>%
+  filter(grepl(paste(Pmar_GO_hub_export_all_GO_list_lightblue4, collapse = "|"), Ontology_term))
+  #Name                                         product  transcript_id moduleTraitCor moduleTraitPvalue    mod_names        GS     protein_id source Ontology_term       Dbxref signature_desc
+  #1 XM_002768739.1  iron-sulfur cluster assembly protein, putative XM_002768739.1      0.9089457      0.0006854917 MElightblue4 0.7920236 XP_002768785.1    CDD  "GO:0005.... "InterPr....      IscU_like
+  #2 XM_002784868.1 DNA replication licensing factor MCM2, putative XM_002784868.1      0.9089457      0.0006854917 MElightblue4 0.7757555 XP_002784914.1   Pfam  "GO:0003.... "InterPr....   Mini-chr....
+
+# join back in the full Interproscan terms to look at all the domains for these proteins
+Pmar_GO_hub_export_all_Interpro_hub_genes_lightblue4_all_domain <- Pmar_GO_hub_export_all_Interpro_hub_genes_lightblue4_list %>%  
+  left_join(., Perk_Interpro_GO_terms_XP[,c("transcript_id","Dbxref","signature_desc")], by = "transcript_id")
+
+# repeat for lightpink3
+Pmar_GO_hub_export_all_Interpro_hub_genes_lightpink3_list <- FilterGenes_Pmar_comb_Interpro_slim %>% filter(mod_names == "MElightpink3") %>%
+  filter(grepl(paste(Pmar_GO_hub_export_all_GO_list_lightpink3, collapse = "|"), Ontology_term))
+#Name                             product  transcript_id moduleTraitCor moduleTraitPvalue    mod_names        GS     protein_id          source Ontology_term       Dbxref signature_desc
+#1 XM_002776978.1                hypothetical protein XM_002776978.1      0.8357802       0.005012701 MElightpink3 0.7085296 XP_002777024.1          PRINTS  "GO:0004.... "InterPr....   Pepsin (....
+#2 XM_002776978.1                hypothetical protein XM_002776978.1      0.8357802       0.005012701 MElightpink3 0.7085296 XP_002777024.1 ProSitePatterns  "GO:0004.... "InterPr....   Eukaryot....
+#3 XM_002786856.1 proteasome subunit alpha1, putative XM_002786856.1      0.8357802       0.005012701 MElightpink3 0.7399695 XP_002786902.1            Pfam  "GO:0004.... "InterPr....   Proteaso....
+#4 XM_002785313.1         aspartyl protease, putative XM_002785313.1      0.8357802       0.005012701 MElightpink3 0.7359564 XP_002785359.1          PRINTS  "GO:0004.... "InterPr....   Pepsin (....
+#5 XM_002777539.1   succinate dehydrogenase, putative XM_002777539.1      0.8357802       0.005012701 MElightpink3 0.8321954 XP_002777585.1         TIGRFAM  "GO:0000.... "InterPr....   flavo_cy....
+#6 XM_002765664.1      conserved hypothetical protein XM_002765664.1      0.8357802       0.005012701 MElightpink3 0.8670879 XP_002765710.1            Pfam  "GO:0004.... "InterPr....   Aminopep....
+
+# join back in the full Interproscan terms to look at all the domains for these proteins
+Pmar_GO_hub_export_all_Interpro_hub_genes_lightpink3_all_domain <- Pmar_GO_hub_export_all_Interpro_hub_genes_lightpink3_list %>%  
+  left_join(., Perk_Interpro_GO_terms_XP[,c("transcript_id","Dbxref","signature_desc")], by = "transcript_id")
+ 
+# repeat for navajowhite2
+Pmar_GO_hub_export_all_Interpro_hub_genes_navajowhite2_list <- FilterGenes_Pmar_comb_Interpro_slim %>% filter(mod_names == "MEnavajowhite2") %>%
+  filter(grepl(paste(Pmar_GO_hub_export_all_GO_list_navajowhite2, collapse = "|"), Ontology_term))
+  #1  XM_002780795.1                     cytochrome p450, putative XM_002780795.1      0.9145422      0.0005521049 MEnavajowhite2 0.8081779 XP_002780841.1          PRINTS  "GO:0005.... "InterPr....
+  #2  XM_002780795.1                     cytochrome p450, putative XM_002780795.1      0.9145422      0.0005521049 MEnavajowhite2 0.8081779 XP_002780841.1            Pfam  "GO:0005.... "InterPr....
+  #3  XM_002788329.1                          hypothetical protein XM_002788329.1      0.9145422      0.0005521049 MEnavajowhite2 0.8636239 XP_002788375.1            Pfam  "GO:0022.... "InterPr....
+  #4  XM_002784845.1  succinyl-coa synthetase beta chain, putative XM_002784845.1      0.9145422      0.0005521049 MEnavajowhite2 0.6890149 XP_002784891.1            Pfam  "GO:0003824" "InterPr....
+  #5  XM_002765483.1      trehalose-6-phosphate synthase, putative XM_002765483.1      0.9145422      0.0005521049 MEnavajowhite2 0.9398572 XP_002765529.1         TIGRFAM  "GO:0003.... "InterPr....
+  #6  XM_002765483.1      trehalose-6-phosphate synthase, putative XM_002765483.1      0.9145422      0.0005521049 MEnavajowhite2 0.9398572 XP_002765529.1            Pfam  "GO:0003.... "InterPr....
+  #7  XM_002773250.1                         SEC61-gamma, putative XM_002773250.1      0.9145422      0.0005521049 MEnavajowhite2 0.8010266 XP_002773296.1           Hamap  "GO:0006.... "InterPr....
+  #8  XM_002773011.1                           Myoglobin, putative XM_002773011.1      0.9145422      0.0005521049 MEnavajowhite2 0.9740561 XP_002773057.1            Pfam  "GO:0019825" "InterPr....
+  #9  XM_002771060.1 transcription elongation factor SII, putative XM_002771060.1      0.9145422      0.0005521049 MEnavajowhite2 0.9560542 XP_002771106.1 ProSitePatterns  "GO:0003.... "InterPr....
+  #10 XM_002772820.1               acetolactate synthase, putative XM_002772820.1      0.9145422      0.0005521049 MEnavajowhite2 0.8030358 XP_002772866.1            Pfam  "GO:0003.... "InterPr....
+  #11 XM_002773752.1                          hypothetical protein XM_002773752.1      0.9145422      0.0005521049 MEnavajowhite2 0.8418256 XP_002773798.1 ProSiteProfiles  "GO:0003.... "InterPr....
+
+# join back in the full Interproscan terms to look at all the domains for these proteins
+Pmar_GO_hub_export_all_Interpro_hub_genes_navajowhite2_all_domain <- Pmar_GO_hub_export_all_Interpro_hub_genes_navajowhite2_list %>%  
+  left_join(., Perk_Interpro_GO_terms_XP[,c("transcript_id","Dbxref","signature_desc")], by = "transcript_id")
 
 #### EXPORT MODULE HUB GENE LISTS FOR VIEW IN CYTOSCAPE ####
 
