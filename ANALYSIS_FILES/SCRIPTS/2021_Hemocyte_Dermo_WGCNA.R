@@ -1993,6 +1993,10 @@ ZVAD_pink3_all_genes <- as.factor(ZVAD_pink3_all_genes[!is.na(ZVAD_pink3_all_gen
 ZVAD_navajowhite2_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="navajowhite2"]  
 ZVAD_navajowhite2_all_genes <- as.factor(ZVAD_navajowhite2_all_genes[!is.na(ZVAD_navajowhite2_all_genes)])
 
+# adding in blue4 as a module potentially response to general P. marinus treatment
+GDC_ZVAD_blue4_all_genes <- names(perk_dds_rlog_matrix)[perk_full_moduleColors =="blue4"]  
+GDC_ZVAD_blue4_all_genes <- as.factor (GDC_ZVAD_blue4_all_genes[!is.na(GDC_ZVAD_blue4_all_genes)])
+
 GDC_steelblue_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_steelblue_all_genes))
 GDC_darkorange2_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_darkorange2_all_genes))
 GDC_lightblue4_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_lightblue4_all_genes))
@@ -2000,12 +2004,17 @@ ZVAD_lightpink3_all_genes_factor <- factor(as.integer(Perk_geneNames %in% ZVAD_l
 ZVAD_pink3_all_genes_factor <- factor(as.integer(Perk_geneNames %in% ZVAD_pink3_all_genes))
 ZVAD_navajowhite2_all_genes_factor <- factor(as.integer(Perk_geneNames %in% ZVAD_navajowhite2_all_genes))
 
+# adding blue4
+GDC_ZVAD_blue4_all_genes_factor <- factor(as.integer(Perk_geneNames %in% GDC_ZVAD_blue4_all_genes))
+
 names(GDC_steelblue_all_genes_factor) <- Perk_geneNames
 names(GDC_darkorange2_all_genes_factor) <- Perk_geneNames
 names(GDC_lightblue4_all_genes_factor) <- Perk_geneNames
 names(ZVAD_lightpink3_all_genes_factor) <- Perk_geneNames
 names(ZVAD_pink3_all_genes_factor) <- Perk_geneNames
 names(ZVAD_navajowhite2_all_genes_factor) <- Perk_geneNames
+
+names(GDC_ZVAD_blue4_all_genes_factor) <- Perk_geneNames
 
 ### Make topGO data object 
 GDC_steelblue_GOdata <- new("topGOdata", description = "GDC_steelblue Gene Enrichment", 
@@ -2050,6 +2059,15 @@ ZVAD_navajowhite2_GOdata <- new("topGOdata", description = "ZVAD_navajowhite2 Ge
                                                                allGenes = ZVAD_navajowhite2_all_genes_factor,
                                                                nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
 
+GDC_ZVAD_blue4_GOdata <- new("topGOdata", description = "blue4 Gene Enrichment", 
+                                # I want to test MF
+                                ontology = "MF",
+                                # define here the genes of interest
+                                allGenes = GDC_ZVAD_blue4_all_genes_factor,
+                                nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+
+
 #nodeSize=used to prune the GO hierarchy from the terms which have less than 1 annotated genes
 #annFUN.gene2GO = this function is used when the annotations are provided as a gene-to-GOs mapping.
 
@@ -2061,6 +2079,8 @@ ZVAD_lightpink3_GOdata_Fisher_Weight <- runTest(ZVAD_lightpink3_GOdata, algorith
 ZVAD_pink3_GOdata_Fisher_Weight <- runTest(ZVAD_pink3_GOdata, algorithm = "weight01", statistic = "fisher")
 ZVAD_navajowhite2_GOdata_Fisher_Weight <- runTest(ZVAD_navajowhite2_GOdata, algorithm = "weight01", statistic = "fisher")
 
+GDC_ZVAD_blue4_GOdata_Fisher_Weight <-  runTest(GDC_ZVAD_blue4_GOdata, algorithm = "weight01", statistic = "fisher")
+
 ## Analyze enrichment test results 
 # see how many results we get where weight01 gives a P-value <= 0.05
 GDC_steelblue_GOdata_summary <- summary(attributes(GDC_steelblue_GOdata_Fisher_Weight)$score <= 0.05) # 9 sig
@@ -2070,6 +2090,8 @@ ZVAD_lightpink3_GOdata_summary <- summary(attributes(ZVAD_lightpink3_GOdata_Fish
 ZVAD_pink3_GOdata_summary <- summary(attributes(ZVAD_pink3_GOdata_Fisher_Weight)$score <= 0.05) # 3 sig
 ZVAD_navajowhite2_GOdata_summary <- summary(attributes(ZVAD_navajowhite2_GOdata_Fisher_Weight)$score <= 0.05) # 11
 
+GDC_ZVAD_blue4_GOdata_summary <- summary(attributes(GDC_ZVAD_blue4_GOdata_Fisher_Weight)$score <= 0.05) # 2
+
 #print out the top results, though only GDC_lightblue4 is sig
 GDC_steelblue_GOdata_Res <- GenTable(GDC_steelblue_GOdata, topgoFisher = GDC_steelblue_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 GDC_darkorange2_GOdata_Res <- GenTable(GDC_darkorange2_GOdata, topgoFisher = GDC_darkorange2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
@@ -2078,6 +2100,8 @@ GDC_lightblue4_GOdata_Res <- GenTable(GDC_lightblue4_GOdata, topgoFisher = GDC_l
 ZVAD_lightpink3_GOdata_Res <- GenTable(ZVAD_lightpink3_GOdata, topgoFisher = ZVAD_lightpink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 ZVAD_pink3_GOdata_Res <- GenTable(ZVAD_pink3_GOdata, topgoFisher = ZVAD_pink3_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 ZVAD_navajowhite2_GOdata_Res <- GenTable(ZVAD_navajowhite2_GOdata, topgoFisher = ZVAD_navajowhite2_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
+
+GDC_ZVAD_blue4_GOdata_Res <- GenTable(GDC_ZVAD_blue4_GOdata, topgoFisher = GDC_ZVAD_blue4_GOdata_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 
 ## Repeat for BP
 GDC_steelblue_GOdata_BP <- new("topGOdata", description = "GDC_steelblue Gene Enrichment", 
@@ -2122,6 +2146,14 @@ ZVAD_navajowhite2_GOdata_BP <- new("topGOdata", description = "ZVAD_navajowhite2
                                 allGenes = ZVAD_navajowhite2_all_genes_factor,
                                 nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
 
+GDC_ZVAD_blue4_GOdata_BP <- new("topGOdata", description = "blue4 Gene Enrichment", 
+                             # I want to test MF
+                             ontology = "BP",
+                             # define here the genes of interest
+                             allGenes = GDC_ZVAD_blue4_all_genes_factor,
+                             nodeSize = 5,  annot = annFUN.gene2GO, gene2GO = Perk_GO_terms_found_geneID2GO_mapping)
+
+
 #nodeSize=used to prune the GO hierarchy from the terms which have less than 1 annotated genes
 #annFUN.gene2GO = this function is used when the annotations are provided as a gene-to-GOs mapping.
 
@@ -2133,6 +2165,8 @@ ZVAD_lightpink3_GOdata_BP_Fisher_Weight <- runTest(ZVAD_lightpink3_GOdata_BP, al
 ZVAD_pink3_GOdata_BP_Fisher_Weight <- runTest(ZVAD_pink3_GOdata_BP, algorithm = "weight01", statistic = "fisher")
 ZVAD_navajowhite2_GOdata_BP_Fisher_Weight <- runTest(ZVAD_navajowhite2_GOdata_BP, algorithm = "weight01", statistic = "fisher")
 
+GDC_ZVAD_blue4_GOdata_BP_Fisher_Weight <- runTest(GDC_ZVAD_blue4_GOdata_BP, algorithm = "weight01", statistic = "fisher")
+
 ## Analyze enrichment test results 
 # see how many results we get where weight01 gives a P-value <= 0.05
 GDC_steelblue_GOdata_BP_summary <- summary(attributes(GDC_steelblue_GOdata_BP_Fisher_Weight)$score <= 0.05) 
@@ -2142,6 +2176,8 @@ ZVAD_lightpink3_GOdata_BP_summary <- summary(attributes(ZVAD_lightpink3_GOdata_B
 ZVAD_pink3_GOdata_BP_summary <- summary(attributes(ZVAD_pink3_GOdata_BP_Fisher_Weight)$score <= 0.05) 
 ZVAD_navajowhite2_GOdata_BP_summary <- summary(attributes(ZVAD_navajowhite2_GOdata_BP_Fisher_Weight)$score <= 0.05) 
 
+GDC_ZVAD_blue4_GOdata_BP_summary <- summary(attributes(GDC_ZVAD_blue4_GOdata_BP_Fisher_Weight)$score <= 0.05) # 2
+
 #print out the top results, though only GDC_lightblue4 is sig
 GDC_steelblue_GOdata_BP_Res <- GenTable(GDC_steelblue_GOdata_BP, topgoFisher = GDC_steelblue_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 GDC_darkorange2_GOdata_BP_Res <- GenTable(GDC_darkorange2_GOdata_BP, topgoFisher = GDC_darkorange2_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
@@ -2150,6 +2186,9 @@ GDC_lightblue4_GOdata_BP_Res <- GenTable(GDC_lightblue4_GOdata_BP, topgoFisher =
 ZVAD_lightpink3_GOdata_BP_Res <- GenTable(ZVAD_lightpink3_GOdata_BP, topgoFisher = ZVAD_lightpink3_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 ZVAD_pink3_GOdata_BP_Res <- GenTable(ZVAD_pink3_GOdata_BP, topgoFisher = ZVAD_pink3_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 ZVAD_navajowhite2_GOdata_BP_Res <- GenTable(ZVAD_navajowhite2_GOdata_BP, topgoFisher = ZVAD_navajowhite2_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
+
+GDC_ZVAD_blue4_GOdata_BP_Res <- GenTable(GDC_ZVAD_blue4_GOdata_BP, topgoFisher = GDC_ZVAD_blue4_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
+
 
 #### Pmar top interesting modules GO visualization ####
 
@@ -2597,6 +2636,10 @@ GDC_lightblue4_all_genes_annot <- as.data.frame(GDC_lightblue4_all_genes) %>% dp
 ZVAD_lightpink3_all_genes_annot <- as.data.frame(ZVAD_lightpink3_all_genes) %>% dplyr::rename("transcript_id" = "ZVAD_lightpink3_all_genes") %>% left_join(., Perk_Interpro_GO_terms_XP)
 ZVAD_navajowhite2_all_genes_annot <- as.data.frame(ZVAD_navajowhite2_all_genes) %>% dplyr::rename("transcript_id" = "ZVAD_navajowhite2_all_genes") %>% left_join(., Perk_Interpro_GO_terms_XP)
 
+# add in blue4
+GDC_ZVAD_blue4_all_genes_annot <- as.data.frame(GDC_ZVAD_blue4_all_genes) %>% dplyr::rename("transcript_id" = "GDC_ZVAD_blue4_all_genes") %>% left_join(., Perk_Interpro_GO_terms_XP)
+
+
 #### EXPORT COMPILED DATA TO SPREADSHEETS ####
 
 # GOAL:
@@ -2793,10 +2836,12 @@ write.table(hemo_hub_gene_ids_MEorangered4_apop_hub, file = "./Cytoscape_files/h
 perk_hub_gene_ids_MElightblue4 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MElightblue4") %>% dplyr::select(Name)
 perk_hub_gene_ids_MElightpink3 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MElightpink3") %>% dplyr::select(Name)
 perk_hub_gene_ids_MEnavajowhite2 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MEnavajowhite2") %>% dplyr::select(Name)
+perk_hub_gene_ids_MEblue4 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MEblue4") %>% dplyr::select(Name)
 
 write.table(perk_hub_gene_ids_MElightblue4, file = "./Cytoscape_files/perk_hub_gene_ids_MElightblue4.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 write.table(perk_hub_gene_ids_MElightpink3, file = "./Cytoscape_files/perk_hub_gene_ids_MElightpink3.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 write.table(perk_hub_gene_ids_MEnavajowhite2, file = "./Cytoscape_files/perk_hub_gene_ids_MEnavajowhite2.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(perk_hub_gene_ids_MEblue4 , file = "./Cytoscape_files/perk_hub_gene_ids_MEblue4.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 
 # export with labels for hub vs enzymes of interest to use in cytoscape
 # join with the lists for the enzymes of interest from "Select Pmar hub genes based on overlap with GO enrichment terms"
@@ -2807,10 +2852,13 @@ perk_hub_gene_ids_MElightpink3_hub <- FilterGenes_Pmar_comb %>% filter(mod_names
   dplyr::select(Name, hub)
 perk_hub_gene_ids_MEnavajowhite2_hub <- FilterGenes_Pmar_comb %>% filter(mod_names == "MEnavajowhite2") %>% mutate(hub = "yes") %>%
   dplyr::select(Name,hub) 
+perk_hub_gene_ids_MEblue4_hub <- FilterGenes_Pmar_comb %>% filter(mod_names == "MEblue4") %>% mutate(hub = "yes") %>%
+  dplyr::select(Name,hub) 
 
 write.table(perk_hub_gene_ids_MElightblue4_hub, file = "./Cytoscape_files/perk_hub_gene_ids_MElightblue4_hub.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 write.table(perk_hub_gene_ids_MElightpink3_hub, file = "./Cytoscape_files/perk_hub_gene_ids_MElightpink3_hub.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 write.table(perk_hub_gene_ids_MEnavajowhite2_hub, file = "./Cytoscape_files/perk_hub_gene_ids_MEnavajowhite2_hub.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(perk_hub_gene_ids_MEblue4_hub, file = "./Cytoscape_files/perk_hub_gene_ids_MEblue4_hub.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 
 ## EXPORT GENE SIGNIFICANCE FOR APOPTOSIS PERCENTAGE FOR EACH GENE
 hemo_full_geneTraitSignificance_apop_cytoscape <- hemo_full_geneTraitSignificance_apop %>% rownames_to_column(.,var = "ID")
@@ -2818,31 +2866,42 @@ hemo_full_GSPvalue_apop_cytoscape <- hemo_full_GSPvalue_apop %>% rownames_to_col
 perk_full_geneTraitSignificance_apop_cytoscape <- perk_full_geneTraitSignificance_apop %>% rownames_to_column(.,var = "ID")
 perk_full_GSPvalue_apop_cytoscape <- perk_full_GSPvalue_apop %>% rownames_to_column(.,var = "ID")
 
-write.table(hemo_full_geneTraitSignificance_apop_cytoscape,  file = "./Cytoscape_files/hemo_full_geneTraitSignificance_apop.txt", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
-write.table(hemo_full_GSPvalue_apop_cytoscape, file = "./Cytoscape_files/hemo_full_GSPvalue_apop.txt", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
-write.table(perk_full_geneTraitSignificance_apop_cytoscape , file = "./Cytoscape_files/perk_full_geneTraitSignificance_apop.txt", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
-write.table(perk_full_GSPvalue_apop_cytoscape, file = "./Cytoscape_files/perk_full_GSPvalue_apop.txt", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+hemo_full_geneTraitSignificance_GSPvalue <- full_join(hemo_full_geneTraitSignificance_apop_cytoscape,hemo_full_GSPvalue_apop_cytoscape )
+perk_full_geneTraitSignificance_GSPvalue <- full_join(perk_full_geneTraitSignificance_apop_cytoscape,perk_full_GSPvalue_apop_cytoscape )
+
+write.table(hemo_full_geneTraitSignificance_GSPvalue,  file = "./Cytoscape_files/hemo_full_geneTraitSignificance_GSPvalue.txt", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.table(perk_full_geneTraitSignificance_GSPvalue , file = "./Cytoscape_files/perk_full_geneTraitSignificance_GSPvalue.txt", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
 
-
-#### DETERMINE CONNECTIVITY CUT OFF TO VIEW MOST INTERESTING GENE CONNECTIONS ####
+#### DETERMINE EDGE WEIGHT CUT OFF TO VIEW MOST INTERESTING CYTOSCAPE GENE CONNECTIONS ####
 
 # What is the top 5% of edge weights for each file?
 CytoscapeInput_edges_perk_fulllightblue4 <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-perk_fulllightblue4.txt", header = TRUE, col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
+
 CytoscapeInput_edges_hemo_fullyellow <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-hemo_fullyellow.txt", header = TRUE,col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
 CytoscapeInput_edges_hemo_fullnavajowhite2 <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-hemo_fullnavajowhite2.txt", header = TRUE,col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
 CytoscapeInput_edges_hemo_fullblue <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-hemo_fullblue.txt", header = TRUE, col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
 
 CytoscapeInput_edges_perk_fulllightblue4$weight <- as.numeric(CytoscapeInput_edges_perk_fulllightblue4$weight)
+
 CytoscapeInput_edges_hemo_fullyellow$weight <- as.numeric(CytoscapeInput_edges_hemo_fullyellow$weight)
 CytoscapeInput_edges_hemo_fullnavajowhite2$weight <- as.numeric(CytoscapeInput_edges_hemo_fullnavajowhite2$weight)
 CytoscapeInput_edges_hemo_fullblue$weight <- as.numeric(CytoscapeInput_edges_hemo_fullblue$weight)
 
-quantile(CytoscapeInput_edges_perk_fulllightblue4$weight, 0.90) # 0.1488532 
+quantile(CytoscapeInput_edges_perk_fulllightblue4$weight, 0.80) # 0.1320015 
 quantile(CytoscapeInput_edges_hemo_fullyellow$weight, 0.90) #0.1047121 
 quantile(CytoscapeInput_edges_hemo_fullnavajowhite2$weight, 0.90) # 0.05366432 
 quantile(CytoscapeInput_edges_hemo_fullblue$weight, 0.90) # 0.3489623 
 
+
+#### ANALYSIS OF CYTOSCAPE RESULTS
+
+# WITH APOP GENE SIGNIFICANCE P VALUE FILTERED TO 0.05 AND EDGE WEIHT FILTERED TO 80 PERCENTILE
+# we get the following Perkinsus nodes in the lightblue4 module
+perk_lightblue3_cytoscape_P05_EW80 <- read.csv("/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/WGCNA/Cytoscape_files/CytoscapeInput-edges-perk_fulllightblue4.txt default node.csv", header= TRUE)
+# filter for selected 
+perk_lightblue3_cytoscape_P05_EW80_selected <- perk_lightblue3_cytoscape_P05_EW80 %>% filter(selected == "true") %>% dplyr::rename("transcript_id" = "name") %>% 
+  left_join(., GDC_lightblue4_all_genes_annot)
 
 #### EXPORT WGNCA MATRIX TO CALCULATE INTRAMODULAR CONNECTIVITY IN BLUEWAVES ####
 
