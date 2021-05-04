@@ -2747,7 +2747,14 @@ Pmar_GO_hub_export_all_Interpro_hub_genes_navajowhite2_list <- FilterGenes_Pmar_
 Pmar_GO_hub_export_all_Interpro_hub_genes_navajowhite2_all_domain <- Pmar_GO_hub_export_all_Interpro_hub_genes_navajowhite2_list %>%  
   left_join(., Perk_Interpro_GO_terms_XP[,c("transcript_id","Dbxref","signature_desc")], by = "transcript_id")
 
-#### EXPORT MODULE HUB GENE LISTS FOR VIEW IN CYTOSCAPE ####
+#### EXPORT MODULE HUB GENE LISTS AND INFO FOR VIEW IN CYTOSCAPE ####
+
+## Export alternate name lists
+C_vir_rtracklayer_transcripts_cytoscape_alt_names <- unique(C_vir_rtracklayer_transcripts[,c("ID","product")])
+Perkinsus_rtracklayer_transcripts_cytoscape_alt_names <- unique(Perkinsus_rtracklayer_transcripts[,c("transcript_id","product")])
+
+write.table(C_vir_rtracklayer_transcripts_cytoscape_alt_names, file = "./Cytoscape_files/C_vir_rtracklayer_transcripts_cytoscape_alt_names.txt",sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.table(Perkinsus_rtracklayer_transcripts_cytoscape_alt_names, file = "./Cytoscape_files/Perkinsus_rtracklayer_transcripts_cytoscape_alt_names.txt",sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
 # Hemocyte hub gene rnaID lists
 #"MEnavajowhite2", "MEblue", "MEyellow","MEdarkslateblue", "MEorangered4"
@@ -2804,6 +2811,38 @@ perk_hub_gene_ids_MEnavajowhite2_hub <- FilterGenes_Pmar_comb %>% filter(mod_nam
 write.table(perk_hub_gene_ids_MElightblue4_hub, file = "./Cytoscape_files/perk_hub_gene_ids_MElightblue4_hub.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 write.table(perk_hub_gene_ids_MElightpink3_hub, file = "./Cytoscape_files/perk_hub_gene_ids_MElightpink3_hub.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 write.table(perk_hub_gene_ids_MEnavajowhite2_hub, file = "./Cytoscape_files/perk_hub_gene_ids_MEnavajowhite2_hub.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+## EXPORT GENE SIGNIFICANCE FOR APOPTOSIS PERCENTAGE FOR EACH GENE
+hemo_full_geneTraitSignificance_apop_cytoscape <- hemo_full_geneTraitSignificance_apop %>% rownames_to_column(.,var = "ID")
+hemo_full_GSPvalue_apop_cytoscape <- hemo_full_GSPvalue_apop %>% rownames_to_column(.,var = "ID")
+perk_full_geneTraitSignificance_apop_cytoscape <- perk_full_geneTraitSignificance_apop %>% rownames_to_column(.,var = "ID")
+perk_full_GSPvalue_apop_cytoscape <- perk_full_GSPvalue_apop %>% rownames_to_column(.,var = "ID")
+
+write.table(hemo_full_geneTraitSignificance_apop_cytoscape,  file = "./Cytoscape_files/hemo_full_geneTraitSignificance_apop.txt", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.table(hemo_full_GSPvalue_apop_cytoscape, file = "./Cytoscape_files/hemo_full_GSPvalue_apop.txt", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.table(perk_full_geneTraitSignificance_apop_cytoscape , file = "./Cytoscape_files/perk_full_geneTraitSignificance_apop.txt", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.table(perk_full_GSPvalue_apop_cytoscape, file = "./Cytoscape_files/perk_full_GSPvalue_apop.txt", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+
+
+
+#### DETERMINE CONNECTIVITY CUT OFF TO VIEW MOST INTERESTING GENE CONNECTIONS ####
+
+# What is the top 5% of edge weights for each file?
+CytoscapeInput_edges_perk_fulllightblue4 <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-perk_fulllightblue4.txt", header = TRUE, col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
+CytoscapeInput_edges_hemo_fullyellow <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-hemo_fullyellow.txt", header = TRUE,col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
+CytoscapeInput_edges_hemo_fullnavajowhite2 <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-hemo_fullnavajowhite2.txt", header = TRUE,col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
+CytoscapeInput_edges_hemo_fullblue <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-hemo_fullblue.txt", header = TRUE, col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
+
+CytoscapeInput_edges_perk_fulllightblue4$weight <- as.numeric(CytoscapeInput_edges_perk_fulllightblue4$weight)
+CytoscapeInput_edges_hemo_fullyellow$weight <- as.numeric(CytoscapeInput_edges_hemo_fullyellow$weight)
+CytoscapeInput_edges_hemo_fullnavajowhite2$weight <- as.numeric(CytoscapeInput_edges_hemo_fullnavajowhite2$weight)
+CytoscapeInput_edges_hemo_fullblue$weight <- as.numeric(CytoscapeInput_edges_hemo_fullblue$weight)
+
+quantile(CytoscapeInput_edges_perk_fulllightblue4$weight, 0.90) # 0.1488532 
+quantile(CytoscapeInput_edges_hemo_fullyellow$weight, 0.90) #0.1047121 
+quantile(CytoscapeInput_edges_hemo_fullnavajowhite2$weight, 0.90) # 0.05366432 
+quantile(CytoscapeInput_edges_hemo_fullblue$weight, 0.90) # 0.3489623 
+
 
 #### EXPORT WGNCA MATRIX TO CALCULATE INTRAMODULAR CONNECTIVITY IN BLUEWAVES ####
 
