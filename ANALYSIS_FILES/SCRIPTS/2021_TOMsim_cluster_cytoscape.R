@@ -11,21 +11,21 @@ cor <- WGCNA::cor
 #### LOAD SAVED DATA ####
 
 # Read in data
-hemo_dds_rlog_matrix <- read.table(file="/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/WGCNA/hemo_dds_rlog_matrix.table")
+#hemo_dds_rlog_matrix <- read.table(file="/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/WGCNA/hemo_dds_rlog_matrix.table")
 perk_dds_rlog_matrix <- read.table(file="/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/WGCNA/perk_dds_rlog_matrix.table")
 
 # Load module colors 
-load(file = "/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/WGCNA/hemo_full_moduleColors.RData")
+#load(file = "/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/WGCNA/hemo_full_moduleColors.RData")
 load(file = "/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/WGCNA/perk_full_moduleColors.RData")
 
 # Calculate TOM
-hemo_full_TOM = TOMsimilarityFromExpr(hemo_dds_rlog_matrix, power = 7, TOMType = "signed", networkType= "signed hybrid", corType = "bicor") 
+#hemo_full_TOM = TOMsimilarityFromExpr(hemo_dds_rlog_matrix, power = 7, TOMType = "signed", networkType= "signed hybrid", corType = "bicor") 
 
-save(hemo_full_TOM, file = "/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/WGCNA/hemo_full_TOM.RData")
+#save(hemo_full_TOM, file = "/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/WGCNA/hemo_full_TOM.RData")
 
-perk_full_TOM = TOMsimilarityFromExpr(perk_dds_rlog_matrix, power = 7, TOMType = "signed", networkType= "signed hybrid", corType ="bicor" )
+#perk_full_TOM = TOMsimilarityFromExpr(perk_dds_rlog_matrix, power = 7, TOMType = "signed", networkType= "signed hybrid", corType ="bicor" )
 
-save(perk_full_TOM, file="/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/WGCNA/perk_full_TOM.RData" )
+#save(perk_full_TOM, file="/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/WGCNA/perk_full_TOM.RData" )
 
 ###### CAN RUN BELOW EITHER INTERACTIVE OR AS A SCRIPT ####
 
@@ -39,7 +39,10 @@ save(perk_full_TOM, file="/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Tr
 library(WGCNA)
 
 # Read in the annotation files 
-load(file="/data3/marine_diseases_lab/erin/2017_2020_Transcriptome_Analysis/WGCNA/C_gig_C_vir_annotations.RData")
+#load(file="/data3/marine_diseases_lab/erin/2017_2020_Transcriptome_Analysis/WGCNA/C_gig_C_vir_annotations.RData")
+
+# load in TOM
+load(file="/data/marine_diseases_lab/erin/2020_Hemolymph_Dermo_Transcriptome_Project/WGCNA/perk_full_TOM.RData")
 
 # Check they loaded
 # nrow(C_vir_rtracklayer)
@@ -51,157 +54,177 @@ load(file="/data3/marine_diseases_lab/erin/2017_2020_Transcriptome_Analysis/WGCN
       # ZVAD = darkslateblue, orangered4
 
 ## EXPORT navajowhite2
-hemo_full_modules = "navajowhite2"
-# Select module probes
-hemo_full_probes = colnames(hemo_dds_rlog_matrix)
-hemo_full_inModule = is.finite(match(hemo_full_moduleColors, hemo_full_modules))
-hemo_full_modProbes = hemo_full_probes[hemo_full_inModule]
-hemo_full_modGenes = C_vir_rtracklayer$ID[match(hemo_full_modProbes, C_vir_rtracklayer$ID)]
-# Select the corresponding Topological Overlap
-hemo_full_modTOM = hemo_full_TOM[hemo_full_inModule, hemo_full_inModule]
-dimnames(hemo_full_modTOM) = list(hemo_full_modProbes, hemo_full_modProbes)
-# Export the network into edge and node list files Cytoscape can read
-hemo_full_cyt = exportNetworkToCytoscape(hemo_full_modTOM,
-                                         edgeFile = paste("CytoscapeInput-edges-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
-                                         nodeFile = paste("CytoscapeInput-nodes-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
-                                         weighted = TRUE,
-                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
-                                         nodeNames = hemo_full_modProbes,
-                                         altNodeNames = hemo_full_modGenes,
-                                         nodeAttr = hemo_full_moduleColors[hemo_full_inModule])
-# The command writes results to file automatically
-
-## EXPORT blue
-hemo_full_modules = "blue"
-# Select module probes
-hemo_full_probes = colnames(hemo_dds_rlog_matrix)
-hemo_full_inModule = is.finite(match(hemo_full_moduleColors, hemo_full_modules))
-hemo_full_modProbes = hemo_full_probes[hemo_full_inModule]
-hemo_full_modGenes = C_vir_rtracklayer$ID[match(hemo_full_modProbes, C_vir_rtracklayer$ID)]
-# Select the corresponding Topological Overlap
-hemo_full_modTOM = hemo_full_TOM[hemo_full_inModule, hemo_full_inModule]
-dimnames(hemo_full_modTOM) = list(hemo_full_modProbes, hemo_full_modProbes)
-# Export the network into edge and node list files Cytoscape can read
-hemo_full_cyt = exportNetworkToCytoscape(hemo_full_modTOM,
-                                         edgeFile = paste("CytoscapeInput-edges-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
-                                         nodeFile = paste("CytoscapeInput-nodes-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
-                                         weighted = TRUE,
-                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
-                                         nodeNames = hemo_full_modProbes,
-                                         altNodeNames = hemo_full_modGenes,
-                                         nodeAttr = hemo_full_moduleColors[hemo_full_inModule])
-## EXPORT yellow
-hemo_full_modules = "yellow"
-# Select module probes
-hemo_full_probes = colnames(hemo_dds_rlog_matrix)
-hemo_full_inModule = is.finite(match(hemo_full_moduleColors, hemo_full_modules))
-hemo_full_modProbes = hemo_full_probes[hemo_full_inModule]
-hemo_full_modGenes = C_vir_rtracklayer$ID[match(hemo_full_modProbes, C_vir_rtracklayer$ID)]
-# Select the corresponding Topological Overlap
-hemo_full_modTOM = hemo_full_TOM[hemo_full_inModule, hemo_full_inModule]
-dimnames(hemo_full_modTOM) = list(hemo_full_modProbes, hemo_full_modProbes)
-# Export the network into edge and node list files Cytoscape can read
-hemo_full_cyt = exportNetworkToCytoscape(hemo_full_modTOM,
-                                         edgeFile = paste("CytoscapeInput-edges-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
-                                         nodeFile = paste("CytoscapeInput-nodes-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
-                                         weighted = TRUE,
-                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
-                                         nodeNames = hemo_full_modProbes,
-                                         altNodeNames = hemo_full_modGenes,
-                                         nodeAttr = hemo_full_moduleColors[hemo_full_inModule])
-
-## EXPORT darkslateblue
-hemo_full_modules = "darkslateblue"
-# Select module probes
-hemo_full_probes = colnames(hemo_dds_rlog_matrix)
-hemo_full_inModule = is.finite(match(hemo_full_moduleColors, hemo_full_modules))
-hemo_full_modProbes = hemo_full_probes[hemo_full_inModule]
-hemo_full_modGenes = C_vir_rtracklayer$ID[match(hemo_full_modProbes, C_vir_rtracklayer$ID)]
-# Select the corresponding Topological Overlap
-hemo_full_modTOM = hemo_full_TOM[hemo_full_inModule, hemo_full_inModule]
-dimnames(hemo_full_modTOM) = list(hemo_full_modProbes, hemo_full_modProbes)
-# Export the network into edge and node list files Cytoscape can read
-hemo_full_cyt = exportNetworkToCytoscape(hemo_full_modTOM,
-                                         edgeFile = paste("CytoscapeInput-edges-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
-                                         nodeFile = paste("CytoscapeInput-nodes-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
-                                         weighted = TRUE,
-                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
-                                         nodeNames = hemo_full_modProbes,
-                                         altNodeNames = hemo_full_modGenes,
-                                         nodeAttr = hemo_full_moduleColors[hemo_full_inModule])
-
-## EXPORT orangered4
-hemo_full_modules = "orangered4"
-# Select module probes
-hemo_full_probes = colnames(hemo_dds_rlog_matrix)
-hemo_full_inModule = is.finite(match(hemo_full_moduleColors, hemo_full_modules))
-hemo_full_modProbes = hemo_full_probes[hemo_full_inModule]
-hemo_full_modGenes = C_vir_rtracklayer$ID[match(hemo_full_modProbes, C_vir_rtracklayer$ID)]
-# Select the corresponding Topological Overlap
-hemo_full_modTOM = hemo_full_TOM[hemo_full_inModule, hemo_full_inModule]
-dimnames(hemo_full_modTOM) = list(hemo_full_modProbes, hemo_full_modProbes)
-# Export the network into edge and node list files Cytoscape can read
-hemo_full_cyt = exportNetworkToCytoscape(hemo_full_modTOM,
-                                         edgeFile = paste("CytoscapeInput-edges-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
-                                         nodeFile = paste("CytoscapeInput-nodes-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
-                                         weighted = TRUE,
-                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
-                                         nodeNames = hemo_full_modProbes,
-                                         altNodeNames = hemo_full_modGenes,
-                                         nodeAttr = hemo_full_moduleColors[hemo_full_inModule])
-
+#hemo_full_modules = "navajowhite2"
+## Select module probes
+#hemo_full_probes = colnames(hemo_dds_rlog_matrix)
+#hemo_full_inModule = is.finite(match(hemo_full_moduleColors, hemo_full_modules))
+#hemo_full_modProbes = hemo_full_probes[hemo_full_inModule]
+#hemo_full_modGenes = C_vir_rtracklayer$ID[match(hemo_full_modProbes, C_vir_rtracklayer$ID)]
+## Select the corresponding Topological Overlap
+#hemo_full_modTOM = hemo_full_TOM[hemo_full_inModule, hemo_full_inModule]
+#dimnames(hemo_full_modTOM) = list(hemo_full_modProbes, hemo_full_modProbes)
+## Export the network into edge and node list files Cytoscape can read
+#hemo_full_cyt = exportNetworkToCytoscape(hemo_full_modTOM,
+#                                         edgeFile = paste("CytoscapeInput-edges-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
+#                                         nodeFile = paste("CytoscapeInput-nodes-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
+#                                         weighted = TRUE,
+#                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
+#                                         nodeNames = hemo_full_modProbes,
+#                                         altNodeNames = hemo_full_modGenes,
+#                                         nodeAttr = hemo_full_moduleColors[hemo_full_inModule])
+## The command writes results to file automatically
+#
+### EXPORT blue
+#hemo_full_modules = "blue"
+## Select module probes
+#hemo_full_probes = colnames(hemo_dds_rlog_matrix)
+#hemo_full_inModule = is.finite(match(hemo_full_moduleColors, hemo_full_modules))
+#hemo_full_modProbes = hemo_full_probes[hemo_full_inModule]
+#hemo_full_modGenes = C_vir_rtracklayer$ID[match(hemo_full_modProbes, C_vir_rtracklayer$ID)]
+## Select the corresponding Topological Overlap
+#hemo_full_modTOM = hemo_full_TOM[hemo_full_inModule, hemo_full_inModule]
+#dimnames(hemo_full_modTOM) = list(hemo_full_modProbes, hemo_full_modProbes)
+## Export the network into edge and node list files Cytoscape can read
+#hemo_full_cyt = exportNetworkToCytoscape(hemo_full_modTOM,
+#                                         edgeFile = paste("CytoscapeInput-edges-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
+#                                         nodeFile = paste("CytoscapeInput-nodes-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
+#                                         weighted = TRUE,
+#                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
+#                                         nodeNames = hemo_full_modProbes,
+#                                         altNodeNames = hemo_full_modGenes,
+#                                         nodeAttr = hemo_full_moduleColors[hemo_full_inModule])
+### EXPORT yellow
+#hemo_full_modules = "yellow"
+## Select module probes
+#hemo_full_probes = colnames(hemo_dds_rlog_matrix)
+#hemo_full_inModule = is.finite(match(hemo_full_moduleColors, hemo_full_modules))
+#hemo_full_modProbes = hemo_full_probes[hemo_full_inModule]
+#hemo_full_modGenes = C_vir_rtracklayer$ID[match(hemo_full_modProbes, C_vir_rtracklayer$ID)]
+## Select the corresponding Topological Overlap
+#hemo_full_modTOM = hemo_full_TOM[hemo_full_inModule, hemo_full_inModule]
+#dimnames(hemo_full_modTOM) = list(hemo_full_modProbes, hemo_full_modProbes)
+## Export the network into edge and node list files Cytoscape can read
+#hemo_full_cyt = exportNetworkToCytoscape(hemo_full_modTOM,
+#                                         edgeFile = paste("CytoscapeInput-edges-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
+#                                         nodeFile = paste("CytoscapeInput-nodes-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
+#                                         weighted = TRUE,
+#                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
+#                                         nodeNames = hemo_full_modProbes,
+#                                         altNodeNames = hemo_full_modGenes,
+#                                         nodeAttr = hemo_full_moduleColors[hemo_full_inModule])
+#
+### EXPORT darkslateblue
+#hemo_full_modules = "darkslateblue"
+## Select module probes
+#hemo_full_probes = colnames(hemo_dds_rlog_matrix)
+#hemo_full_inModule = is.finite(match(hemo_full_moduleColors, hemo_full_modules))
+#hemo_full_modProbes = hemo_full_probes[hemo_full_inModule]
+#hemo_full_modGenes = C_vir_rtracklayer$ID[match(hemo_full_modProbes, C_vir_rtracklayer$ID)]
+## Select the corresponding Topological Overlap
+#hemo_full_modTOM = hemo_full_TOM[hemo_full_inModule, hemo_full_inModule]
+#dimnames(hemo_full_modTOM) = list(hemo_full_modProbes, hemo_full_modProbes)
+## Export the network into edge and node list files Cytoscape can read
+#hemo_full_cyt = exportNetworkToCytoscape(hemo_full_modTOM,
+#                                         edgeFile = paste("CytoscapeInput-edges-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
+#                                         nodeFile = paste("CytoscapeInput-nodes-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
+#                                         weighted = TRUE,
+#                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
+#                                         nodeNames = hemo_full_modProbes,
+#                                         altNodeNames = hemo_full_modGenes,
+#                                         nodeAttr = hemo_full_moduleColors[hemo_full_inModule])
+#
+### EXPORT orangered4
+#hemo_full_modules = "orangered4"
+## Select module probes
+#hemo_full_probes = colnames(hemo_dds_rlog_matrix)
+#hemo_full_inModule = is.finite(match(hemo_full_moduleColors, hemo_full_modules))
+#hemo_full_modProbes = hemo_full_probes[hemo_full_inModule]
+#hemo_full_modGenes = C_vir_rtracklayer$ID[match(hemo_full_modProbes, C_vir_rtracklayer$ID)]
+## Select the corresponding Topological Overlap
+#hemo_full_modTOM = hemo_full_TOM[hemo_full_inModule, hemo_full_inModule]
+#dimnames(hemo_full_modTOM) = list(hemo_full_modProbes, hemo_full_modProbes)
+## Export the network into edge and node list files Cytoscape can read
+#hemo_full_cyt = exportNetworkToCytoscape(hemo_full_modTOM,
+#                                         edgeFile = paste("CytoscapeInput-edges-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
+#                                         nodeFile = paste("CytoscapeInput-nodes-hemo_full", paste(hemo_full_modules, collapse="-"), ".txt", sep=""),
+#                                         weighted = TRUE,
+#                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
+#                                         nodeNames = hemo_full_modProbes,
+#                                         altNodeNames = hemo_full_modGenes,
+#                                         nodeAttr = hemo_full_moduleColors[hemo_full_inModule])
+#
 ## EXPORT PERKINSUS MODULES ###
 # Export Perkinsus GDC:lightblue4
-# Export Perkinsus ZVAD : lightpink3, navajowhite2,
+# Export Perkinsus ZVAD : lightpink3, navajowhite2, blue4
 
 ## EXPORT LIGHTBLUE4
-perk_full_modules = "lightblue4"
-# Select module probes
-perk_full_probes = colnames(perk_dds_rlog_matrix)
-perk_full_inModule = is.finite(match(perk_full_moduleColors, perk_full_modules))
-perk_full_modProbes = perk_full_probes[perk_full_inModule]
-perk_full_modGenes = C_vir_rtracklayer$ID[match(perk_full_modProbes, C_vir_rtracklayer$ID)]
-# Select the corresponding Topological Overlap
-perk_full_modTOM = perk_full_TOM[perk_full_inModule, perk_full_inModule]
-dimnames(perk_full_modTOM) = list(perk_full_modProbes, perk_full_modProbes)
-# Export the network into edge and node list files Cytoscape can read
-perk_full_cyt = exportNetworkToCytoscape(perk_full_modTOM,
-                                              edgeFile = paste("CytoscapeInput-edges-perk_full", paste(perk_full_modules, collapse="-"), ".txt", sep=""),
-                                              nodeFile = paste("CytoscapeInput-nodes-perk_full", paste(perk_full_modules, collapse="-"), ".txt", sep=""),
-                                              weighted = TRUE,
-                                              threshold = 0.00, # using 0 threshold so no genes are subset out 
-                                              nodeNames = perk_full_modProbes,
-                                              altNodeNames = perk_full_modGenes,
-                                              nodeAttr = perk_full_moduleColors[perk_full_inModule])
-# The command writes results to file automatically
-
-## EXPORT lightpink3
-perk_full_modules = "lightpink3"
-# Select module probes
-perk_full_probes = colnames(perk_dds_rlog_matrix)
-perk_full_inModule = is.finite(match(perk_full_moduleColors, perk_full_modules))
-perk_full_modProbes = perk_full_probes[perk_full_inModule]
-perk_full_modGenes = C_vir_rtracklayer$ID[match(perk_full_modProbes, C_vir_rtracklayer$ID)]
-# Select the corresponding Topological Overlap
-perk_full_modTOM = perk_full_TOM[perk_full_inModule, perk_full_inModule]
-dimnames(perk_full_modTOM) = list(perk_full_modProbes, perk_full_modProbes)
-# Export the network into edge and node list files Cytoscape can read
-perk_full_cyt = exportNetworkToCytoscape(perk_full_modTOM,
-                                         edgeFile = paste("CytoscapeInput-edges-perk_full", paste(perk_full_modules, collapse="-"), ".txt", sep=""),
-                                         nodeFile = paste("CytoscapeInput-nodes-perk_full", paste(perk_full_modules, collapse="-"), ".txt", sep=""),
-                                         weighted = TRUE,
-                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
-                                         nodeNames = perk_full_modProbes,
-                                         altNodeNames = perk_full_modGenes,
-                                         nodeAttr = perk_full_moduleColors[perk_full_inModule])
+#perk_full_modules = "lightblue4"
+## Select module probes
+#perk_full_probes = colnames(perk_dds_rlog_matrix)
+#perk_full_inModule = is.finite(match(perk_full_moduleColors, perk_full_modules))
+#perk_full_modProbes = perk_full_probes[perk_full_inModule]
+##perk_full_modGenes = C_vir_rtracklayer$ID[match(perk_full_modProbes, C_vir_rtracklayer$ID)]
+## Select the corresponding Topological Overlap
+#perk_full_modTOM = perk_full_TOM[perk_full_inModule, perk_full_inModule]
+#dimnames(perk_full_modTOM) = list(perk_full_modProbes, perk_full_modProbes)
+## Export the network into edge and node list files Cytoscape can read
+#perk_full_cyt = exportNetworkToCytoscape(perk_full_modTOM,
+#                                              edgeFile = paste("CytoscapeInput-edges-perk_full", paste(perk_full_modules, collapse="-"), ".txt", sep=""),
+#                                              nodeFile = paste("CytoscapeInput-nodes-perk_full", paste(perk_full_modules, collapse="-"), ".txt", sep=""),
+#                                              weighted = TRUE,
+#                                              threshold = 0.00, # using 0 threshold so no genes are subset out 
+#                                              nodeNames = perk_full_modProbes,
+#                                              #altNodeNames = perk_full_modGenes,
+#                                              nodeAttr = perk_full_moduleColors[perk_full_inModule])
+## The command writes results to file automatically
+#
+### EXPORT lightpink3
+#perk_full_modules = "lightpink3"
+## Select module probes
+#perk_full_probes = colnames(perk_dds_rlog_matrix)
+#perk_full_inModule = is.finite(match(perk_full_moduleColors, perk_full_modules))
+#perk_full_modProbes = perk_full_probes[perk_full_inModule]
+##perk_full_modGenes = C_vir_rtracklayer$ID[match(perk_full_modProbes, C_vir_rtracklayer$ID)]
+## Select the corresponding Topological Overlap
+#perk_full_modTOM = perk_full_TOM[perk_full_inModule, perk_full_inModule]
+#dimnames(perk_full_modTOM) = list(perk_full_modProbes, perk_full_modProbes)
+## Export the network into edge and node list files Cytoscape can read
+#perk_full_cyt = exportNetworkToCytoscape(perk_full_modTOM,
+#                                         edgeFile = paste("CytoscapeInput-edges-perk_full", paste(perk_full_modules, collapse="-"), ".txt", sep=""),
+#                                         nodeFile = paste("CytoscapeInput-nodes-perk_full", paste(perk_full_modules, collapse="-"), ".txt", sep=""),
+#                                         weighted = TRUE,
+#                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
+#                                         nodeNames = perk_full_modProbes,
+#                                         #altNodeNames = perk_full_modGenes,
+#                                         nodeAttr = perk_full_moduleColors[perk_full_inModule])
 
 ## EXPORT navajowhite2
-perk_full_modules = "navajowhite2"
+#perk_full_modules = "navajowhite2"
+## Select module probes
+#perk_full_probes = colnames(perk_dds_rlog_matrix)
+#perk_full_inModule = is.finite(match(perk_full_moduleColors, perk_full_modules))
+#perk_full_modProbes = perk_full_probes[perk_full_inModule]
+##perk_full_modGenes = C_vir_rtracklayer$ID[match(perk_full_modProbes, C_vir_rtracklayer$ID)]
+## Select the corresponding Topological Overlap
+#perk_full_modTOM = perk_full_TOM[perk_full_inModule, perk_full_inModule]
+#dimnames(perk_full_modTOM) = list(perk_full_modProbes, perk_full_modProbes)
+## Export the network into edge and node list files Cytoscape can read
+#perk_full_cyt = exportNetworkToCytoscape(perk_full_modTOM,
+#                                         edgeFile = paste("CytoscapeInput-edges-perk_full", paste(perk_full_modules, collapse="-"), ".txt", sep=""),
+#                                         nodeFile = paste("CytoscapeInput-nodes-perk_full", paste(perk_full_modules, collapse="-"), ".txt", sep=""),
+#                                         weighted = TRUE,
+#                                         threshold = 0.00, # using 0 threshold so no genes are subset out 
+#                                         nodeNames = perk_full_modProbes,
+#                                        # altNodeNames = perk_full_modGenes,
+#                                         nodeAttr = perk_full_moduleColors[perk_full_inModule])
+
+## EXPORT blue4
+perk_full_modules = "blue4"
 # Select module probes
 perk_full_probes = colnames(perk_dds_rlog_matrix)
 perk_full_inModule = is.finite(match(perk_full_moduleColors, perk_full_modules))
 perk_full_modProbes = perk_full_probes[perk_full_inModule]
-perk_full_modGenes = C_vir_rtracklayer$ID[match(perk_full_modProbes, C_vir_rtracklayer$ID)]
+#perk_full_modGenes = C_vir_rtracklayer$ID[match(perk_full_modProbes, C_vir_rtracklayer$ID)]
 # Select the corresponding Topological Overlap
 perk_full_modTOM = perk_full_TOM[perk_full_inModule, perk_full_inModule]
 dimnames(perk_full_modTOM) = list(perk_full_modProbes, perk_full_modProbes)
@@ -212,9 +235,8 @@ perk_full_cyt = exportNetworkToCytoscape(perk_full_modTOM,
                                          weighted = TRUE,
                                          threshold = 0.00, # using 0 threshold so no genes are subset out 
                                          nodeNames = perk_full_modProbes,
-                                         altNodeNames = perk_full_modGenes,
+                                         # altNodeNames = perk_full_modGenes,
                                          nodeAttr = perk_full_moduleColors[perk_full_inModule])
-
 
 
 sessionInfo()
