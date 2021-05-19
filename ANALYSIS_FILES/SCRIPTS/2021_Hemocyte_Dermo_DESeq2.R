@@ -539,24 +539,30 @@ hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot_apop <- hemo_dds_deseq_res_Pma
 
 # plot the volcano plots
 hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot_apop <- 
-  ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot_apop), aes(x=log2FoldChange, y=log10)) + 
-  geom_point(aes(color = apop)) + 
-  scale_color_manual(name = "Apoptosis Transcripts", values = c('red','black')) +
+  ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot_apop), aes(x=log2FoldChange, y=log10, group = apop)) + 
+  geom_point(aes(color = apop,shape = apop, size = apop)) + 
+  scale_shape_manual(values = c(17,16)) + 
+  scale_size_manual(values= c(3,2)) +
+  scale_color_manual(values = c("red",'black')) +
   theme_minimal() + 
   labs(y = "-log10(adj. p-value)", title = "Control vs *P. marinus* Treated Hemocyte DEGs", x = "log2 Fold Change") +
   theme(legend.text = element_text(size = 14), legend.title = element_text(size = 16, face = "bold"), axis.title = element_text(size = 16, face = "bold"),
         axis.text = element_text(size = 14), plot.title = ggtext::element_markdown()) +
   # remove legend because legend is going to be shared
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  geom_vline(xintercept = 0)
 
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_plot_apop <- 
-  ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot_apop), aes(x=log2FoldChange, y=log10)) + 
-  geom_point(aes(color = apop)) + 
-  scale_color_manual(name = "Apoptosis Transcripts", values = c('red','black')) +
+  ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot_apop), aes(x=log2FoldChange, y=log10, group = apop)) + 
+  geom_point(aes(color = apop,shape = apop, size = apop)) + 
+  scale_shape_manual(values = c(17,16)) + 
+  scale_size_manual(values= c(3,2)) +
+  scale_color_manual(values = c("red",'black')) +
   theme_minimal() + 
   labs(y = "-log10(adj. p-value)", title = "Control vs *P. marinus* and GDC-0152 Treated Hemocyte DEGs", x = "log2 Fold Change") +
   theme(legend.text = element_text(size = 14), legend.title = element_text(size = 16, face = "bold"), axis.title = element_text(size = 16, face = "bold"),
-        axis.text = element_text(size = 14), plot.title = ggtext::element_markdown())
+        axis.text = element_text(size = 14), plot.title = ggtext::element_markdown()) +
+  geom_vline(xintercept = 0)
 
 hemo_volcano_apop <- ggarrange(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot_apop, 
                           hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_plot_apop, ncol = 2, nrow = 1)
