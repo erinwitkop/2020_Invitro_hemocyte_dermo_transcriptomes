@@ -124,16 +124,16 @@ dev.off()
 # PC1 and PC2 don't explain much of the variation, which means that the Pool effect is not too large 
 
 ## Plot PCA with only P. mar and Pmar GDC
-hemo_counts_matrix_noGDC <- as.matrix(hemo_counts[,c(2:4,6:8,10:12)])
-hemo_rlog_counts_noGDC <- rlog(hemo_counts_matrix_noGDC, blind =TRUE)
+hemo_counts_matrix_noZVAD <- as.matrix(hemo_counts[,c(1,3:5,7:9,11,12)])
+hemo_rlog_counts_noZVAD <- rlog(hemo_counts_matrix_noZVAD, blind =TRUE)
 
 # run PCA
-pchemo_noGDC <- prcomp(t(hemo_rlog_counts_noGDC))
-hemo_coldata_noGDC <- hemo_coldata %>% filter(!grepl("ZVAD",condition))
-hemo_coldata_noGDC$pool <- as.factor(hemo_coldata_noGDC$pool)
-colnames(hemo_coldata_noGDC) <- c("Condition","Pool")
+pchemo_noZVAD <- prcomp(t(hemo_rlog_counts_noZVAD))
+hemo_coldata_noZVAD <- hemo_coldata %>% filter(!grepl("ZVAD",condition))
+hemo_coldata_noZVAD$pool <- as.factor(hemo_coldata_noZVAD$pool)
+colnames(hemo_coldata_noZVAD) <- c("Condition","Pool")
 # change group names so I can italicize with markdown in plot
-hemo_coldata_noGDC <- hemo_coldata_noGDC %>% mutate(Condition = case_when(
+hemo_coldata_noZVAD <- hemo_coldata_noZVAD %>% mutate(Condition = case_when(
   Condition == "Pmar_GDC" ~ "*P. marinus* and GDC-0152",
   Condition == "Pmar" ~ "*P. marinus*",
   Condition == "control" ~ "Control",
@@ -141,8 +141,8 @@ hemo_coldata_noGDC <- hemo_coldata_noGDC %>% mutate(Condition = case_when(
 ))
 
 ## Make Hemocyte PCA figure for Publication
-hemo_noGDC_PCA <- autoplot(pchemo_noGDC,
-         data = hemo_coldata_noGDC, 
+hemo_noZVAD_PCA <- autoplot(pchemo_noZVAD,
+         data = hemo_coldata_noZVAD, 
          colour="Condition", 
          shape = "Pool",
          size=5, frame = TRUE)  + 
@@ -206,6 +206,14 @@ hemo_dds_rlog <- rlog(hemo_dds, blind = TRUE) # keep blind = true before deseq f
 plotPCA(hemo_dds_rlog, intgroup=c("condition")) # a bit more clustering by condition now 
 
 head(assay(hemo_dds_rlog),3)
+
+### Make hemo_dds with no ZVAD samples for plotting counts in multipanel figure
+hemo_coldata_noZVAD_fordds <- hemo_coldata[c(1,3:5,7:9,11,12),] 
+hemo_dds_noZVAD <- DESeqDataSetFromMatrix(countData = hemo_counts_matrix_noZVAD,
+                                   colData = hemo_coldata_noZVAD_fordds,
+                                   design = ~condition)
+hemo_dds_noZVAD <- hemo_dds_noZVAD[ rowSums(counts(hemo_dds_noZVAD)) > 10, ]
+hemo_dds_rlog_noZVAD <- rlog(hemo_dds_noZVAD, blind = TRUE)
 
 ### DIFFERENTIAL EXPRESSION ANALYSIS
 # run pipeline with single command because the formula has already been specified
@@ -772,6 +780,40 @@ C_vir_heatmap <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_spread_mat, border = TR
 ComplexHeatmap::draw(C_vir_heatmap, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
 dev.off()
 
+### Upset plot heatmap of significant apoptosis expression across Pmar and GDC treatments ####
+
+# combine all dataframes
+C_vir_hemo_apop_noZVAD <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_APOP,
+                         hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP)
+C_vir_hemo_comb_noZVAD <- rbind(hemo_dds_deseq_res_Pmar_LFC_sig_APOP,
+                         hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP) %>% mutate(transcript_product = paste(product, transcript_id)) %>%
+  dplyr::select(transcript_product, condition, log2FoldChange)
+C_vir_hemo_comb_noZVAD_spread <- spread(C_vir_hemo_comb_noZVAD, condition, log2FoldChange, fill = 0)
+C_vir_hemo_comb_noZVAD_spread <- column_to_rownames(C_vir_hemo_comb_noZVAD_spread , var = "transcript_product") 
+C_vir_hemo_comb_noZVAD_spread_mat <- as.matrix(C_vir_hemo_comb_noZVAD_spread)
+
+C_vir_labels_noZVAD =c( "P. mar + GDC-0152 \nvs Control", "P. mar \nvs Control")
+# create named vector to hold column names
+C_vir_column_labels_noZVAD = structure(paste0(C_vir_labels_noZVAD), names = paste0(colnames(C_vir_hemo_comb_noZVAD_spread_mat)))
+
+library(circlize)
+col_fun = colorRamp2(c(-10, 0, 10), c("blue", "white", "red"))
+col_fun(seq(-3, 3))
+
+C_vir_heatmap_noZVAD <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_noZVAD_spread_mat, border = TRUE, 
+                                         #column_title = ComplexHeatmap::gt_render("*C. virginica* Experimental Group"), 
+                                         column_order = order(desc(colnames(C_vir_hemo_comb_noZVAD_spread_mat))), 
+                                         column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_title = "Apoptosis Transcript and Product Name", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                         row_dend_width = unit(2, "cm"),
+                                         column_labels = C_vir_column_labels_noZVAD[colnames(C_vir_hemo_comb_noZVAD_spread_mat)],
+                                         # apply split by k-meams clustering to highlight groups
+                                         row_km = 3, column_km = 1, row_names_gp = gpar(fontsize = 8),
+                                         column_names_gp = gpar(fontsize = 12),
+                                         heatmap_legend_param = list(title = "Log2 Fold Change"),
+                                         col= col_fun, rect_gp = gpar(col = "grey", lwd = 0.1))
+C_vir_heatmap_noZVAD <- ComplexHeatmap::draw(C_vir_heatmap_noZVAD, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+
 ## Plot apoptosis transcformed counts across each sample ####
 # example codes from RNAseq workflow: https://www.bioconductor.org/packages/devel/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#other-comparisons
 
@@ -795,6 +837,32 @@ colnames(apop_hemo_anno)[1] <- "Condition"
 
 pdf("./FIGURES/C_vir_apop_hemo_mat1.pdf", width = 12, height = 12)
 pheatmap(apop_hemo_mat , annotation_col = apop_hemo_anno)
+dev.off()
+
+## Plot apoptosis transcformed counts for all but ZVAD for multipanel figure ####
+# example codes from RNAseq workflow: https://www.bioconductor.org/packages/devel/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#other-comparisons
+
+C_vir_hemo_comb_ID_noZVAD <-  rbind(hemo_dds_deseq_res_Pmar_LFC_sig_APOP,
+                             hemo_dds_deseq_res_Pmar_GDC_LFC_sig_APOP) %>% dplyr::pull(., ID)
+class(C_vir_hemo_comb_ID_noZVAD)
+
+# find rownames matching these IDs
+apop_hemo_mat_noZVAD <- assay(hemo_dds_rlog_noZVAD)[C_vir_hemo_comb_ID_noZVAD,]
+apop_hemo_mat_noZVAD <- as.data.frame(apop_hemo_mat_noZVAD) %>% mutate(ID = rownames(.)) %>% 
+  left_join(., C_vir_rtracklayer_apop_product_final[,c("ID","product","transcript_id")], by = "ID") %>% filter(!is.na(product)) %>%
+  mutate(transcript_product = paste(product, transcript_id, sep = "-")) %>% dplyr::select(-ID,-product, -transcript_id)
+rownames(apop_hemo_mat_noZVAD) <- apop_hemo_mat_noZVAD$transcript_product
+apop_hemo_mat_noZVAD <- apop_hemo_mat_noZVAD[,-10]
+apop_hemo_mat_noZVAD <- as.matrix(apop_hemo_mat_noZVAD)  
+
+# change row and column annotations 
+
+apop_hemo_anno_noZVAD <- as.data.frame(colData(hemo_dds_rlog_noZVAD)[, c("condition")])
+rownames(apop_hemo_anno_noZVAD) <- colnames(apop_hemo_mat_noZVAD)
+colnames(apop_hemo_anno_noZVAD)[1] <- "Condition"
+
+pdf("./FIGURES/C_vir_apop_hemo_mat_noZVAD.pdf", width = 12, height = 12)
+pheatmap(apop_hemo_mat_noZVAD, annotation_col = apop_hemo_anno_noZVAD)
 dev.off()
 
 ### Upset plot of significant LFCs > 1
@@ -2702,7 +2770,7 @@ write.table(perk_GO_comb, file = "perk_GO_comb.txt",sep = "\t", row.names = FALS
 
 #### HEMOCYTE COMPILED EXPRESSION FIGURE ####
 
-hemocyte_figure <- cowplot::plot_grid(hemo_noGDC_PCA,hemo_volcano_apop )
+hemocyte_figure <- cowplot::plot_grid(hemo_noZVAD_PCA,hemo_volcano_apop , C_vir_heatmap_noZVAD)
 
 #### BIPLOT SOURCE CODE ####
 #' Draw a bi-plot, comparing 2 selected principal components / eigenvectors.
