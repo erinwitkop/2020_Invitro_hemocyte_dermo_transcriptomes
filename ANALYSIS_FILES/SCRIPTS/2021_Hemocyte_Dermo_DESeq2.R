@@ -35,6 +35,8 @@ library(topGO)
 library(GOSim)
 library(GO.db)
 library(PCAtools)
+library(egg)
+library(cowplot)
 
 #### LOADING SAVED GENOME, APOPTOSIS NAMES, IAP XP LISTS ####
 Apoptosis_frames <- load(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/C_gig_C_vir_apoptosis_products.RData")
@@ -120,6 +122,37 @@ autoplot(pchemo,
          size=5) + ggtitle("Hemocyte expression")
 dev.off()
 # PC1 and PC2 don't explain much of the variation, which means that the Pool effect is not too large 
+
+## Plot PCA with only P. mar and Pmar GDC
+hemo_counts_matrix_noGDC <- as.matrix(hemo_counts[,c(2:4,6:8,10:12)])
+hemo_rlog_counts_noGDC <- rlog(hemo_counts_matrix_noGDC, blind =TRUE)
+
+# run PCA
+pchemo_noGDC <- prcomp(t(hemo_rlog_counts_noGDC))
+hemo_coldata_noGDC <- hemo_coldata %>% filter(!grepl("ZVAD",condition))
+hemo_coldata_noGDC$pool <- as.factor(hemo_coldata_noGDC$pool)
+colnames(hemo_coldata_noGDC) <- c("Condition","Pool")
+# change group names so I can italicize with markdown in plot
+hemo_coldata_noGDC <- hemo_coldata_noGDC %>% mutate(Condition = case_when(
+  Condition == "Pmar_GDC" ~ "*P. marinus* and GDC-0152",
+  Condition == "Pmar" ~ "*P. marinus*",
+  Condition == "control" ~ "Control",
+  TRUE ~ NA_character_
+))
+
+## Make Hemocyte PCA figure for Publication
+hemo_noGDC_PCA <- autoplot(pchemo_noGDC,
+         data = hemo_coldata_noGDC, 
+         colour="Condition", 
+         shape = "Pool",
+         size=5, frame = TRUE)  + 
+  theme_minimal() +
+  scale_color_manual(values = c("#ca5733","#5b69c9","#62b650")) + 
+  scale_fill_manual(values = c("#ca5733","#5b69c9","#62b650")) +
+  theme(legend.text = ggtext::element_markdown(size = 14), 
+        legend.title = element_text(size = 16, face = "bold"),
+        axis.text = element_text(size = 14), 
+        axis.title = element_text(size = 16, face = "bold"))
 
 ## Plot total reads in each sample
 hemo_counts_total <- colSums(hemo_counts)
@@ -440,7 +473,7 @@ family_hemo_mat_prot <- as.data.frame(family_hemo_heatmap_reorder)
 colnames(family_hemo_mat_prot)[1] <- "ID"
 family_hemo_mat_prot_annot <- left_join(family_hemo_mat_prot, dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene), by = "ID")
 
-### Volcano plots of significant genes
+### Hemocyte Volcano plots of significant genes ####
 # compute significance 
 hemo_dds_deseq_res_Pmar_LFC_sig_volcano <- hemo_dds_deseq_res_Pmar_LFC_sig
 hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig
@@ -453,21 +486,22 @@ hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano$log10 <- -log10(hemo_dds_deseq_res_P
 # plot the volcano plots
 hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot <- ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_LFC_sig_volcano),
                                                        aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() + 
-  labs(y = "-log10(adjusted p-value)", title = "P.mar vs. control hemocytes")
+  labs(y = "-log10(adj. p-value)", title = "P.mar vs. control hemocytes")
 
 hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_plot <- ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano), 
                                                             aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() +
-  labs(y = "-log10(adjusted p-value)", title = "P.mar + ZVAD vs. control hemocytes")
+  labs(y = "-log10(adj. p-value)", title = "P.mar + ZVAD vs. control hemocytes")
 
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_plot <- ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano), 
                                                            aes(x=log2FoldChange, y=log10)) + geom_point() + theme_bw() +
-  labs(y = "-log10(adjusted p-value)", title = "P.mar + GDC vs. control hemocytes")
+  labs(y = "-log10(adj. p-value)", title = "P.mar + GDC vs. control hemocytes")
 
 hemo_volcano <- ggarrange(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot, 
           hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_plot,
           hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_plot)
 
 ggsave(hemo_volcano, file = "./FIGURES/hemo_volcano_plot", device = "tiff", height = 10, width = 10)
+
 
 
 # annot all 
@@ -2625,6 +2659,10 @@ write.table(Hemo_Pmar_GO_comb, file = "Hemo_Pmar_GO_comb.txt",sep = "\t", row.na
 write.table(Perk_comb_all_Interpro_slim, file = "Perk_comb_all_Interpro_slim.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
 write.table(perk_GO_comb, file = "perk_GO_comb.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
 
+
+#### HEMOCYTE COMPILED EXPRESSION FIGURE ####
+
+hemocyte_figure <- egg:ggarrange(hemo_noGDC_PCA, )
 
 #### BIPLOT SOURCE CODE ####
 #' Draw a bi-plot, comparing 2 selected principal components / eigenvectors.
