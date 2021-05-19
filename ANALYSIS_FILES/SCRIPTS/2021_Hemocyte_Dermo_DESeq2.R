@@ -503,7 +503,6 @@ hemo_volcano <- ggarrange(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot,
 ggsave(hemo_volcano, file = "./FIGURES/hemo_volcano_plot", device = "tiff", height = 10, width = 10)
 
 
-
 # annot all 
 hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot <- hemo_dds_deseq_res_Pmar_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
   left_join(., dplyr::select(C_vir_rtracklayer_transcripts, ID, product, gene, transcript_id), by = "ID") %>% mutate(group = "control_Pmar")
@@ -526,6 +525,41 @@ hemo_dds_deseq_res_Pmar_LFC_sig_volcano_5_annot <- hemo_dds_deseq_res_Pmar_LFC_s
 hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_5_annot <- hemo_dds_deseq_res_Pmar_ZVAD_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 5.0 | log2FoldChange <= -5.0)
 
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_5_annot <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot %>% filter(log2FoldChange >= 5.0 | log2FoldChange <= -5.0)
+
+### Make volcano plots of Pmar and GDC with apoptosis transcripts highlighted for multipanel figure ####
+# add column that denotes apoptosis or not 
+
+hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot_apop <- hemo_dds_deseq_res_Pmar_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
+  left_join(., dplyr::select(C_vir_rtracklayer_apop_product_final, ID, product, gene, transcript_id), by = "ID") %>% 
+  mutate(group = "control_Pmar") %>% mutate(apop = case_when(!is.na(product)~ "Apoptosis-related transcripts", is.na(product) ~ "Non apoptosis-related transcripts"))
+
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot_apop <- hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano %>% mutate(ID = rownames(.)) %>% 
+  left_join(., dplyr::select(C_vir_rtracklayer_apop_product_final, ID, product, gene,transcript_id), by = "ID") %>% mutate(group = "control_Pmar_GDC") %>%
+  mutate(apop = case_when(!is.na(product)~ "Apoptosis-related transcripts", is.na(product) ~ "Non apoptosis-related transcripts"))
+
+# plot the volcano plots
+hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot_apop <- 
+  ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot_apop), aes(x=log2FoldChange, y=log10)) + 
+  geom_point(aes(color = apop)) + 
+  scale_color_manual(name = "Apoptosis Transcripts", values = c('red','black')) +
+  theme_minimal() + 
+  labs(y = "-log10(adj. p-value)", title = "Control vs *P. marinus* Treated Hemocyte DEGs", x = "log2 Fold Change") +
+  theme(legend.text = element_text(size = 14), legend.title = element_text(size = 16, face = "bold"), axis.title = element_text(size = 16, face = "bold"),
+        axis.text = element_text(size = 14), plot.title = ggtext::element_markdown()) +
+  # remove legend because legend is going to be shared
+  theme(legend.position = "none")
+
+hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_plot_apop <- 
+  ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot_apop), aes(x=log2FoldChange, y=log10)) + 
+  geom_point(aes(color = apop)) + 
+  scale_color_manual(name = "Apoptosis Transcripts", values = c('red','black')) +
+  theme_minimal() + 
+  labs(y = "-log10(adj. p-value)", title = "Control vs *P. marinus* and GDC-0152 Treated Hemocyte DEGs", x = "log2 Fold Change") +
+  theme(legend.text = element_text(size = 14), legend.title = element_text(size = 16, face = "bold"), axis.title = element_text(size = 16, face = "bold"),
+        axis.text = element_text(size = 14), plot.title = ggtext::element_markdown())
+
+hemo_volcano_apop <- ggarrange(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot_apop, 
+                          hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_plot_apop, ncol = 2, nrow = 1)
 
 ### Extract list of significant Apoptosis Genes ####
 # (not less than or greater than 1 LFC) using merge
@@ -2662,7 +2696,7 @@ write.table(perk_GO_comb, file = "perk_GO_comb.txt",sep = "\t", row.names = FALS
 
 #### HEMOCYTE COMPILED EXPRESSION FIGURE ####
 
-hemocyte_figure <- egg:ggarrange(hemo_noGDC_PCA, )
+hemocyte_figure <- cowplot::plot_grid(hemo_noGDC_PCA,hemo_volcano_apop )
 
 #### BIPLOT SOURCE CODE ####
 #' Draw a bi-plot, comparing 2 selected principal components / eigenvectors.
