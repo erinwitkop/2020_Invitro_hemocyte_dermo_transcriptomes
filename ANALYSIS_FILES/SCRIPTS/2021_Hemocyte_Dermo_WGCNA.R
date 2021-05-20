@@ -1560,7 +1560,7 @@ hemo_MEyellow_GOdata_BP_Res <- GenTable(hemo_MEyellow_GOdata_BP, topgoFisher = h
 
 #### Hemocyte top interesting modules GO visualization ####
 
-### Dotplot of significantly enriched GO terms from hub modules
+### Dotplot of significantly enriched MF GO terms from hub modules
 hemo_MEantiquewhite2_GOdata_Res$group <- "antiquewhite2"
 hemo_MEblack_GOdata_Res$group <- "black"
 hemo_MEblue_GOdata_Res$group <- "blue"
@@ -1730,6 +1730,13 @@ Hemo_GO_all_dotplot_subset_plot <- ggplot(Hemo_GO_all_dotplot_subset, aes(x = gr
 ggsave(Hemo_GO_all_dotplot_subset_plot, device = "tiff", path = "./FIGURES/", 
        filename = "Hemo_GO_all_dotplot_subset_plot_BP.tiff", width = 20, height = 12, limitsize = FALSE)
 
+
+### Dotplot of just the navajowhite2 module BP and MF terms
+
+hemo_MEnavajowhite2_GOdata_BP_Res$level <- "BP"
+hemo_MEnavajowhite2_GOdata_Res$level <- "MF"
+
+hemo_MEnavajowhite2_GOdata_combined <- rbind(hemo_MEnavajowhite2_GOdata_BP_Res,hemo_MEnavajowhite2_GOdata_Res)
 
 #### Pmar intramodular hub gene analysis for interesting modules ####
 
@@ -2431,36 +2438,36 @@ hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare_shared <- drop_na(h
 
 # subset hemo_full_moduleTraitCor, hemo_full_moduleTraitPvalue, hemo_full_MEs for only those modules significant in either challenge
 hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_apop_moduleTraitCor[rownames(hemo_full_apop_moduleTraitCor) %in% FilterGenes_comb_apop_count_mod_names,]
-hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_moduleTraitCor_sig_apop_pheno[,c(1:3,7)]
+hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_moduleTraitCor_sig_apop_pheno[,c(1,2,8)] # keep only control, GDC, and apop_arcsin
 hemo_full_moduleTraitPvalue_sig_apop_pheno <- hemo_full_apop_moduleTraitPvalue[rownames(hemo_full_apop_moduleTraitPvalue) %in% FilterGenes_comb_apop_count_mod_names,]
-hemo_full_moduleTraitPvalue_sig_apop_pheno <- hemo_full_moduleTraitPvalue_sig_apop_pheno[,c(1:3,7)]
+hemo_full_moduleTraitPvalue_sig_apop_pheno <- hemo_full_moduleTraitPvalue_sig_apop_pheno[,c(1,2,8)]
 hemo_full_MEs_sig_apop_pheno <- hemo_full_MEs[,colnames(hemo_full_MEs) %in% FilterGenes_comb_apop_count_mod_names]
-hemo_coldata_collapse_binarize_sig_apop_pheno <- hemo_coldata_collapse_binarize_apop_perk[,c(1:3,7)]
+hemo_coldata_collapse_binarize_sig_apop_pheno <- hemo_coldata_collapse_binarize_apop_perk[,c(1,2,8)]
 
 # Will display correlations and their p-values
 hemo_full_textMatrix_sig_apop_pheno = paste(signif(hemo_full_moduleTraitCor_sig_apop_pheno, 2), "\n(",
                                       signif(hemo_full_moduleTraitPvalue_sig_apop_pheno, 1), ")", sep = "");
 dim(hemo_full_textMatrix_sig_apop_pheno) = dim(hemo_full_moduleTraitCor_sig_apop_pheno)
 
-# make plot
-sizeGrWindow(10,6)
-par(mar = c(6, 8.5, 3, 3))
+# make plot for use in multipanel figure
+sizeGrWindow(10,10)
 # Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
 # green is more negatively correlated)
+pdf("./FIGURES/hemo_full_moduleTraitCor_sig_apop_pheno_heatmap.pdf", width = 2.5, height = 4)
 labeledHeatmap(Matrix = hemo_full_moduleTraitCor_sig_apop_pheno,
-               xLabels = c("Con vs. Pmar", "P.mar. GDC vs. Con", "P. mar. ZVAD vs. Con", "Apoptosis Percentage"),
+               xLabels = c("Control vs. P. marinus", "Control vs P. marinus\nand GDC-0152 ", "Arsine Transformed\nApoptosis Percentage"),
                yLabels = names(hemo_full_MEs_sig_apop_pheno),
                ySymbols = names(hemo_full_MEs_sig_apop_pheno),
                colorLabels = FALSE,
                colors = blueWhiteRed(50),
                textMatrix = hemo_full_textMatrix_sig_apop_pheno,
                setStdMargins = FALSE,
-               cex.text = 0.5,
-               cex.lab = 0.7,
+               cex.text = 0.3,
+               cex.lab = 0.3,
                #zlim = c(-1,1), 
-               yColorWidth = 0.2, 
-               main = paste("Hemocyte Module-Challenge Relationships"))
-# have to save manually...weird!
+               yColorWidth = 0.2)
+dev.off()
+dev.off()
 
 ### Repeat for P_marinus counts 
 
@@ -2566,215 +2573,6 @@ labeledHeatmap(Matrix = perk_full_apop_moduleTraitCor_sig,
                main = paste("P. marinus Module-Challenge Relationships"))
 # have to save manually...weird!
 
-#### QUANTIFY MODULE ASSOCIATIONS WITH CHALLENGE AND PHENOTYPE EXCEPT ZVAD ####
-
-## Add phenotype data for the hemocytes that have engulfed hemocytes and to the binarized data
-PCA_pheno_2020_all_samplename <-PCA_pheno_2020_all %>% mutate(Sample_Name = paste(ID, Treat, sep = "_")) 
-PCA_pheno_2020_all_samplename_APOP_hemo_perk <- na.omit(PCA_pheno_2020_all_samplename[,c("Sample_Name","Percent_of_this_plot_APOP_hemo_perk")])
-# Format by arcsine transform
-PCA_pheno_2020_all_samplename_APOP_hemo_perk$Percent_of_this_plot_APOP_hemo_perk_arcsin <- transf.arcsin(PCA_pheno_2020_all_samplename_APOP_hemo_perk$Percent_of_this_plot_APOP_hemo_perk*0.01)
-
-# Join apoptosis phenotype 
-hemo_coldata_collapse_binarize_apop_perk <- as.data.frame(hemo_coldata_collapse_binarize) %>% rownames_to_column(., var = "Sample_Name") %>% 
-  left_join(.,PCA_pheno_2020_all_samplename_APOP_hemo_perk) %>% column_to_rownames(., var = "Sample_Name")
-
-# tutorial for this section: https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/Tutorials/FemaleLiver-03-relateModsToExt.pdf
-
-# Recalculate Module trait correlations and Pvalue using this new phenotype dataframe
-hemo_full_apop_moduleTraitCor = cor(hemo_full_MEs, hemo_coldata_collapse_binarize_apop_perk, use = "p");
-hemo_full_apop_moduleTraitPvalue = corPvalueStudent(hemo_full_apop_moduleTraitCor, hemo_full_nSamples)
-
-# Graph and color code each the strength of association (correlation) of module eigengenes and trai
-sizeGrWindow(10,6)
-# Will display correlations and their p-values
-hemo_full_apop_textMatrix = paste(signif(hemo_full_apop_moduleTraitCor, 2), "\n(",
-                                  signif(hemo_full_apop_moduleTraitPvalue, 1), ")", sep = "");
-dim(hemo_full_apop_textMatrix) = dim(hemo_full_apop_moduleTraitCor)
-par(mar = c(6, 8.5, 3, 3))
-# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
-# green is more negatively correlated)
-labeledHeatmap(Matrix = hemo_full_apop_moduleTraitCor,
-               xLabels = names(hemo_coldata_collapse_binarize_apop_perk),
-               yLabels = names(hemo_full_MEs),
-               ySymbols = names(hemo_full_MEs),
-               colorLabels = FALSE,
-               colors = blueWhiteRed(50),
-               textMatrix = hemo_full_apop_textMatrix,
-               setStdMargins = FALSE,
-               cex.text = 0.45,
-               cex.lab = 0.7,
-               zlim = c(-1,1), 
-               yColorWidth = 0.2, 
-               main = paste("Module-trait relationships"))
-
-# Which modules have the highest associations with disease (high correlation and low P value)?
-hemo_full_apop_moduleTraitCor_df <- as.data.frame(hemo_full_apop_moduleTraitCor) %>% dplyr::select(Percent_of_this_plot_APOP_hemo_perk,Percent_of_this_plot_APOP_hemo_perk_arcsin)
-colnames(hemo_full_apop_moduleTraitCor_df) <- c("Percent_of_this_plot_APOP_hemo_perk.moduleTraitCor", "Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitCor")
-hemo_full_apop_moduleTraitPvalue_df <- as.data.frame(hemo_full_apop_moduleTraitPvalue) %>% dplyr::select(Percent_of_this_plot_APOP_hemo_perk,Percent_of_this_plot_APOP_hemo_perk_arcsin)
-colnames(hemo_full_apop_moduleTraitPvalue_df) <- c("Percent_of_this_plot_APOP_hemo_perk.moduleTraitPvalue", "Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitPvalue")
-
-hemo_full_apop_moduleTraitCor_Pval_df <- cbind(hemo_full_apop_moduleTraitCor_df, hemo_full_apop_moduleTraitPvalue_df) 
-
-hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk <- hemo_full_apop_moduleTraitCor_Pval_df %>% dplyr::select(contains("Percent_of_this_plot_APOP_hemo_perk."))
-hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin <- hemo_full_apop_moduleTraitCor_Pval_df %>% dplyr::select(contains("APOP_hemo_perk_arcsin."))
-
-# Significantly correlated modules
-hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig <- hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk %>% filter(Percent_of_this_plot_APOP_hemo_perk.moduleTraitPvalue <= 0.05)  %>% rownames_to_column(., "mod_names") 
-nrow(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig) #14 significant modules
-
-hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin_sig <- hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin %>% filter(Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
-nrow(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin_sig) #13
-
-# compare modules
-hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare <-  
-  full_join(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig,hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin_sig) %>% dplyr::select(!contains("Pvalue"))
-
-# find those shared between all 
-hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare_shared <- drop_na(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare)
-# 12 shared between both...the arcine transform does not make a difference! Correlation values are very similar for both, in general slightly lower correlation for arcsine 
-
-## Plot only those modules with significant apoptosis members as before
-## Heatmap of only the significantly correlated modules that have apoptosis hub genes
-# Graph and color code each the strength of association (correlation) of module eigengenes and trait
-
-# subset hemo_full_moduleTraitCor, hemo_full_moduleTraitPvalue, hemo_full_MEs for only those modules significant in either challenge
-hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_apop_moduleTraitCor[rownames(hemo_full_apop_moduleTraitCor) %in% FilterGenes_comb_apop_count_mod_names,]
-hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_moduleTraitCor_sig_apop_pheno[,c(1:3,7)]
-hemo_full_moduleTraitPvalue_sig_apop_pheno <- hemo_full_apop_moduleTraitPvalue[rownames(hemo_full_apop_moduleTraitPvalue) %in% FilterGenes_comb_apop_count_mod_names,]
-hemo_full_moduleTraitPvalue_sig_apop_pheno <- hemo_full_moduleTraitPvalue_sig_apop_pheno[,c(1:3,7)]
-hemo_full_MEs_sig_apop_pheno <- hemo_full_MEs[,colnames(hemo_full_MEs) %in% FilterGenes_comb_apop_count_mod_names]
-hemo_coldata_collapse_binarize_sig_apop_pheno <- hemo_coldata_collapse_binarize_apop_perk[,c(1:3,7)]
-
-# Will display correlations and their p-values
-hemo_full_textMatrix_sig_apop_pheno = paste(signif(hemo_full_moduleTraitCor_sig_apop_pheno, 2), "\n(",
-                                            signif(hemo_full_moduleTraitPvalue_sig_apop_pheno, 1), ")", sep = "");
-dim(hemo_full_textMatrix_sig_apop_pheno) = dim(hemo_full_moduleTraitCor_sig_apop_pheno)
-
-# make plot
-sizeGrWindow(10,6)
-par(mar = c(6, 8.5, 3, 3))
-# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
-# green is more negatively correlated)
-labeledHeatmap(Matrix = hemo_full_moduleTraitCor_sig_apop_pheno,
-               xLabels = c("Con vs. Pmar", "P.mar. GDC vs. Con", "P. mar. ZVAD vs. Con", "Apoptosis Percentage"),
-               yLabels = names(hemo_full_MEs_sig_apop_pheno),
-               ySymbols = names(hemo_full_MEs_sig_apop_pheno),
-               colorLabels = FALSE,
-               colors = blueWhiteRed(50),
-               textMatrix = hemo_full_textMatrix_sig_apop_pheno,
-               setStdMargins = FALSE,
-               cex.text = 0.5,
-               cex.lab = 0.7,
-               #zlim = c(-1,1), 
-               yColorWidth = 0.2, 
-               main = paste("Hemocyte Module-Challenge Relationships"))
-# have to save manually...weird!
-
-### Repeat for P_marinus counts 
-
-# format phenotype data 
-perk_coldata_collapse_binarize
-# Join apoptosis phenotype 
-perk_coldata_collapse_binarize_apop_perk <- as.data.frame(perk_coldata_collapse_binarize) %>% rownames_to_column(., var = "Sample_Name") %>% 
-  left_join(.,PCA_pheno_2020_all_samplename_APOP_hemo_perk) %>% column_to_rownames(., var = "Sample_Name")
-
-# recalculate the correlation with traits
-perk_full_apop_moduleTraitCor = cor(perk_full_MEs, perk_coldata_collapse_binarize_apop_perk, use = "p");
-perk_full_apop_moduleTraitPvalue = corPvalueStudent(perk_full_apop_moduleTraitCor, perk_full_nSamples)
-
-# Graph and color code each the strength of association (correlation) of module eigengenes and trai
-sizeGrWindow(10,6)
-# Will display correlations and their p-values
-perk_full_apop_textMatrix = paste(signif(perk_full_apop_moduleTraitCor, 2), "\n(",
-                                  signif(perk_full_apop_moduleTraitPvalue, 1), ")", sep = "");
-dim(perk_full_apop_textMatrix) = dim(perk_full_apop_moduleTraitCor)
-par(mar = c(6, 8.5, 3, 3))
-# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
-# green is more negatively correlated)
-labeledHeatmap(Matrix = perk_full_apop_moduleTraitCor,
-               xLabels = names(perk_coldata_collapse_binarize_apop_perk),
-               yLabels = names(perk_full_MEs),
-               ySymbols = names(perk_full_MEs),
-               colorLabels = FALSE,
-               colors = blueWhiteRed(50),
-               textMatrix = perk_full_apop_textMatrix,
-               setStdMargins = FALSE,
-               cex.text = 0.45,
-               cex.lab = 0.7,
-               zlim = c(-1,1), 
-               yColorWidth = 0.2, 
-               main = paste("Module-trait relationships"))
-
-# Which modules have the highest associations with disease (high correlation and low P value)?
-perk_full_apop_moduleTraitCor_df <- as.data.frame(perk_full_apop_moduleTraitCor) %>% dplyr::select(Percent_of_this_plot_APOP_hemo_perk,Percent_of_this_plot_APOP_hemo_perk_arcsin)
-colnames(perk_full_apop_moduleTraitCor_df) <- c( "Percent_of_this_plot_APOP_hemo_perk.moduleTraitCor","Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitCor")
-perk_full_apop_moduleTraitPvalue_df <- as.data.frame(perk_full_apop_moduleTraitPvalue) %>% dplyr::select(Percent_of_this_plot_APOP_hemo_perk,Percent_of_this_plot_APOP_hemo_perk_arcsin)
-colnames(perk_full_apop_moduleTraitPvalue_df) <- c( "Percent_of_this_plot_APOP_hemo_perk.moduleTraitPvalue","Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitPvalue")
-
-perk_full_apop_moduleTraitCor_Pval_df <- cbind(perk_full_apop_moduleTraitCor_df, perk_full_apop_moduleTraitPvalue_df) 
-
-perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk <- perk_full_apop_moduleTraitCor_Pval_df %>% dplyr::select(contains("Percent_of_this_plot_APOP_hemo_perk"))
-perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin <- perk_full_apop_moduleTraitCor_Pval_df %>% dplyr::select(contains("Percent_of_this_plot_APOP_hemo_perk_arcsin"))
-
-# Significantly correlated modules
-
-perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig <- perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk %>% filter(Percent_of_this_plot_APOP_hemo_perk.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
-nrow(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig) #15 significant modules
-
-perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin_sig <- perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin %>% filter(Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
-nrow(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin_sig) #14 significant modules
-
-# compare modules between these and the other modules
-perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare <- 
-  full_join(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig,perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin_sig) %>%
-  # also join with original perkinsus dataframe
-  full_join(.,perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare) %>%
-  dplyr::select(!contains("Pvalue"))
-
-# all mod_names significant in either challenge
-perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare_mod_names <- perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare$mod_names
-
-# find those shared between all 
-perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare_shared <- drop_na(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare)
-# 15 shared, again all are almost exactly the same correlation
-
-## Heatmap of only the significantly correlated modules 
-# Graph and color code each the strength of association (correlation) of module eigengenes and trait
-
-# subset perk_full_moduleTraitCor, perk_full_moduleTraitPvalue, perk_full_MEs for only those modules significant in either challenge
-perk_full_apop_moduleTraitCor_sig <- perk_full_apop_moduleTraitCor[rownames(perk_full_apop_moduleTraitCor) %in% perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare_mod_names,]
-perk_full_apop_moduleTraitCor_sig <- perk_full_apop_moduleTraitCor_sig[,c(-3)]
-perk_full_apop_moduleTraitPvalue_sig <- perk_full_apop_moduleTraitPvalue[rownames(perk_full_apop_moduleTraitPvalue) %in% perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare_mod_names,]
-perk_full_apop_moduleTraitPvalue_sig <- perk_full_apop_moduleTraitPvalue_sig[,c(-3)]
-perk_full_apop_MEs_sig <- perk_full_MEs[,colnames(perk_full_MEs) %in% perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare_mod_names]
-perk_coldata_collapse_binarize_apop_perk_sig <- perk_coldata_collapse_binarize_apop_perk[,c(-3)]
-
-# Will display correlations and their p-values
-perk_full_apop_textMatrix_sig = paste(signif(perk_full_apop_moduleTraitCor_sig, 2), "\n(",
-                                      signif(perk_full_apop_moduleTraitPvalue_sig, 1), ")", sep = "");
-dim(perk_full_apop_textMatrix_sig) = dim(perk_full_apop_moduleTraitCor_sig)
-
-# make plot
-sizeGrWindow(10,6)
-par(mar = c(6, 8.5, 3, 3))
-# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
-# green is more negatively correlated)
-labeledHeatmap(Matrix = perk_full_apop_moduleTraitCor_sig,
-               xLabels = c("P.mar. and GDC-0152", "P. mar. and ZVAD-fmk", "Apoptosis_Percentage", "Apoptosis Percentage Arcsine"),
-               yLabels = names(perk_full_apop_MEs_sig),
-               ySymbols = names(perk_full_apop_MEs_sig),
-               colorLabels = FALSE,
-               colors = blueWhiteRed(50),
-               textMatrix = perk_full_apop_textMatrix_sig,
-               setStdMargins = FALSE,
-               cex.text = 0.5,
-               cex.lab = 0.7,
-               #zlim = c(-1,1), 
-               yColorWidth = 0.2, 
-               main = paste("P. marinus Module-Challenge Relationships"))
-# have to save manually...weird!
-
-
 ### Gene relationship to trait and important modules: Gene Significance and Module Membership ####
 
 ## calculate gene trait significance for each treatment
@@ -2821,6 +2619,22 @@ lapply(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_list,  GS_MM_plo
     # darkgreen = 0.44
     # mediumpurple1 = 0.56
     # darkred = 0.53
+
+## Create plot for just navajowhite2 for use in paper
+hemo_full_module = "navajowhite2" 
+hemo_full_column = match(hemo_full_module, hemo_full_modNames)
+hemo_full_moduleGenes = hemo_full_moduleColors==hemo_full_module
+sizeGrWindow(7, 7);
+par(mfrow = c(1,1));
+pdf("./FIGURES/hemo_navajowhite2_apop_GS_MM_plot.pdf",width=5, height = 5)
+verboseScatterplot(abs(hemo_full_geneModuleMembership [hemo_full_moduleGenes, hemo_full_column]),
+                   abs(hemo_full_geneTraitSignificance_apop[hemo_full_moduleGenes, 1]),
+                   xlab = paste("Module Membership in", hemo_full_module, "module"),
+                   ylab = "Gene significance for challenge",
+                   main = paste("Module Membership vs. Gene Significance\n"),
+                   cex.main = 1.0, cex.lab = 1.0, cex.axis = 1.0, col = "black")
+dev.off()
+dev.off()
 
 ## calculate gene trait significance for each treatment
 # Pmar vs Apop percentage 
