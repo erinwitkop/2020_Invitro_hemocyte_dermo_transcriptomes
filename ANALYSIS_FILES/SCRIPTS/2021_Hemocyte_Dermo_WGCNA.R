@@ -1755,7 +1755,6 @@ hemo_MEnavajowhite2_GOdata_combined_dotplot <-
 ggsave(hemo_MEnavajowhite2_GOdata_combined_dotplot, filename = "hemo_MEnavajowhite2_GOdata_combined_dotplot.tiff", 
        path = "./FIGURES/", device = "tiff", width = 6, height = 10)
 
-
 #### Pmar intramodular hub gene analysis for interesting modules ####
 
 # Interesting modules
@@ -2383,7 +2382,7 @@ ZVAD_navajowhite2_all_genes[ZVAD_navajowhite2_all_genes %in% SOD_list]
 
 # no SOD in any of these modules
 
-#### QUANTIFY MODULE ASSOCIATIONS WITH CHALLENGE AND PHENOTYPE ####
+#### QUANTIFY MODULE ASSOCIATIONS WITH CHALLENGE AND APOPTOSIS PHENOTYPE ####
 
 ## Add phenotype data for the hemocytes that have engulfed hemocytes and to the binarized data
 PCA_pheno_2020_all_samplename <-PCA_pheno_2020_all %>% mutate(Sample_Name = paste(ID, Treat, sep = "_")) 
@@ -2455,11 +2454,13 @@ hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare_shared <- drop_na(h
 # Graph and color code each the strength of association (correlation) of module eigengenes and trait
 
 # subset hemo_full_moduleTraitCor, hemo_full_moduleTraitPvalue, hemo_full_MEs for only those modules significant in either challenge
-hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_apop_moduleTraitCor[rownames(hemo_full_apop_moduleTraitCor) %in% FilterGenes_comb_apop_count_mod_names,]
+# also remove for plotting those modules that are only correlated with ZVAD
+FilterGenes_comb_apop_count_mod_names_noZVAD <- FilterGenes_comb_apop_count_mod_names[!FilterGenes_comb_apop_count_mod_names %in% "MEdarkslateblue"]
+hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_apop_moduleTraitCor[rownames(hemo_full_apop_moduleTraitCor) %in% FilterGenes_comb_apop_count_mod_names_noZVAD,]
 hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_moduleTraitCor_sig_apop_pheno[,c(1,2,8)] # keep only control, GDC, and apop_arcsin
-hemo_full_moduleTraitPvalue_sig_apop_pheno <- hemo_full_apop_moduleTraitPvalue[rownames(hemo_full_apop_moduleTraitPvalue) %in% FilterGenes_comb_apop_count_mod_names,]
+hemo_full_moduleTraitPvalue_sig_apop_pheno <- hemo_full_apop_moduleTraitPvalue[rownames(hemo_full_apop_moduleTraitPvalue) %in% FilterGenes_comb_apop_count_mod_names_noZVAD,]
 hemo_full_moduleTraitPvalue_sig_apop_pheno <- hemo_full_moduleTraitPvalue_sig_apop_pheno[,c(1,2,8)]
-hemo_full_MEs_sig_apop_pheno <- hemo_full_MEs[,colnames(hemo_full_MEs) %in% FilterGenes_comb_apop_count_mod_names]
+hemo_full_MEs_sig_apop_pheno <- hemo_full_MEs[,colnames(hemo_full_MEs) %in% FilterGenes_comb_apop_count_mod_names_noZVAD]
 hemo_coldata_collapse_binarize_sig_apop_pheno <- hemo_coldata_collapse_binarize_apop_perk[,c(1,2,8)]
 
 # Will display correlations and their p-values
