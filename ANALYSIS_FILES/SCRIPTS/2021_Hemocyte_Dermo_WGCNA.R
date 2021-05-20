@@ -1733,10 +1733,27 @@ ggsave(Hemo_GO_all_dotplot_subset_plot, device = "tiff", path = "./FIGURES/",
 
 ### Dotplot of just the navajowhite2 module BP and MF terms
 
-hemo_MEnavajowhite2_GOdata_BP_Res$level <- "BP"
-hemo_MEnavajowhite2_GOdata_Res$level <- "MF"
+hemo_MEnavajowhite2_GOdata_BP_Res$type <- "BP"
+hemo_MEnavajowhite2_GOdata_Res$type <- "MF"
 
-hemo_MEnavajowhite2_GOdata_combined <- rbind(hemo_MEnavajowhite2_GOdata_BP_Res,hemo_MEnavajowhite2_GOdata_Res)
+hemo_MEnavajowhite2_GOdata_combined <- rbind(hemo_MEnavajowhite2_GOdata_BP_Res,hemo_MEnavajowhite2_GOdata_Res) %>% filter(topgoFisher <=0.05)
+
+hemo_MEnavajowhite2_GOdata_combined_dotplot <- 
+  ggplot(hemo_MEnavajowhite2_GOdata_combined, aes(x = group, y = Term )) +
+  geom_point(aes(size = Significant, color = as.numeric(topgoFisher))) + 
+  scale_size_continuous(range = c(4,10)) +
+  scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
+  facet_grid(type~., scales = "free", space="free") + 
+  theme_minimal() +
+  labs(x = NULL, y = "GO Term", title = "GO Enrichment of Significant Hemocyte navajowhite2 DEGs") + 
+  theme(panel.border = element_rect(color = "black", fill = "NA"),
+        axis.text.x = ggtext::element_markdown(size = 14),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 16, face = "bold"),
+        strip.text.y = element_text(size = 16, face = "bold"),
+        title = element_text(size = 12))
+ggsave(hemo_MEnavajowhite2_GOdata_combined_dotplot, filename = "hemo_MEnavajowhite2_GOdata_combined_dotplot.tiff", path = "./FIGURES/", device = "tiff", width = 10, height = 15)
+
 
 #### Pmar intramodular hub gene analysis for interesting modules ####
 
