@@ -1745,14 +1745,15 @@ hemo_MEnavajowhite2_GOdata_combined_dotplot <-
   scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
   facet_grid(type~., scales = "free", space="free") + 
   theme_minimal() +
-  labs(x = NULL, y = "GO Term", title = "GO Enrichment of Significant Hemocyte navajowhite2 DEGs") + 
+  labs(x = NULL, y = "GO Term", title = "GO Enrichment") + 
   theme(panel.border = element_rect(color = "black", fill = "NA"),
         axis.text.x = ggtext::element_markdown(size = 14),
         axis.text.y = element_text(size = 12),
         axis.title = element_text(size = 16, face = "bold"),
         strip.text.y = element_text(size = 16, face = "bold"),
         title = element_text(size = 12))
-ggsave(hemo_MEnavajowhite2_GOdata_combined_dotplot, filename = "hemo_MEnavajowhite2_GOdata_combined_dotplot.tiff", path = "./FIGURES/", device = "tiff", width = 10, height = 15)
+ggsave(hemo_MEnavajowhite2_GOdata_combined_dotplot, filename = "hemo_MEnavajowhite2_GOdata_combined_dotplot.tiff", 
+       path = "./FIGURES/", device = "tiff", width = 6, height = 10)
 
 
 #### Pmar intramodular hub gene analysis for interesting modules ####
