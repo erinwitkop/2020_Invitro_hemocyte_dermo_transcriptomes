@@ -116,19 +116,29 @@ sizeGrWindow(9, 5)
 par(mfrow = c(1,2));
 cex1 = 0.9;
 
+pdf("./FIGURES/hemo_scale_free_plot.pdf", width = 4, height = 5 )
 # Scale-free topology fit index as a function of the soft-thresholding power
 plot(hemo_dds_rlog_matrix_sft$fitIndices[,1], -sign(hemo_dds_rlog_matrix_sft$fitIndices[,3])*hemo_dds_rlog_matrix_sft$fitIndices[,2],
      xlab="Soft Threshold (power)",ylab="Scale Free Topology Model Fit,signed R^2",type="n",
-     main = paste("Scale independence"));
+     main = paste("Hemocyte Scale Independence"));
 text(hemo_dds_rlog_matrix_sft$fitIndices[,1], -sign(hemo_dds_rlog_matrix_sft$fitIndices[,3])*hemo_dds_rlog_matrix_sft$fitIndices[,2],
      labels=powers,cex=cex1,col="red");
 # this line corresponds to using an R^2 cut-off of h
 abline(h=0.90,col="red")
+dev.off()
+
+
+sizeGrWindow(9, 5)
+par(mfrow = c(1,2));
+cex1 = 0.9;
+pdf("./FIGURES/hemo_mean_connectivity_plot.pdf", width = 4, height = 5 )
 # Mean connectivity as a function of the soft-thresholding power
 plot(hemo_dds_rlog_matrix_sft$fitIndices[,1], hemo_dds_rlog_matrix_sft$fitIndices[,5],
      xlab="Soft Threshold (power)",ylab="Mean Connectivity", type="n",
-     main = paste("Mean connectivity"))
+     main = paste("Hemocyte Mean Connectivity"))
 text(hemo_dds_rlog_matrix_sft$fitIndices[,1], hemo_dds_rlog_matrix_sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
+dev.off()
+dev.off()
 
 # Selecting Softthreshold of 7 since this is lowest value past 0.9 we start to see flattening 
 
@@ -142,20 +152,29 @@ sizeGrWindow(9, 5)
 par(mfrow = c(1,2));
 cex1 = 0.9;
 
+pdf("./FIGURES/perk_scale_free_plot.pdf", width = 4, height = 5 )
 # Scale-free topology fit index as a function of the soft-thresholding power
 plot(perk_dds_rlog_matrix_sft$fitIndices[,1], -sign(perk_dds_rlog_matrix_sft$fitIndices[,3])*perk_dds_rlog_matrix_sft$fitIndices[,2],
      xlab="Soft Threshold (power)",ylab="Scale Free Topology Model Fit,signed R^2",type="n",
-     main = paste("Scale independence"));
+     main = paste("P. marinus Scale Independence"));
 text(perk_dds_rlog_matrix_sft$fitIndices[,1], -sign(perk_dds_rlog_matrix_sft$fitIndices[,3])*perk_dds_rlog_matrix_sft$fitIndices[,2],
      labels=powers,cex=cex1,col="red");
 # this line corresponds to using an R^2 cut-off of h
 abline(h=0.90,col="red")
+dev.off()
+dev.off()
+
+sizeGrWindow(9, 5)
+par(mfrow = c(1,2));
+cex1 = 0.9;
+pdf("./FIGURES/perk_mean_connectivity_plot.pdf", width = 4, height = 5 )
 # Mean connectivity as a function of the soft-thresholding power
 plot(perk_dds_rlog_matrix_sft$fitIndices[,1], perk_dds_rlog_matrix_sft$fitIndices[,5],
      xlab="Soft Threshold (power)",ylab="Mean Connectivity", type="n",
-     main = paste("Mean connectivity"))
+     main = paste("P. marinus Mean Connectivity"))
 text(perk_dds_rlog_matrix_sft$fitIndices[,1], perk_dds_rlog_matrix_sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
-
+dev.off()
+dev.off()
 # Selecting Softthreshold of 7 since this is lowest value past 0.9 we start to see flattening 
 
 #### ONE STEP NETWORK CONSTRUCTION, MODULE DETECTION, MODULE DENDROGRAM INSPECTION ####
@@ -178,11 +197,15 @@ table(hemo_full_net$colors) # 121 total modules
 sizeGrWindow(12, 9)
 # Convert labels to colors for plotting
 hemo_full_mergedColors = labels2colors(hemo_full_net$colors)
+
 # Plot the dendrogram and the module colors underneath
+pdf("./FIGURES/hemo_dendrogram.pdf", width = 10, height = 5 )
 plotDendroAndColors(hemo_full_net$dendrograms[[1]], hemo_full_mergedColors[hemo_full_net$blockGenes[[1]]],
-                    "Module colors",
+                    "Hemocyte\nModule Colors",
                     dendroLabels = FALSE, hang = 0.03,
                     addGuide = TRUE, guideHang = 0.05)
+dev.off()
+
 hemo_full_moduleLabels = hemo_full_net$colors
 hemo_full_moduleColors = labels2colors(hemo_full_net$colors)
 hemo_full_MEs = hemo_full_net$MEs
@@ -213,11 +236,15 @@ table(perk_full_net$colors) # 134 total modules
 sizeGrWindow(12, 9)
 # Convert labels to colors for plotting
 perk_full_mergedColors = labels2colors(perk_full_net$colors)
+
 # Plot the dendrogram and the module colors underneath
+pdf("./FIGURES/perk_dendrogram.pdf", width = 10, height = 5 )
 plotDendroAndColors(perk_full_net$dendrograms[[1]], perk_full_mergedColors[perk_full_net$blockGenes[[1]]],
-                    "Module colors",
+                    "P. marinus\nModule Colors",
                     dendroLabels = FALSE, hang = 0.03,
                     addGuide = TRUE, guideHang = 0.05)
+dev.off()
+
 perk_full_moduleLabels = perk_full_net$colors
 perk_full_moduleColors = labels2colors(perk_full_net$colors)
 perk_full_MEs = perk_full_net$MEs
@@ -1731,7 +1758,7 @@ FilterGenes_Pmar_comb_Interpro_ZVAD_pink3  %>% distinct(transcript_id, GS) %>% d
 FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3  %>% distinct(transcript_id, GS) %>% dplyr::count() # 27
 FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2  %>% distinct(transcript_id, GS) %>% dplyr::count() # 46
 
-### ASSESS OVERLAPS WITH DEG RESULTS
+### ASSESS HUB GENE OVERLAPS WITH DEG RESULTS ####
 # assessing the modules I've highlighted as being most significant, GDC_lightblue4, ZVADnavajowhite2, ZVADpink3
 View(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4)
 perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot
@@ -1756,6 +1783,28 @@ perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_
 # 0
 perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% unique(FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2$transcript_id),]
 # 0
+
+### ASSESS FULL MODULE OVERLAPS WITH DEG RESULTS ####
+
+# In case I'm missing something!
+# How many overlaps between module genes and interesting modules 
+#GDC
+GDC_lightblue4_all_genes_DEG_overlap <- perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% as.character(GDC_lightblue4_all_genes),]
+#0
+GDC_ZVAD_blue4_all_genes_overlap <- perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot[perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id %in% as.character(GDC_ZVAD_blue4_all_genes),]
+#transcript_id  baseMean log2FoldChange     lfcSE       pvalue         padj                                       product         condition    log10
+#8  XM_002767241.1  36.74167       3.690627 1.3135200 1.488092e-04 4.445373e-02           hypothetical protein-XM_002767241.1 P_mar_GDC_vs_Pmar 1.352092
+#22 XM_002776403.1 114.53786       1.706073 0.3736873 1.971983e-07 2.421815e-04 conserved hypothetical protein-XM_002776403.1 P_mar_GDC_vs_Pmar 3.615859
+#37 XM_002787026.1  88.88279       2.701711 0.4627373 3.050280e-10 6.742950e-07               Uridine phosphorylase, putative P_mar_GDC_vs_Pmar 6.171150
+
+GDC_ZVAD_blue4_all_genes_annot_Interpro <- GDC_ZVAD_blue4_all_genes_annot[GDC_ZVAD_blue4_all_genes_annot$transcript_id %in% GDC_ZVAD_blue4_all_genes_overlap$transcript_id,]
+
+# ZVAD
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% as.character(ZVAD_lightpink3_all_genes),]
+#transcript_id baseMean log2FoldChange   lfcSE       pvalue       padj                                                        product          condition
+#7 XM_002771133.1 31.61013       3.300932 1.01682 3.364091e-05 0.01583559 transmembrane BAX inhibitor motif-containing protein, putative P_mar_ZVAD_vs_Pmar
+
+perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot[perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot$transcript_id %in% as.character(ZVAD_navajowhite2_all_genes),]
 
 ### Pmar GO enrichment for interesting module intramodular hub genes ####
 Perk_geneNames <- names(Perk_GO_terms_found_geneID2GO_mapping)
@@ -2189,7 +2238,6 @@ ZVAD_navajowhite2_GOdata_BP_Res <- GenTable(ZVAD_navajowhite2_GOdata_BP, topgoFi
 
 GDC_ZVAD_blue4_GOdata_BP_Res <- GenTable(GDC_ZVAD_blue4_GOdata_BP, topgoFisher = GDC_ZVAD_blue4_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 20)
 
-
 #### Pmar top interesting modules GO visualization ####
 
 ### Dotplot of significantly enriched GO terms from hub modules plotting just the MF
@@ -2518,6 +2566,215 @@ labeledHeatmap(Matrix = perk_full_apop_moduleTraitCor_sig,
                main = paste("P. marinus Module-Challenge Relationships"))
 # have to save manually...weird!
 
+#### QUANTIFY MODULE ASSOCIATIONS WITH CHALLENGE AND PHENOTYPE EXCEPT ZVAD ####
+
+## Add phenotype data for the hemocytes that have engulfed hemocytes and to the binarized data
+PCA_pheno_2020_all_samplename <-PCA_pheno_2020_all %>% mutate(Sample_Name = paste(ID, Treat, sep = "_")) 
+PCA_pheno_2020_all_samplename_APOP_hemo_perk <- na.omit(PCA_pheno_2020_all_samplename[,c("Sample_Name","Percent_of_this_plot_APOP_hemo_perk")])
+# Format by arcsine transform
+PCA_pheno_2020_all_samplename_APOP_hemo_perk$Percent_of_this_plot_APOP_hemo_perk_arcsin <- transf.arcsin(PCA_pheno_2020_all_samplename_APOP_hemo_perk$Percent_of_this_plot_APOP_hemo_perk*0.01)
+
+# Join apoptosis phenotype 
+hemo_coldata_collapse_binarize_apop_perk <- as.data.frame(hemo_coldata_collapse_binarize) %>% rownames_to_column(., var = "Sample_Name") %>% 
+  left_join(.,PCA_pheno_2020_all_samplename_APOP_hemo_perk) %>% column_to_rownames(., var = "Sample_Name")
+
+# tutorial for this section: https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/Tutorials/FemaleLiver-03-relateModsToExt.pdf
+
+# Recalculate Module trait correlations and Pvalue using this new phenotype dataframe
+hemo_full_apop_moduleTraitCor = cor(hemo_full_MEs, hemo_coldata_collapse_binarize_apop_perk, use = "p");
+hemo_full_apop_moduleTraitPvalue = corPvalueStudent(hemo_full_apop_moduleTraitCor, hemo_full_nSamples)
+
+# Graph and color code each the strength of association (correlation) of module eigengenes and trai
+sizeGrWindow(10,6)
+# Will display correlations and their p-values
+hemo_full_apop_textMatrix = paste(signif(hemo_full_apop_moduleTraitCor, 2), "\n(",
+                                  signif(hemo_full_apop_moduleTraitPvalue, 1), ")", sep = "");
+dim(hemo_full_apop_textMatrix) = dim(hemo_full_apop_moduleTraitCor)
+par(mar = c(6, 8.5, 3, 3))
+# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
+# green is more negatively correlated)
+labeledHeatmap(Matrix = hemo_full_apop_moduleTraitCor,
+               xLabels = names(hemo_coldata_collapse_binarize_apop_perk),
+               yLabels = names(hemo_full_MEs),
+               ySymbols = names(hemo_full_MEs),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = hemo_full_apop_textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.45,
+               cex.lab = 0.7,
+               zlim = c(-1,1), 
+               yColorWidth = 0.2, 
+               main = paste("Module-trait relationships"))
+
+# Which modules have the highest associations with disease (high correlation and low P value)?
+hemo_full_apop_moduleTraitCor_df <- as.data.frame(hemo_full_apop_moduleTraitCor) %>% dplyr::select(Percent_of_this_plot_APOP_hemo_perk,Percent_of_this_plot_APOP_hemo_perk_arcsin)
+colnames(hemo_full_apop_moduleTraitCor_df) <- c("Percent_of_this_plot_APOP_hemo_perk.moduleTraitCor", "Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitCor")
+hemo_full_apop_moduleTraitPvalue_df <- as.data.frame(hemo_full_apop_moduleTraitPvalue) %>% dplyr::select(Percent_of_this_plot_APOP_hemo_perk,Percent_of_this_plot_APOP_hemo_perk_arcsin)
+colnames(hemo_full_apop_moduleTraitPvalue_df) <- c("Percent_of_this_plot_APOP_hemo_perk.moduleTraitPvalue", "Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitPvalue")
+
+hemo_full_apop_moduleTraitCor_Pval_df <- cbind(hemo_full_apop_moduleTraitCor_df, hemo_full_apop_moduleTraitPvalue_df) 
+
+hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk <- hemo_full_apop_moduleTraitCor_Pval_df %>% dplyr::select(contains("Percent_of_this_plot_APOP_hemo_perk."))
+hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin <- hemo_full_apop_moduleTraitCor_Pval_df %>% dplyr::select(contains("APOP_hemo_perk_arcsin."))
+
+# Significantly correlated modules
+hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig <- hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk %>% filter(Percent_of_this_plot_APOP_hemo_perk.moduleTraitPvalue <= 0.05)  %>% rownames_to_column(., "mod_names") 
+nrow(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig) #14 significant modules
+
+hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin_sig <- hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin %>% filter(Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
+nrow(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin_sig) #13
+
+# compare modules
+hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare <-  
+  full_join(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig,hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin_sig) %>% dplyr::select(!contains("Pvalue"))
+
+# find those shared between all 
+hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare_shared <- drop_na(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare)
+# 12 shared between both...the arcine transform does not make a difference! Correlation values are very similar for both, in general slightly lower correlation for arcsine 
+
+## Plot only those modules with significant apoptosis members as before
+## Heatmap of only the significantly correlated modules that have apoptosis hub genes
+# Graph and color code each the strength of association (correlation) of module eigengenes and trait
+
+# subset hemo_full_moduleTraitCor, hemo_full_moduleTraitPvalue, hemo_full_MEs for only those modules significant in either challenge
+hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_apop_moduleTraitCor[rownames(hemo_full_apop_moduleTraitCor) %in% FilterGenes_comb_apop_count_mod_names,]
+hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_moduleTraitCor_sig_apop_pheno[,c(1:3,7)]
+hemo_full_moduleTraitPvalue_sig_apop_pheno <- hemo_full_apop_moduleTraitPvalue[rownames(hemo_full_apop_moduleTraitPvalue) %in% FilterGenes_comb_apop_count_mod_names,]
+hemo_full_moduleTraitPvalue_sig_apop_pheno <- hemo_full_moduleTraitPvalue_sig_apop_pheno[,c(1:3,7)]
+hemo_full_MEs_sig_apop_pheno <- hemo_full_MEs[,colnames(hemo_full_MEs) %in% FilterGenes_comb_apop_count_mod_names]
+hemo_coldata_collapse_binarize_sig_apop_pheno <- hemo_coldata_collapse_binarize_apop_perk[,c(1:3,7)]
+
+# Will display correlations and their p-values
+hemo_full_textMatrix_sig_apop_pheno = paste(signif(hemo_full_moduleTraitCor_sig_apop_pheno, 2), "\n(",
+                                            signif(hemo_full_moduleTraitPvalue_sig_apop_pheno, 1), ")", sep = "");
+dim(hemo_full_textMatrix_sig_apop_pheno) = dim(hemo_full_moduleTraitCor_sig_apop_pheno)
+
+# make plot
+sizeGrWindow(10,6)
+par(mar = c(6, 8.5, 3, 3))
+# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
+# green is more negatively correlated)
+labeledHeatmap(Matrix = hemo_full_moduleTraitCor_sig_apop_pheno,
+               xLabels = c("Con vs. Pmar", "P.mar. GDC vs. Con", "P. mar. ZVAD vs. Con", "Apoptosis Percentage"),
+               yLabels = names(hemo_full_MEs_sig_apop_pheno),
+               ySymbols = names(hemo_full_MEs_sig_apop_pheno),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = hemo_full_textMatrix_sig_apop_pheno,
+               setStdMargins = FALSE,
+               cex.text = 0.5,
+               cex.lab = 0.7,
+               #zlim = c(-1,1), 
+               yColorWidth = 0.2, 
+               main = paste("Hemocyte Module-Challenge Relationships"))
+# have to save manually...weird!
+
+### Repeat for P_marinus counts 
+
+# format phenotype data 
+perk_coldata_collapse_binarize
+# Join apoptosis phenotype 
+perk_coldata_collapse_binarize_apop_perk <- as.data.frame(perk_coldata_collapse_binarize) %>% rownames_to_column(., var = "Sample_Name") %>% 
+  left_join(.,PCA_pheno_2020_all_samplename_APOP_hemo_perk) %>% column_to_rownames(., var = "Sample_Name")
+
+# recalculate the correlation with traits
+perk_full_apop_moduleTraitCor = cor(perk_full_MEs, perk_coldata_collapse_binarize_apop_perk, use = "p");
+perk_full_apop_moduleTraitPvalue = corPvalueStudent(perk_full_apop_moduleTraitCor, perk_full_nSamples)
+
+# Graph and color code each the strength of association (correlation) of module eigengenes and trai
+sizeGrWindow(10,6)
+# Will display correlations and their p-values
+perk_full_apop_textMatrix = paste(signif(perk_full_apop_moduleTraitCor, 2), "\n(",
+                                  signif(perk_full_apop_moduleTraitPvalue, 1), ")", sep = "");
+dim(perk_full_apop_textMatrix) = dim(perk_full_apop_moduleTraitCor)
+par(mar = c(6, 8.5, 3, 3))
+# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
+# green is more negatively correlated)
+labeledHeatmap(Matrix = perk_full_apop_moduleTraitCor,
+               xLabels = names(perk_coldata_collapse_binarize_apop_perk),
+               yLabels = names(perk_full_MEs),
+               ySymbols = names(perk_full_MEs),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = perk_full_apop_textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.45,
+               cex.lab = 0.7,
+               zlim = c(-1,1), 
+               yColorWidth = 0.2, 
+               main = paste("Module-trait relationships"))
+
+# Which modules have the highest associations with disease (high correlation and low P value)?
+perk_full_apop_moduleTraitCor_df <- as.data.frame(perk_full_apop_moduleTraitCor) %>% dplyr::select(Percent_of_this_plot_APOP_hemo_perk,Percent_of_this_plot_APOP_hemo_perk_arcsin)
+colnames(perk_full_apop_moduleTraitCor_df) <- c( "Percent_of_this_plot_APOP_hemo_perk.moduleTraitCor","Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitCor")
+perk_full_apop_moduleTraitPvalue_df <- as.data.frame(perk_full_apop_moduleTraitPvalue) %>% dplyr::select(Percent_of_this_plot_APOP_hemo_perk,Percent_of_this_plot_APOP_hemo_perk_arcsin)
+colnames(perk_full_apop_moduleTraitPvalue_df) <- c( "Percent_of_this_plot_APOP_hemo_perk.moduleTraitPvalue","Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitPvalue")
+
+perk_full_apop_moduleTraitCor_Pval_df <- cbind(perk_full_apop_moduleTraitCor_df, perk_full_apop_moduleTraitPvalue_df) 
+
+perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk <- perk_full_apop_moduleTraitCor_Pval_df %>% dplyr::select(contains("Percent_of_this_plot_APOP_hemo_perk"))
+perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin <- perk_full_apop_moduleTraitCor_Pval_df %>% dplyr::select(contains("Percent_of_this_plot_APOP_hemo_perk_arcsin"))
+
+# Significantly correlated modules
+
+perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig <- perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk %>% filter(Percent_of_this_plot_APOP_hemo_perk.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
+nrow(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig) #15 significant modules
+
+perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin_sig <- perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin %>% filter(Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitPvalue<= 0.05)  %>% rownames_to_column(., "mod_names") 
+nrow(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin_sig) #14 significant modules
+
+# compare modules between these and the other modules
+perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare <- 
+  full_join(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig,perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_arcsin_sig) %>%
+  # also join with original perkinsus dataframe
+  full_join(.,perk_full_moduleTraitCor_Pval_df_Pmar_sig_compare) %>%
+  dplyr::select(!contains("Pvalue"))
+
+# all mod_names significant in either challenge
+perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare_mod_names <- perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare$mod_names
+
+# find those shared between all 
+perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare_shared <- drop_na(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare)
+# 15 shared, again all are almost exactly the same correlation
+
+## Heatmap of only the significantly correlated modules 
+# Graph and color code each the strength of association (correlation) of module eigengenes and trait
+
+# subset perk_full_moduleTraitCor, perk_full_moduleTraitPvalue, perk_full_MEs for only those modules significant in either challenge
+perk_full_apop_moduleTraitCor_sig <- perk_full_apop_moduleTraitCor[rownames(perk_full_apop_moduleTraitCor) %in% perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare_mod_names,]
+perk_full_apop_moduleTraitCor_sig <- perk_full_apop_moduleTraitCor_sig[,c(-3)]
+perk_full_apop_moduleTraitPvalue_sig <- perk_full_apop_moduleTraitPvalue[rownames(perk_full_apop_moduleTraitPvalue) %in% perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare_mod_names,]
+perk_full_apop_moduleTraitPvalue_sig <- perk_full_apop_moduleTraitPvalue_sig[,c(-3)]
+perk_full_apop_MEs_sig <- perk_full_MEs[,colnames(perk_full_MEs) %in% perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_compare_mod_names]
+perk_coldata_collapse_binarize_apop_perk_sig <- perk_coldata_collapse_binarize_apop_perk[,c(-3)]
+
+# Will display correlations and their p-values
+perk_full_apop_textMatrix_sig = paste(signif(perk_full_apop_moduleTraitCor_sig, 2), "\n(",
+                                      signif(perk_full_apop_moduleTraitPvalue_sig, 1), ")", sep = "");
+dim(perk_full_apop_textMatrix_sig) = dim(perk_full_apop_moduleTraitCor_sig)
+
+# make plot
+sizeGrWindow(10,6)
+par(mar = c(6, 8.5, 3, 3))
+# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
+# green is more negatively correlated)
+labeledHeatmap(Matrix = perk_full_apop_moduleTraitCor_sig,
+               xLabels = c("P.mar. and GDC-0152", "P. mar. and ZVAD-fmk", "Apoptosis_Percentage", "Apoptosis Percentage Arcsine"),
+               yLabels = names(perk_full_apop_MEs_sig),
+               ySymbols = names(perk_full_apop_MEs_sig),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = perk_full_apop_textMatrix_sig,
+               setStdMargins = FALSE,
+               cex.text = 0.5,
+               cex.lab = 0.7,
+               #zlim = c(-1,1), 
+               yColorWidth = 0.2, 
+               main = paste("P. marinus Module-Challenge Relationships"))
+# have to save manually...weird!
+
+
 ### Gene relationship to trait and important modules: Gene Significance and Module Membership ####
 
 ## calculate gene trait significance for each treatment
@@ -2648,7 +2905,6 @@ GDC_ZVAD_blue4_all_genes_annot <- as.data.frame(GDC_ZVAD_blue4_all_genes) %>% dp
 # one table will have all the significantly enriched GO terms from the full module
 
 ## Hemocyte experiment
-
 # df for all hub genes
 FilterGenes_comb
 # df for all apoptosis hub genes
@@ -2694,36 +2950,47 @@ Hemo_GO_export_subset_all <- rbind(Hemo_GO_export_subset, Hemo_GO_BP_export_subs
 ## Perkinsus experiment
 # all hub genes without the interproscan
 FilterGenes_Pmar_comb
-# all bug genes with interproscan
+# all hub genes with interproscan
 FilterGenes_Pmar_comb_Interpro_slim <- FilterGenes_Pmar_comb_Interpro %>% filter(signature_desc !="consensus disorder prediction") %>% filter(Dbxref != "character(0)") %>% 
   filter(!is.na(Name)) %>% filter(signature_desc != "character(0)") %>%
   distinct(transcript_id, Dbxref, .keep_all = TRUE)
 
-# Export GO enrichment data
-# focusing on the following modules: lightblue4, lightpink3, navajowhite2,
+# Export GO enrichment data - FOR all genes not just the hub genes 
+# focusing on the following modules: lightblue4, lightpink3, navajowhite2,blue4
+# export for hub genes
 FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_Res$group <- "lightpink3"
-
 Pmar_GO_hub_export <- rbind(FilterGenes_Pmar_comb_Interpro_ZVAD_lightpink3_GOdata_Res,
                             FilterGenes_Pmar_comb_Interpro_ZVAD_navajowhite2_GOdata_Res[,-8],
                             FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GOdata_Res[,-8]) %>% filter(topgoFisher <=0.05) %>% mutate(type = "MF")
-
-
 GDC_lightblue4_GOdata_BP_Res$group <- "lightblue4"
 ZVAD_lightpink3_GOdata_BP_Res$group <- "lightpink3"
 ZVAD_navajowhite2_GOdata_BP_Res$group <- "navajowhite2"
 
-Pmar_GO_hub_export_BP <- rbind(GDC_lightblue4_GOdata_BP_Res,
+# export the GO enrichment results for the full module
+GDC_ZVAD_blue4_GOdata_Res$group <- "blue4"
+GDC_ZVAD_blue4_GOdata_Res$treat <- "GDC_ZVAD"
+Pmar_GO_all_export_MF <- rbind(GDC_lightblue4_GOdata_Res,
+                               GDC_ZVAD_blue4_GOdata_Res,
+                               ZVAD_lightpink3_GOdata_Res,
+                               ZVAD_navajowhite2_GOdata_Res) %>% filter(topgoFisher <=0.05) %>% mutate(type = "MF")
+
+GDC_lightblue4_GOdata_BP_Res$group <- "lightblue4"
+GDC_ZVAD_blue4_GOdata_BP_Res$group <- "blue4"
+ZVAD_lightpink3_GOdata_BP_Res$group <- "lightpink3"
+ZVAD_navajowhite2_GOdata_BP_Res$group <- "navajowhite2"
+Pmar_GO_all_export_BP <- rbind(GDC_lightblue4_GOdata_BP_Res,
+                               GDC_ZVAD_blue4_GOdata_BP_Res,
                                ZVAD_lightpink3_GOdata_BP_Res,
                                ZVAD_navajowhite2_GOdata_BP_Res)  %>% filter(topgoFisher <=0.05) %>% mutate(type = "BP")
 
 # combine all 
-Pmar_GO_hub_export_all <- rbind(Pmar_GO_hub_export, Pmar_GO_hub_export_BP)
+Pmar_GO_export_all <- rbind(Pmar_GO_all_export_MF[,-8], Pmar_GO_all_export_BP)
 
 # Files to export
 write.table(FilterGenes_comb_apop_labeled, file = "FilterGenes_comb_apop_labeled_HUB_GENES.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
 write.table(Hemo_GO_export_subset_all, file = "Hemo_GO_export_subset_all.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
 write.table(FilterGenes_Pmar_comb_Interpro_slim, file = "FilterGenes_Pmar_comb_Interpro_slim_HUB_GENES.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
-write.table(Pmar_GO_hub_export_all, file = "Pmar_GO_hub_export_all.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
+write.table(Pmar_GO_export_all, file = "Pmar_GO_export_all.txt",sep = "\t", row.names = FALSE, col.names = TRUE)
 
 #### Select Pmar hub genes for further analysis based on overlap with GO enrichment terms ####
 
@@ -2736,24 +3003,40 @@ write.table(Pmar_GO_hub_export_all, file = "Pmar_GO_hub_export_all.txt",sep = "\
 # ZVAD related:
 #   Navajowhite2
 #   lightpink3
-Pmar_GO_hub_export_all_GO_list_lightblue4 <- Pmar_GO_hub_export_all %>% filter(group == "lightblue4") %>% dplyr::select(GO.ID)
+# GDC and ZVAD
+Pmar_GO_hub_export_all_GO_list_lightblue4 <- Pmar_GO_export_all %>% filter(group == "lightblue4") %>% dplyr::select(GO.ID)
 Pmar_GO_hub_export_all_GO_list_lightblue4 <- as.character(unlist(Pmar_GO_hub_export_all_GO_list_lightblue4))
 
-Pmar_GO_hub_export_all_GO_list_lightpink3 <- Pmar_GO_hub_export_all %>% filter(group == "lightpink3") %>% dplyr::select(GO.ID)
+Pmar_GO_hub_export_all_GO_list_blue4 <- Pmar_GO_export_all %>% filter(group == "blue4") %>% dplyr::select(GO.ID)
+Pmar_GO_hub_export_all_GO_list_blue4 <- as.character(unlist(Pmar_GO_hub_export_all_GO_list_blue4))
+
+Pmar_GO_hub_export_all_GO_list_lightpink3 <- Pmar_GO_export_all %>% filter(group == "lightpink3") %>% dplyr::select(GO.ID)
 Pmar_GO_hub_export_all_GO_list_lightpink3 <- as.character(unlist(Pmar_GO_hub_export_all_GO_list_lightpink3))
 
-Pmar_GO_hub_export_all_GO_list_navajowhite2 <- Pmar_GO_hub_export_all %>% filter(group == "navajowhite2") %>% dplyr::select(GO.ID)
+Pmar_GO_hub_export_all_GO_list_navajowhite2 <- Pmar_GO_export_all %>% filter(group == "navajowhite2") %>% dplyr::select(GO.ID)
 Pmar_GO_hub_export_all_GO_list_navajowhite2 <- as.character(unlist(Pmar_GO_hub_export_all_GO_list_navajowhite2))
 
 # get lists of hub genes that overlap with enriched GO terms in either BP or MF
 Pmar_GO_hub_export_all_Interpro_hub_genes_lightblue4_list <- FilterGenes_Pmar_comb_Interpro_slim %>% filter(mod_names == "MElightblue4") %>%
   filter(grepl(paste(Pmar_GO_hub_export_all_GO_list_lightblue4, collapse = "|"), Ontology_term))
-  #Name                                         product  transcript_id moduleTraitCor moduleTraitPvalue    mod_names        GS     protein_id source Ontology_term       Dbxref signature_desc
-  #1 XM_002768739.1  iron-sulfur cluster assembly protein, putative XM_002768739.1      0.9089457      0.0006854917 MElightblue4 0.7920236 XP_002768785.1    CDD  "GO:0005.... "InterPr....      IscU_like
-  #2 XM_002784868.1 DNA replication licensing factor MCM2, putative XM_002784868.1      0.9089457      0.0006854917 MElightblue4 0.7757555 XP_002784914.1   Pfam  "GO:0003.... "InterPr....   Mini-chr....
+    #1 XM_002768739.1  iron-sulfur cluster assembly protein, putative XM_002768739.1      0.9089457      0.0006854917 MElightblue4 0.7920236 XP_002768785.1    CDD
+    #2 XM_002766308.1                       cytochrome P450, putative XM_002766308.1      0.9089457      0.0006854917 MElightblue4 0.7677165 XP_002766354.1   Pfam
+    #3 XM_002766308.1                       cytochrome P450, putative XM_002766308.1      0.9089457      0.0006854917 MElightblue4 0.7677165 XP_002766354.1 PRINTS
+    #4 XM_002784868.1 DNA replication licensing factor MCM2, putative XM_002784868.1      0.9089457      0.0006854917 MElightblue4 0.7757555 XP_002784914.1   Pfam
 
 # join back in the full Interproscan terms to look at all the domains for these proteins
 Pmar_GO_hub_export_all_Interpro_hub_genes_lightblue4_all_domain <- Pmar_GO_hub_export_all_Interpro_hub_genes_lightblue4_list %>%  
+  left_join(., Perk_Interpro_GO_terms_XP[,c("transcript_id","Dbxref","signature_desc")], by = "transcript_id")
+
+# repeat for blue4
+Pmar_GO_hub_export_all_Interpro_hub_genes_blue4_list <- FilterGenes_Pmar_comb_Interpro_slim %>% filter(mod_names == "MEblue4") %>%
+  filter(grepl(paste(Pmar_GO_hub_export_all_GO_list_blue4, collapse = "|"), Ontology_term))
+#Name                        product  transcript_id moduleTraitCor moduleTraitPvalue mod_names        GS     protein_id source Ontology_term       Dbxref
+#1 XM_002772524.1 CAAX prenyl protease, putative XM_002772524.1      0.8944067       0.001134529   MEblue4 0.6877459 XP_002772570.1   Pfam  "GO:0004.... "InterPr....
+#signature_desc
+
+# join back in the full Interproscan terms to look at all the domains for these proteins
+Pmar_GO_hub_export_all_Interpro_hub_genes_blue4_all_domain <- Pmar_GO_hub_export_all_Interpro_hub_genes_blue4_list %>%  
   left_join(., Perk_Interpro_GO_terms_XP[,c("transcript_id","Dbxref","signature_desc")], by = "transcript_id")
 
 # repeat for lightpink3
@@ -2836,7 +3119,7 @@ write.table(hemo_hub_gene_ids_MEorangered4_apop_hub, file = "./Cytoscape_files/h
 perk_hub_gene_ids_MElightblue4 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MElightblue4") %>% dplyr::select(Name)
 perk_hub_gene_ids_MElightpink3 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MElightpink3") %>% dplyr::select(Name)
 perk_hub_gene_ids_MEnavajowhite2 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MEnavajowhite2") %>% dplyr::select(Name)
-perk_hub_gene_ids_MEblue4 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MEblue4") %>% dplyr::select(Name)
+perk_hub_gene_ids_MEblue4 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MEblue4") %>% dplyr::select(Name) %>% distinct(Name)
 
 write.table(perk_hub_gene_ids_MElightblue4, file = "./Cytoscape_files/perk_hub_gene_ids_MElightblue4.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
 write.table(perk_hub_gene_ids_MElightpink3, file = "./Cytoscape_files/perk_hub_gene_ids_MElightpink3.txt",sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
@@ -2877,24 +3160,28 @@ write.table(perk_full_geneTraitSignificance_GSPvalue , file = "./Cytoscape_files
 
 # What is the top 5% of edge weights for each file?
 CytoscapeInput_edges_perk_fulllightblue4 <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-perk_fulllightblue4.txt", header = TRUE, col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
+CytoscapeInput_edges_perk_fullblue4 <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-perk_fullblue4.txt", header = TRUE, col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
 
 CytoscapeInput_edges_hemo_fullyellow <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-hemo_fullyellow.txt", header = TRUE,col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
 CytoscapeInput_edges_hemo_fullnavajowhite2 <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-hemo_fullnavajowhite2.txt", header = TRUE,col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
 CytoscapeInput_edges_hemo_fullblue <- read.table(file="./Cytoscape_files/CytoscapeInput-edges-hemo_fullblue.txt", header = TRUE, col.names = c("fromNode","toNode","weight", "direction", "fromAltName", "toAltName"))
 
 CytoscapeInput_edges_perk_fulllightblue4$weight <- as.numeric(CytoscapeInput_edges_perk_fulllightblue4$weight)
+CytoscapeInput_edges_perk_fullblue4$weight <- as.numeric(CytoscapeInput_edges_perk_fullblue4$weight)
 
 CytoscapeInput_edges_hemo_fullyellow$weight <- as.numeric(CytoscapeInput_edges_hemo_fullyellow$weight)
 CytoscapeInput_edges_hemo_fullnavajowhite2$weight <- as.numeric(CytoscapeInput_edges_hemo_fullnavajowhite2$weight)
 CytoscapeInput_edges_hemo_fullblue$weight <- as.numeric(CytoscapeInput_edges_hemo_fullblue$weight)
 
-quantile(CytoscapeInput_edges_perk_fulllightblue4$weight, 0.80) # 0.1320015 
-quantile(CytoscapeInput_edges_hemo_fullyellow$weight, 0.90) #0.1047121 
-quantile(CytoscapeInput_edges_hemo_fullnavajowhite2$weight, 0.90) # 0.05366432 
-quantile(CytoscapeInput_edges_hemo_fullblue$weight, 0.90) # 0.3489623 
+quantile(CytoscapeInput_edges_perk_fulllightblue4$weight, 0.80) # 0.1320015
+quantile(CytoscapeInput_edges_perk_fullblue4$weight, 0.80) #  0.1121706
+
+quantile(CytoscapeInput_edges_hemo_fullyellow$weight, 0.90) # 
+quantile(CytoscapeInput_edges_hemo_fullnavajowhite2$weight, 0.90) #  
+quantile(CytoscapeInput_edges_hemo_fullblue$weight, 0.90) #  0.3489623 
 
 
-#### ANALYSIS OF CYTOSCAPE RESULTS
+#### ANALYSIS OF CYTOSCAPE RESULTS FOR INTERESTING MODULES ####
 
 # WITH APOP GENE SIGNIFICANCE P VALUE FILTERED TO 0.05 AND EDGE WEIHT FILTERED TO 80 PERCENTILE
 # we get the following Perkinsus nodes in the lightblue4 module
@@ -2902,6 +3189,15 @@ perk_lightblue3_cytoscape_P05_EW80 <- read.csv("/Users/erinroberts/Documents/PhD
 # filter for selected 
 perk_lightblue3_cytoscape_P05_EW80_selected <- perk_lightblue3_cytoscape_P05_EW80 %>% filter(selected == "true") %>% dplyr::rename("transcript_id" = "name") %>% 
   left_join(., GDC_lightblue4_all_genes_annot)
+
+# any overlap with GDC DEG?
+perk_lightblue3_cytoscape_P05_EW80_selected$transcript_id %in% perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot$transcript_id # no Overlap with DEGs!
+XM_002770984.1
+
+# any overlap at all with enriched GO terms?
+perk_lightblue3_cytoscape_P05_EW80_selected %>%
+  filter(grepl(paste(Pmar_GO_hub_export_all_GO_list_lightblue4, collapse = "|"), Ontology_term))
+  # just the iron-sulfur cluster assembly protein iron-sulfur cluster assembly protein, putative 
 
 #### EXPORT WGNCA MATRIX TO CALCULATE INTRAMODULAR CONNECTIVITY IN BLUEWAVES ####
 
@@ -2916,4 +3212,6 @@ save(perk_full_moduleColors, file = "/Users/erinroberts/Documents/PhD_Research/D
 # Export MEs for each
 save(hemo_full_MEs, file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/WGCNA/hemo_full_MEs.RData")
 save(perk_full_MEs, file = "/Users/erinroberts/Documents/PhD_Research/DERMO_EXP_18_19/2020_Hemocyte_experiment/2020_Dermo_Inhibitors_main_exp/ANALYSIS_FILES/WGCNA/perk_full_MEs.RData")
+
+#### MULTIPANEL FIGURE OF WGCNA RAW DATA FOR PAPER SUPPLEMENTARY FIGURE ####
 
