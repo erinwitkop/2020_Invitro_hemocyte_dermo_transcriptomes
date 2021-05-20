@@ -1578,6 +1578,36 @@ dev.off()
 
 # clustering mostly by pool, but PC1 and PC2 only explain about 30% of the total sample variation
 
+## Plot PCA with only Pmar and Pmar GDC
+perk_counts_matrix_noZVAD <- as.matrix(perk_counts[,c(1,3,4,6,7,9)])
+perk_rlog_counts_noZVAD <- rlog(perk_counts_matrix_noZVAD, blind =TRUE)
+
+# run PCA
+pcperk_noZVAD <- prcomp(t(perk_rlog_counts_noZVAD))
+perk_coldata_noZVAD <- perk_coldata %>% filter(!grepl("ZVAD",condition))
+perk_coldata_noZVAD$pool <- as.factor(perk_coldata_noZVAD$pool)
+colnames(perk_coldata_noZVAD) <- c("Condition","Pool")
+# change group names so I can italicize with markdown in plot
+perk_coldata_noZVAD <- perk_coldata_noZVAD %>% mutate(Condition = case_when(
+  Condition == "Pmar_GDC" ~ "*P. marinus* and GDC-0152",
+  Condition == "Pmar" ~ "*P. marinus*",
+  TRUE ~ NA_character_
+))
+
+## Make perkcyte PCA figure for Publication
+perk_noZVAD_PCA <- autoplot(pcperk_noZVAD,
+                            data = perk_coldata_noZVAD, 
+                            colour="Condition", 
+                            shape = "Pool",
+                            size=5, frame = TRUE)  + 
+  theme_minimal() +
+  scale_color_manual(values = c("#ca5733","#5b69c9","#62b650")) + 
+  scale_fill_manual(values = c("#ca5733","#5b69c9","#62b650")) +
+  theme(legend.text = ggtext::element_markdown(size = 14), 
+        legend.title = element_text(size = 16, face = "bold"),
+        axis.text = element_text(size = 14), 
+        axis.title = element_text(size = 16, face = "bold"))
+
 ## Plot total reads in each sample
 perk_counts_total <- colSums(perk_counts)
 perk_counts_total <- as.data.frame(perk_counts_total)
@@ -1876,6 +1906,22 @@ perk_volcano <- ggarrange(perk_dds_deseq_res_Pmar_ZVAD_LFC_sig_annot_volcano_plo
 
 ggsave(perk_volcano, file = "./FIGURES/perk_volcano_plot", device = "tiff", height = 3, width = 5)
 
+
+### Format volcano plots of Pmar and GDC ####
+# add column that denotes apoptosis or not 
+
+# plot the volcano plot using the same format as the hemocyte volcano plots
+perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_volcano_multipanel <- 
+  ggplot(data = as.data.frame(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot), aes(x=log2FoldChange, y=log10)) + 
+  geom_point() + 
+  scale_shape_manual(values = c(16)) + 
+  scale_size_manual(values= c(2)) +
+  scale_color_manual(values = c('black')) +
+  theme_minimal() + 
+  labs(y = "-log10(adj. p-value)", title = "*P. marinus* vs *P. marinus* and GDC-0152 Treated Hemocyte DEGs", x = "log2 Fold Change") +
+  theme(legend.text = element_text(size = 14), legend.title = element_text(size = 16, face = "bold"), axis.title = element_text(size = 16, face = "bold"),
+        axis.text = element_text(size = 14), plot.title = ggtext::element_markdown()) +
+  geom_vline(xintercept = 0)
 
 #### Heatmaps of the genes with the most variable expression patterns ####
 
@@ -3033,6 +3079,32 @@ hemocyte_figure_GO <- cowplot::plot_grid(hemocyte_figure, Hemocyte_pmar_GDC_GO_D
 
 ggsave(hemocyte_figure_GO, path = "./FIGURES/", filename = "hemocyte_figure_GO_multipanel.tiff",
        device = "tiff",width = 35, height = 23, limitsize = FALSE)
+
+#### PERKINSUS COMPILED EXPRESSION FIGURE ####
+C_vir_heatmap_noZVAD_grob <- grid::grid.grabExpr(print(C_vir_heatmap_noZVAD))
+apop_hemo_mat_noZVAD_pheatmap_grob <- grid::grid.grabExpr(print(apop_hemo_mat_noZVAD_pheatmap))
+
+perk_PCA_volcano <- cowplot::plot_grid(perk_noZVAD_PCA,perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_volcano_multipanel, labels = c("A","B"), ncol = 2,
+                                           label_size = 16,
+                                           label_fontface = "bold", rel_widths = c(0.5,1))
+
+hemocyte_PCA_heatmap <- cowplot::plot_grid( C_vir_heatmap_noZVAD_grob, NULL, apop_hemo_mat_noZVAD_pheatmap_grob,
+                                            ncol = 3, labels = c("C"," ","D"),
+                                            label_size = 16,
+                                            label_fontface = "bold", axis = "bt", rel_widths = c(0.5,0.2,0.8))
+hemocyte_figure <- cowplot::plot_grid(hemocyte_PCA_volcano,
+                                      hemocyte_PCA_heatmap,
+                                      nrow = 2, labels = NULL, rel_heights = c(0.5,1))
+hemocyte_figure_GO <- cowplot::plot_grid(hemocyte_figure, Hemocyte_pmar_GDC_GO_DEG_dotplot_plot, nrow = 1, 
+                                         labels = c(" ", "E"), label_size = 16,
+                                         label_fontface = "bold", rel_widths = c(0.8,0.3))
+
+ggsave(hemocyte_figure_GO, path = "./FIGURES/", filename = "hemocyte_figure_GO_multipanel.tiff",
+       device = "tiff",width = 35, height = 23, limitsize = FALSE)
+
+
+#### SESSION INFO ####
+sessionInfo()
 
 #### BIPLOT SOURCE CODE ####
 #' Draw a bi-plot, comparing 2 selected principal components / eigenvectors.
