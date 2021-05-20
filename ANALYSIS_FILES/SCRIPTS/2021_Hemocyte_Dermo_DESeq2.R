@@ -37,6 +37,8 @@ library(GO.db)
 library(PCAtools)
 library(egg)
 library(cowplot)
+library(grid)
+library(treemap) 	
 
 #### LOADING SAVED GENOME, APOPTOSIS NAMES, IAP XP LISTS ####
 Apoptosis_frames <- load(file="/Volumes/My Passport for Mac/Chapter1_Apoptosis_Paper_Saved_DESeq_WGCNA_Data/C_gig_C_vir_apoptosis_products.RData")
@@ -792,12 +794,12 @@ C_vir_hemo_comb_noZVAD_spread <- spread(C_vir_hemo_comb_noZVAD, condition, log2F
 C_vir_hemo_comb_noZVAD_spread <- column_to_rownames(C_vir_hemo_comb_noZVAD_spread , var = "transcript_product") 
 C_vir_hemo_comb_noZVAD_spread_mat <- as.matrix(C_vir_hemo_comb_noZVAD_spread)
 
-C_vir_labels_noZVAD =c( "P. mar + GDC-0152 \nvs Control", "P. mar \nvs Control")
+C_vir_labels_noZVAD =c( "P. mar\nGDC-0152 \nvs Control", "P. mar \nvs Control")
 # create named vector to hold column names
 C_vir_column_labels_noZVAD = structure(paste0(C_vir_labels_noZVAD), names = paste0(colnames(C_vir_hemo_comb_noZVAD_spread_mat)))
 
 library(circlize)
-col_fun = colorRamp2(c(-10, 0, 10), c("blue", "white", "red"))
+col_fun = colorRamp2(c(-5, 0, 5), c("blue", "white", "red"))
 col_fun(seq(-3, 3))
 
 C_vir_heatmap_noZVAD <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_noZVAD_spread_mat, border = TRUE, 
@@ -809,7 +811,7 @@ C_vir_heatmap_noZVAD <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_noZVAD_spread_ma
                                          column_labels = C_vir_column_labels_noZVAD[colnames(C_vir_hemo_comb_noZVAD_spread_mat)],
                                          # apply split by k-meams clustering to highlight groups
                                          row_km = 3, column_km = 1, row_names_gp = gpar(fontsize = 8),
-                                         column_names_gp = gpar(fontsize = 12),
+                                         column_names_gp = gpar(fontsize = 16),
                                          heatmap_legend_param = list(title = "Log2 Fold Change"),
                                          col= col_fun, rect_gp = gpar(col = "grey", lwd = 0.1))
 C_vir_heatmap_noZVAD <- ComplexHeatmap::draw(C_vir_heatmap_noZVAD, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
@@ -854,16 +856,19 @@ apop_hemo_mat_noZVAD <- as.data.frame(apop_hemo_mat_noZVAD) %>% mutate(ID = rown
 rownames(apop_hemo_mat_noZVAD) <- apop_hemo_mat_noZVAD$transcript_product
 apop_hemo_mat_noZVAD <- apop_hemo_mat_noZVAD[,-10]
 apop_hemo_mat_noZVAD <- as.matrix(apop_hemo_mat_noZVAD)  
+# edit column names
+colnames(apop_hemo_mat_noZVAD) <- str_replace(str_replace(str_remove(colnames(hemo_dds_rlog_noZVAD), "_R1_001"), "_","-"),"_","-")
 
 # change row and column annotations 
+apop_hemo_anno_noZVAD <- data.frame("condition" = colData(hemo_dds_rlog_noZVAD)[, c("condition")])
+apop_hemo_anno_noZVAD <- apop_hemo_anno_noZVAD %>% mutate(Condition = case_when(condition == "Pmar_GDC" ~ "P. mar. and GDC",
+                                                                                condition == "Pmar"~ "P. mar",
+                                                                                condition == "control" ~ "Control", TRUE ~ NA_character_)) %>% dplyr::select(Condition)
+rownames(apop_hemo_anno_noZVAD) <- str_replace(str_replace(str_remove(colnames(hemo_dds_rlog_noZVAD), "_R1_001"), "_","-"),"_","-")
 
-apop_hemo_anno_noZVAD <- as.data.frame(colData(hemo_dds_rlog_noZVAD)[, c("condition")])
-rownames(apop_hemo_anno_noZVAD) <- colnames(apop_hemo_mat_noZVAD)
-colnames(apop_hemo_anno_noZVAD)[1] <- "Condition"
 
-pdf("./FIGURES/C_vir_apop_hemo_mat_noZVAD.pdf", width = 12, height = 12)
-pheatmap(apop_hemo_mat_noZVAD, annotation_col = apop_hemo_anno_noZVAD)
-dev.off()
+apop_hemo_mat_noZVAD_pheatmap <- pheatmap(apop_hemo_mat_noZVAD, annotation_col = apop_hemo_anno_noZVAD)
+
 
 ### Upset plot of significant LFCs > 1
 
@@ -1263,6 +1268,246 @@ write.csv(Pmar_GDC_control_Res_BP , file = "Pmar_GDC_control_Res_GO_BP.csv")
 
 
 hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_GO
+
+#### COMBINED BUBBLE PLOT OF HEMOCYTE PMAR and PMAR GDC GO ENRICHMENT MF AND BP ####
+
+Hemocyte_pmar_GDC_GO_DEG_dotplot <- rbind(Pmar_control_Res_BP,
+Pmar_GDC_control_Res_BP,
+Pmar_control_Res, 
+Pmar_GDC_control_Res) %>% filter(topgoFisher <=0.05) %>% mutate(treatment = case_when(treatment == "control_Pmar"~"*P.marinus*", treatment == "control_Pmar_GDC" ~ "*P. marinus* and GDC-0152"))
+Hemocyte_pmar_GDC_GO_DEG_dotplot$treatment <- factor(Hemocyte_pmar_GDC_GO_DEG_dotplot$treatment, levels = c("*P.marinus*","*P. marinus* and GDC-0152"))
+
+Hemocyte_pmar_GDC_GO_DEG_dotplot_plot <- 
+  ggplot(Hemocyte_pmar_GDC_GO_DEG_dotplot, aes(x = treatment, y = Term )) +
+  geom_point(aes(size = Significant, color = as.numeric(topgoFisher))) + 
+  scale_size_continuous(range = c(4,10)) +
+  scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
+  facet_grid(type~., scales = "free", space="free") + 
+  theme_minimal() +
+  labs(x = "Treatment", y = "GO Term", title = "GO Enrichment of Significant Hemocyte DEGs") + 
+  theme(panel.border = element_rect(color = "black", fill = "NA"),
+        axis.text.x = ggtext::element_markdown(size = 14),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 16, face = "bold"),
+        strip.text.y = element_text(size = 16, face = "bold"),
+        title = element_text(size = 12))
+ggsave(Hemocyte_pmar_GDC_GO_DEG_dotplot_plot, filename = "Hemocyte_pmar_GDC_GO_DEG_dotplot_plot.tiff", path = "./FIGURES/", device = "tiff", width = 10, height = 15)
+
+#### HEMOCYTE REVIGO TREEMAP PLOTS ####
+
+## Control vs P. marinus MF
+revigo.names <- c("term_ID","description","freqInDbPercent","uniqueness","dispensability","representative");
+revigo.data <- rbind(c("GO:0003824","catalytic activity",63.230,1.000,0.000,"catalytic activity"),
+                     c("GO:0004066","asparagine synthase (glutamine-hydrolyzing) activity",0.056,0.978,0.000,"asparagine synthase (glutamine-hydrolyzing) activity"),
+                     c("GO:0005096","GTPase activator activity",0.481,0.915,0.000,"GTPase activator activity"),
+                     c("GO:0005515","protein binding",4.420,0.977,0.000,"protein binding"),
+                     c("GO:0008324","cation transmembrane transporter activity",2.321,0.823,0.000,"cation transmembrane transporter activity"),
+                     c("GO:0005315","inorganic phosphate transmembrane transporter activity",0.145,0.812,0.408,"cation transmembrane transporter activity"),
+                     c("GO:0005452","inorganic anion exchanger activity",0.022,0.796,0.608,"cation transmembrane transporter activity"),
+                     c("GO:0008271","secondary active sulfate transmembrane transporter activity",0.069,0.784,0.670,"cation transmembrane transporter activity"),
+                     c("GO:0004514","nicotinate-nucleotide diphosphorylase (carboxylating) activity",0.060,0.939,0.023,"nicotinate-nucleotide diphosphorylase (carboxylating) activity"),
+                     c("GO:0008146","sulfotransferase activity",0.116,0.937,0.168,"nicotinate-nucleotide diphosphorylase (carboxylating) activity"),
+                     c("GO:0003774","motor activity",0.360,0.896,0.026,"motor activity"),
+                     c("GO:0019783","ubiquitin-like protein-specific protease activity",0.229,0.789,0.226,"motor activity"),
+                     c("GO:0004672","protein kinase activity",3.471,0.764,0.428,"motor activity"),
+                     c("GO:0008233","peptidase activity",4.190,0.746,0.619,"motor activity"),
+                     c("GO:0003723","RNA binding",5.649,0.962,0.092,"RNA binding"),
+                     c("GO:0005524","ATP binding",13.840,0.960,0.235,"RNA binding"));
+
+stuff <- data.frame(revigo.data);
+names(stuff) <- revigo.names;
+
+stuff$freqInDbPercent <- as.numeric( as.character(stuff$freqInDbPercent) );
+stuff$uniqueness <- as.numeric( as.character(stuff$uniqueness) );
+stuff$dispensability <- as.numeric( as.character(stuff$dispensability) );
+
+# check the tmPlot command documentation for all possible parameters - there are a lot more
+pdf( file="./FIGURES/Control_Pmar_GO_treemap_MF.pdf", width=16, height=9 )
+treemap(
+  stuff,
+  index = c("representative","description"),
+  vSize = "uniqueness",
+  type = "categorical",
+  vColor = "representative",
+  title = "Control vs P. marinus MF GO Enrichment",
+  inflate.labels = FALSE,      # set this to TRUE for space-filling group labels - good for posters
+  lowerbound.cex.labels = 0,   # try to draw as many labels as possible (still, some small squares may not get a label)
+  bg.labels = "#CCCCCCAA",   # define background color of group labels
+  # "#CCCCCC00" is fully transparent, "#CCCCCCAA" is semi-transparent grey, NA is opaque
+  position.legend = "none"
+)
+dev.off()
+
+### Control vs. Pmarnus BP
+revigo.data <- rbind(c("GO:0006820","anion transport",1.379,0.682,0.000,"anion transport"),
+                     c("GO:0055085","transmembrane transport",14.451,0.754,0.434,"anion transport"),
+                     c("GO:0008272","sulfate transport",0.153,0.693,0.525,"anion transport"),
+                     c("GO:0030203","glycosaminoglycan metabolic process",1.032,0.903,0.000,"glycosaminoglycan metabolic process"),
+                     c("GO:0006308","DNA catabolic process",0.090,0.893,0.120,"glycosaminoglycan metabolic process"),
+                     c("GO:0006529","asparagine biosynthetic process",0.073,0.856,0.129,"glycosaminoglycan metabolic process"),
+                     c("GO:0006468","protein phosphorylation",4.240,0.867,0.200,"glycosaminoglycan metabolic process"),
+                     c("GO:0006367","transcription initiation from RNA polymerase II promoter",0.095,0.878,0.244,"glycosaminoglycan metabolic process"),
+                     c("GO:0019752","carboxylic acid metabolic process",8.943,0.877,0.453,"glycosaminoglycan metabolic process"),
+                     c("GO:0051056","regulation of small GTPase mediated signal transduction",0.132,0.928,0.000,"regulation of small GTPase mediated signal transduction"),
+                     c("GO:0043666","regulation of phosphoprotein phosphatase activity",0.142,0.928,0.197,"regulation of small GTPase mediated signal transduction"),
+                     c("GO:0007165","signal transduction",7.086,0.902,0.283,"regulation of small GTPase mediated signal transduction"));
+
+stuff <- data.frame(revigo.data);
+names(stuff) <- revigo.names;
+
+stuff$freqInDbPercent <- as.numeric( as.character(stuff$freqInDbPercent) );
+stuff$uniqueness <- as.numeric( as.character(stuff$uniqueness) );
+stuff$dispensability <- as.numeric( as.character(stuff$dispensability) );
+
+# by default, outputs to a PDF file
+pdf( file="./FIGURES/Control_Pmar_GO_treemap_BP.pdf", width=16, height=9 ) # width and height are in inches
+
+# check the tmPlot command documentation for all possible parameters - there are a lot more
+treemap(
+  stuff,
+  index = c("representative","description"),
+  vSize = "uniqueness",
+  type = "categorical",
+  vColor = "representative",
+  title = "Control vs P. marinus BP GO Enrichment",
+  inflate.labels = FALSE,      # set this to TRUE for space-filling group labels - good for posters
+  lowerbound.cex.labels = 0,   # try to draw as many labels as possible (still, some small squares may not get a label)
+  bg.labels = "#CCCCCCAA",   # define background color of group labels
+  # "#CCCCCC00" is fully transparent, "#CCCCCCAA" is semi-transparent grey, NA is opaque
+  position.legend = "none"
+)
+
+dev.off()
+
+### control vs Pmar + GDC MF
+revigo.data <- rbind(c("GO:0003674","molecular_function",100.000,1.000,0.000,"molecular_function"),
+                     c("GO:0003824","catalytic activity",63.230,1.000,0.000,"catalytic activity"),
+                     c("GO:0004812","aminoacyl-tRNA ligase activity",0.911,0.975,0.000,"aminoacyl-tRNA ligase activity"),
+                     c("GO:0004930","G protein-coupled receptor activity",0.738,0.966,0.000,"G protein-coupled receptor activity"),
+                     c("GO:0005094","Rho GDP-dissociation inhibitor activity",0.009,0.965,0.160,"G protein-coupled receptor activity"),
+                     c("GO:0003700","DNA-binding transcription factor activity",4.370,0.963,0.324,"G protein-coupled receptor activity"),
+                     c("GO:0004861","cyclin-dependent protein serine/threonine kinase inhibitor activity",0.011,0.958,0.421,"G protein-coupled receptor activity"),
+                     c("GO:0008289","lipid binding",0.647,0.953,0.000,"lipid binding"),
+                     c("GO:0008271","secondary active sulfate transmembrane transporter activity",0.069,0.918,0.008,"secondary active sulfate transmembrane transporter activity"),
+                     c("GO:0008324","cation transmembrane transporter activity",2.321,0.905,0.605,"secondary active sulfate transmembrane transporter activity"),
+                     c("GO:0022857","transmembrane transporter activity",9.741,0.921,0.686,"secondary active sulfate transmembrane transporter activity"),
+                     c("GO:0004531","deoxyribonuclease II activity",0.009,0.936,0.024,"deoxyribonuclease II activity"),
+                     c("GO:0003924","GTPase activity",1.145,0.912,0.192,"deoxyribonuclease II activity"),
+                     c("GO:0008233","peptidase activity",4.190,0.847,0.346,"deoxyribonuclease II activity"),
+                     c("GO:0004298","threonine-type endopeptidase activity",0.076,0.875,0.520,"deoxyribonuclease II activity"),
+                     c("GO:0008242","omega peptidase activity",0.263,0.869,0.591,"deoxyribonuclease II activity"),
+                     c("GO:0004190","aspartic-type endopeptidase activity",0.276,0.863,0.594,"deoxyribonuclease II activity"),
+                     c("GO:0016679","oxidoreductase activity, acting on diphenols and related substances as donors",0.093,0.944,0.029,"oxidoreductase activity, acting on diphenols and related substances as donors"),
+                     c("GO:0016628","oxidoreductase activity, acting on the CH-CH group of donors, NAD or NADP as acceptor",0.252,0.940,0.273,"oxidoreductase activity, acting on diphenols and related substances as donors"),
+                     c("GO:0008137","NADH dehydrogenase (ubiquinone) activity",0.275,0.937,0.298,"oxidoreductase activity, acting on diphenols and related substances as donors"),
+                     c("GO:0016705","oxidoreductase activity, acting on paired donors, with incorporation or reduction of molecular oxygen",1.230,0.933,0.344,"oxidoreductase activity, acting on diphenols and related substances as donors"),
+                     c("GO:0008146","sulfotransferase activity",0.116,0.946,0.029,"sulfotransferase activity"),
+                     c("GO:0016763","pentosyltransferase activity",0.586,0.939,0.200,"sulfotransferase activity"),
+                     c("GO:0008483","transaminase activity",0.734,0.937,0.237,"sulfotransferase activity"),
+                     c("GO:0016746","acyltransferase activity",3.068,0.929,0.284,"sulfotransferase activity"),
+                     c("GO:0008080","N-acetyltransferase activity",1.013,0.936,0.295,"sulfotransferase activity"),
+                     c("GO:0043015","gamma-tubulin binding",0.032,0.917,0.042,"gamma-tubulin binding"),
+                     c("GO:0051082","unfolded protein binding",0.437,0.915,0.442,"gamma-tubulin binding"),
+                     c("GO:0031418","L-ascorbic acid binding",0.064,0.929,0.044,"L-ascorbic acid binding"),
+                     c("GO:0005506","iron ion binding",1.439,0.917,0.122,"L-ascorbic acid binding"),
+                     c("GO:0005525","GTP binding",1.814,0.868,0.229,"L-ascorbic acid binding"),
+                     c("GO:0046872","metal ion binding",17.542,0.888,0.476,"L-ascorbic acid binding"),
+                     c("GO:0005524","ATP binding",13.840,0.825,0.525,"L-ascorbic acid binding"),
+                     c("GO:0005515","protein binding",4.420,0.940,0.067,"protein binding"),
+                     c("GO:0020037","heme binding",1.470,0.918,0.075,"heme binding"),
+                     c("GO:0043565","sequence-specific DNA binding",1.642,0.885,0.137,"heme binding"),
+                     c("GO:0003676","nucleic acid binding",19.181,0.880,0.198,"heme binding"),
+                     c("GO:0003723","RNA binding",5.649,0.871,0.382,"heme binding"),
+                     c("GO:0000976","transcription cis-regulatory region binding",0.370,0.901,0.395,"heme binding"),
+                     c("GO:0003677","DNA binding",11.454,0.858,0.530,"heme binding"));
+
+stuff <- data.frame(revigo.data);
+names(stuff) <- revigo.names;
+
+stuff$freqInDbPercent <- as.numeric( as.character(stuff$freqInDbPercent) );
+stuff$uniqueness <- as.numeric( as.character(stuff$uniqueness) );
+stuff$dispensability <- as.numeric( as.character(stuff$dispensability) );
+
+# by default, outputs to a PDF file
+pdf( file="./FIGURES/Control_Pmar_GDC_GO_treemap_MF.pdf", width=16, height=9 ) # width and height are in inches
+
+# check the tmPlot command documentation for all possible parameters - there are a lot more
+treemap(
+  stuff,
+  index = c("representative","description"),
+  vSize = "uniqueness",
+  type = "categorical",
+  vColor = "representative",
+  title = "Control vs P. marinus and GDC-0152 MF GO Enrichment",
+  inflate.labels = FALSE,      # set this to TRUE for space-filling group labels - good for posters
+  lowerbound.cex.labels = 0,   # try to draw as many labels as possible (still, some small squares may not get a label)
+  bg.labels = "#CCCCCCAA",   # define background color of group labels
+  # "#CCCCCC00" is fully transparent, "#CCCCCCAA" is semi-transparent grey, NA is opaque
+  position.legend = "none"
+)
+
+dev.off()
+
+### control vs Pmar + GDC BP
+
+revigo.data <- rbind(c("GO:0007155","cell adhesion",0.540,0.987,0.000,"cell adhesion"),
+                     c("GO:0010959","regulation of metal ion transport",0.045,0.944,0.000,"regulation of metal ion transport"),
+                     c("GO:0032886","regulation of microtubule-based process",0.090,0.938,0.166,"regulation of metal ion transport"),
+                     c("GO:0000122","negative regulation of transcription by RNA polymerase II",0.189,0.924,0.196,"regulation of metal ion transport"),
+                     c("GO:0007186","G protein-coupled receptor signaling pathway",1.081,0.893,0.241,"regulation of metal ion transport"),
+                     c("GO:0006355","regulation of transcription, DNA-templated",9.898,0.897,0.485,"regulation of metal ion transport"),
+                     c("GO:0007165","signal transduction",7.086,0.876,0.680,"regulation of metal ion transport"),
+                     c("GO:0017038","protein import",0.260,0.850,0.000,"protein import"),
+                     c("GO:0055085","transmembrane transport",14.451,0.886,0.342,"protein import"),
+                     c("GO:0090150","establishment of protein localization to membrane",0.362,0.819,0.600,"protein import"),
+                     c("GO:0023052","signaling",7.215,1.000,0.000,"signaling"),
+                     c("GO:0042246","tissue regeneration",0.022,1.000,0.000,"tissue regeneration"),
+                     c("GO:0046034","ATP metabolic process",1.380,0.966,0.000,"ATP metabolic process"),
+                     c("GO:0055114","(obsolete) oxidation-reduction process",0.130,1.000,0.000,"(obsolete) oxidation-reduction process"),
+                     c("GO:0006457","protein folding",0.909,0.986,0.010,"protein folding"),
+                     c("GO:0051276","chromosome organization",2.083,0.907,0.011,"chromosome organization"),
+                     c("GO:0065004","protein-DNA complex assembly",0.185,0.880,0.472,"chromosome organization"),
+                     c("GO:0006801","superoxide metabolic process",0.142,0.949,0.032,"superoxide metabolic process"),
+                     c("GO:0006471","protein ADP-ribosylation",0.023,0.909,0.043,"protein ADP-ribosylation"),
+                     c("GO:0051603","proteolysis involved in cellular protein catabolic process",0.841,0.880,0.244,"protein ADP-ribosylation"),
+                     c("GO:0044272","sulfur compound biosynthetic process",1.337,0.903,0.059,"sulfur compound biosynthetic process"),
+                     c("GO:0006270","DNA replication initiation",0.124,0.848,0.205,"sulfur compound biosynthetic process"),
+                     c("GO:0009263","deoxyribonucleotide biosynthetic process",0.189,0.841,0.213,"sulfur compound biosynthetic process"),
+                     c("GO:0006563","L-serine metabolic process",0.261,0.832,0.253,"sulfur compound biosynthetic process"),
+                     c("GO:0000398","mRNA splicing, via spliceosome",0.418,0.798,0.280,"sulfur compound biosynthetic process"),
+                     c("GO:0016072","rRNA metabolic process",1.115,0.797,0.464,"sulfur compound biosynthetic process"),
+                     c("GO:0019752","carboxylic acid metabolic process",8.943,0.830,0.522,"sulfur compound biosynthetic process"),
+                     c("GO:0006418","tRNA aminoacylation for protein translation",1.042,0.701,0.700,"sulfur compound biosynthetic process"),
+                     c("GO:0009058","biosynthetic process",24.708,0.951,0.062,"biosynthetic process"),
+                     c("GO:0005975","carbohydrate metabolic process",5.986,0.933,0.083,"carbohydrate metabolic process"));
+
+stuff <- data.frame(revigo.data);
+names(stuff) <- revigo.names;
+
+stuff$freqInDbPercent <- as.numeric( as.character(stuff$freqInDbPercent) );
+stuff$uniqueness <- as.numeric( as.character(stuff$uniqueness) );
+stuff$dispensability <- as.numeric( as.character(stuff$dispensability) );
+
+# by default, outputs to a PDF file
+pdf( file="./FIGURES/Control_Pmar_GDC_GO_treemap_BP.pdf", width=16, height=9 ) # width and height are in inches
+
+# check the tmPlot command documentation for all possible parameters - there are a lot more
+treemap(
+  stuff,
+  index = c("representative","description"),
+  vSize = "uniqueness",
+  type = "categorical",
+  vColor = "representative",
+  title = "Control vs P. marinus and GDC-0152 BP GO Enrichment",
+  inflate.labels = FALSE,      # set this to TRUE for space-filling group labels - good for posters
+  lowerbound.cex.labels = 0,   # try to draw as many labels as possible (still, some small squares may not get a label)
+  bg.labels = "#CCCCCCAA",   # define background color of group labels
+  # "#CCCCCC00" is fully transparent, "#CCCCCCAA" is semi-transparent grey, NA is opaque
+  position.legend = "none"
+)
+
+dev.off()
+
 
 #### PERKINSUS TRANSCRIPTOME ANALYSIS ####
 
@@ -1902,7 +2147,6 @@ perk_ZVAD_GOdata_MF_Res <- GenTable(perk_ZVAD_GOdata_MF, topgoFisher = perk_ZVAD
 perk_ZVAD_GOdata_BP_Res <- GenTable(perk_ZVAD_GOdata_BP, topgoFisher = perk_ZVAD_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 4)
 perk_GDC_GOdata_MF_Res <- GenTable(perk_GDC_GOdata_MF, topgoFisher = perk_GDC_GOdata_MF_Fisher_Weight, orderBy = "topgoFisher", topNodes = 5)
 perk_GDC_GOdata_BP_Res <- GenTable(perk_GDC_GOdata_BP, topgoFisher = perk_GDC_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 4)
-
 
 #### HEMOCYTE PCA ANALYSIS WITH PHENOTYPE ####
 
@@ -2769,8 +3013,26 @@ write.table(perk_GO_comb, file = "perk_GO_comb.txt",sep = "\t", row.names = FALS
 
 
 #### HEMOCYTE COMPILED EXPRESSION FIGURE ####
+C_vir_heatmap_noZVAD_grob <- grid::grid.grabExpr(print(C_vir_heatmap_noZVAD))
+apop_hemo_mat_noZVAD_pheatmap_grob <- grid::grid.grabExpr(print(apop_hemo_mat_noZVAD_pheatmap))
 
-hemocyte_figure <- cowplot::plot_grid(hemo_noZVAD_PCA,hemo_volcano_apop , C_vir_heatmap_noZVAD)
+hemocyte_PCA_volcano <- cowplot::plot_grid(hemo_noZVAD_PCA,hemo_volcano_apop, labels = c("A","B"), ncol = 2,
+                                           label_size = 16,
+                                           label_fontface = "bold", rel_widths = c(0.5,1))
+
+hemocyte_PCA_heatmap <- cowplot::plot_grid( C_vir_heatmap_noZVAD_grob, NULL, apop_hemo_mat_noZVAD_pheatmap_grob,
+                                           ncol = 3, labels = c("C"," ","D"),
+                                           label_size = 16,
+                                           label_fontface = "bold", axis = "bt", rel_widths = c(0.5,0.2,0.8))
+hemocyte_figure <- cowplot::plot_grid(hemocyte_PCA_volcano,
+                                      hemocyte_PCA_heatmap,
+                                      nrow = 2, labels = NULL, rel_heights = c(0.5,1))
+hemocyte_figure_GO <- cowplot::plot_grid(hemocyte_figure, Hemocyte_pmar_GDC_GO_DEG_dotplot_plot, nrow = 1, 
+                                         labels = c(" ", "E"), label_size = 16,
+                                         label_fontface = "bold", rel_widths = c(0.8,0.3))
+
+ggsave(hemocyte_figure_GO, path = "./FIGURES/", filename = "hemocyte_figure_GO_multipanel.tiff",
+       device = "tiff",width = 35, height = 23, limitsize = FALSE)
 
 #### BIPLOT SOURCE CODE ####
 #' Draw a bi-plot, comparing 2 selected principal components / eigenvectors.
