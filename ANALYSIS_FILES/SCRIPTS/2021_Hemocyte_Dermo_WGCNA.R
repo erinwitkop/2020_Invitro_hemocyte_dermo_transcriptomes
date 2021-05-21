@@ -1026,6 +1026,11 @@ FilterGenes_comb_hub_count_apop <- left_join(FilterGenes_comb_hub_count, FilterG
 
 View(FilterGenes_comb_hub_count_apop )
 
+# combine with Interproscan results
+FilterGenes_comb_Interpro <- left_join(FilterGenes_comb[,c("ID","product","transcript_id","moduleTraitCor","moduleTraitPvalue","mod_names","GS")], 
+          GO_universe_rna_found[,c("ID","source","transcript_id", "Ontology_term",
+                                       "Dbxref","signature_desc")], by =  c("ID", "transcript_id"))
+
 ## Heatmap of only the significantly correlated modules that have apoptosis hub genes
 # Graph and color code each the strength of association (correlation) of module eigengenes and trait
 
@@ -2423,7 +2428,7 @@ labeledHeatmap(Matrix = hemo_full_apop_moduleTraitCor,
                yColorWidth = 0.2, 
                main = paste("Module-trait relationships"))
 
-# Which modules have the highest associations with disease (high correlation and low P value)?
+# Which modules have the highest associations with apoptosis (high correlation and low P value)?
 hemo_full_apop_moduleTraitCor_df <- as.data.frame(hemo_full_apop_moduleTraitCor) %>% dplyr::select(Percent_of_this_plot_APOP_hemo_perk,Percent_of_this_plot_APOP_hemo_perk_arcsin)
 colnames(hemo_full_apop_moduleTraitCor_df) <- c("Percent_of_this_plot_APOP_hemo_perk.moduleTraitCor", "Percent_of_this_plot_APOP_hemo_perk_arcsin.moduleTraitCor")
 hemo_full_apop_moduleTraitPvalue_df <- as.data.frame(hemo_full_apop_moduleTraitPvalue) %>% dplyr::select(Percent_of_this_plot_APOP_hemo_perk,Percent_of_this_plot_APOP_hemo_perk_arcsin)
@@ -2700,6 +2705,46 @@ lapply(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_list,  GS_MM_plo
   # lightblue4 = 0.4
   # grey = 0.45
 
+### FIND INTRAMODULAR HUB GENES USING APOPTOSIS PHENOTYPE ####
+
+# Which modules should be looked at?
+# For hemocytes: modules that are significant for treatment, have >5 apoptosis transcripts, and have high (>0.4) correlation between GS and MM
+# For hemocytes: same as above, except no filtering of modules for apoptosis related transcripts
+# filter genes for each module of interest that have correlation between 
+
+# annotate intramodular hub genes in each module
+matrix = hemo_dds_rlog_matrix
+moduleColors = hemo_full_moduleColors
+lookup =   C_vir_rtracklayer_transcripts
+datKME =  hemo_datKME
+
+lookup_annot_intramodular <- function(list) {
+  module_name = str_remove(list, "MM.")
+  mod_list <- names(matrix)[moduleColors == module_name]
+  FilterGenes = abs(GS1)> .6 & abs(datKME[list])>.8
+  FilterGenes_annot <- data.frame("ID" = dimnames(data.frame(matrix))[[2]][FilterGenes]) %>% left_join(., lookup) %>% mutate(mod_names = list) %>% filter(ID %in% mod_list)
+}
+
+## Hemocytes first
+# control_Pmar_GDC 
+
+GS1 = hemo_full_geneTraitSignificance_apop
+hemo_control_Pmar_GDC_navajowhite2 <- c("MM.navajowhite2")
+names(hemo_control_Pmar_GDC_navajowhite2) <- c("MM.navajowhite2")
+
+FilterGenes_control_Pmar_GDC_navajowhite2 <- lapply(hemo_control_Pmar_GDC_navajowhite2, lookup_annot_intramodular)
+FilterGenes_control_Pmar_GDC_navajowhite2_df <- do.call(rbind,FilterGenes_control_Pmar_GDC_navajowhite2) %>% mutate(group = "control_Pmar_GDC")
+
+# trait correlation for each module
+hemo_full_apop_moduleTraitPvalue_df
+# join with gene trait significance 
+hemo_full_geneTraitSignificance_apop_join <- hemo_full_geneTraitSignificance_apop %>% rownames_to_column(.,var = "ID")
+FilterGenes_control_Pmar_GDC_navajowhite2_apop_sig <- left_join(FilterGenes_control_Pmar_GDC_navajowhite2_df,hemo_full_geneTraitSignificance_apop_join) %>% dplyr::select(ID,product,gene,GS.Hemo_apop)
+
+# find any apoptosis related 
+
+FilterGenes_control_Pmar_GDC_navajowhite2_apop_sig_apop_transcript <- left_join(FilterGenes_control_Pmar_GDC_navajowhite2_apop_sig, C_vir_rtracklayer_apop_product_final[,c("ID","product","Name")])
+
 #### ANNOTATE ALL GENES IN MOST INTERESTING MODULES ####
 
 # Hemocyte list: "MEnavajowhite2", "MEblue", "MEyellow","MEdarkslateblue", "MEorangered4"
@@ -2948,6 +2993,27 @@ write.table(hemo_hub_gene_ids_MEyellow_apop_hub, file = "./Cytoscape_files/hemo_
 write.table(hemo_hub_gene_ids_MEdarkslateblue_apop_hub, file = "./Cytoscape_files/hemo_hub_gene_ids_MEdarkslateblue_apop_hub.txt",sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
 write.table(hemo_hub_gene_ids_MEorangered4_apop_hub, file = "./Cytoscape_files/hemo_hub_gene_ids_MEorangered4_apop_hub.txt",sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
+# Create dummy list that also includes oxidoreducase terms for the navajowhite2 module
+hemo_hub_gene_ids_MEnavajowhite2_apop_hub_oxidoreductase <- FilterGenes_comb_apop_labeled %>% filter(mod_names == "MEnavajowhite2") %>% mutate(hub = "yes") %>%
+  dplyr::select(ID, apop, hub) %>% mutate(apop = case_when(is.na(apop) ~ "non_apop", TRUE ~ "apop"))
+hemo_hub_gene_ids_MEnavajowhite2_apop_hub_oxidoreductase <- hemo_hub_gene_ids_MEnavajowhite2_apop_hub_oxidoreductase %>%
+  mutate(apop = case_when(
+    ID == "rna44333" ~ "apop", 
+    ID == "rna31750" ~ "apop",
+    ID == "rna6693"  ~ "apop",
+    TRUE ~ apop))
+
+# only rna6693 was changed because the others aren't hub genes...add these to the list
+navajowhite2_oxido_cytochrome <- data.frame("ID" = c("rna44333", "rna31750"), "apop" = c("apop","apop"), "hub" = c("no","no"))
+
+# join together
+hemo_hub_gene_ids_MEnavajowhite2_apop_hub_oxidoreductase <- rbind(hemo_hub_gene_ids_MEnavajowhite2_apop_hub_oxidoreductase, navajowhite2_oxido_cytochrome)
+
+write.table(hemo_hub_gene_ids_MEnavajowhite2_apop_hub_oxidoreductase, file = "./Cytoscape_files/hemo_hub_gene_ids_MEnavajowhite2_apop_hub_oxidoreductase.txt",sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+
+# only 
+
+
 ## Repeat for Perkinsus: modules of interest lightblue4, lightpink3, navajowhite2,
 perk_hub_gene_ids_MElightblue4 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MElightblue4") %>% dplyr::select(Name)
 perk_hub_gene_ids_MElightpink3 <- FilterGenes_Pmar_comb %>% filter(mod_names == "MElightpink3") %>% dplyr::select(Name)
@@ -3009,8 +3075,8 @@ CytoscapeInput_edges_hemo_fullblue$weight <- as.numeric(CytoscapeInput_edges_hem
 quantile(CytoscapeInput_edges_perk_fulllightblue4$weight, 0.80) # 0.1320015
 quantile(CytoscapeInput_edges_perk_fullblue4$weight, 0.80) #  0.1121706
 
-quantile(CytoscapeInput_edges_hemo_fullyellow$weight, 0.90) # 
-quantile(CytoscapeInput_edges_hemo_fullnavajowhite2$weight, 0.90) #  
+quantile(CytoscapeInput_edges_hemo_fullyellow$weight, 0.90) #
+quantile(CytoscapeInput_edges_hemo_fullnavajowhite2$weight, .9990) #  0.09
 quantile(CytoscapeInput_edges_hemo_fullblue$weight, 0.90) #  0.3489623 
 
 
@@ -3031,6 +3097,41 @@ XM_002770984.1
 perk_lightblue3_cytoscape_P05_EW80_selected %>%
   filter(grepl(paste(Pmar_GO_hub_export_all_GO_list_lightblue4, collapse = "|"), Ontology_term))
   # just the iron-sulfur cluster assembly protein iron-sulfur cluster assembly protein, putative 
+
+## What are the most significant for apoptosis navajowhite2 genes?
+hemo_MEnavajowhite2_annot <- left_join(hemo_MEnavajowhite2_annot, hemo_full_geneTraitSignificance_GSPvalue)
+
+## What are the oxidoreductase genes in the navajowhite2 modules 
+hemo_MEnavajowhite2_GOdata_Res
+  # oxidoreductase activity terms: GO:0016705,GO:0016628
+
+# Interproscan of all genes to get GO terms
+hemo_MEnavajowhite2_annot_Interpro <- GO_universe_rna_found[GO_universe_rna_found$transcript_id %in% hemo_MEnavajowhite2_annot$ID,]
+
+## look up in the list of hub genes for navajowhite2
+# GO:0016705
+hemo_MEnavajowhite2_annot_Interpro %>% filter(grepl("GO:0016705", Ontology_term))
+  # two transcripts: rna44333, rna31750
+hemo_MEnavajowhite2_annot %>% filter(ID == "rna44333" | ID == "rna31750") %>% dplyr::select(ID, product,gene)
+ # ID                   product         gene
+ # 1 rna44333 cytochrome P450 4F22-like LOC111099622
+ # 2 rna31750 cytochrome P450 2D27-like LOC111137052
+
+#GO:0016628
+hemo_MEnavajowhite2_annot_Interpro %>% filter(grepl("GO:0016628", Ontology_term)) %>% View()
+  # 1 transcript: rna6693
+hemo_MEnavajowhite2_annot %>% filter(ID == "rna6693") %>% dplyr::select(ID, product,gene)
+#ID                                                    product         gene
+#1 rna6693 7-dehydrocholesterol reductase-like, transcript variant X2 LOC111121358
+# Contains the following domains  
+    # Sterol reductase family signature 1. = IPR018083
+
+
+
+## Are either of these oxidoreductase genes also hub genes for apoptosis phenotype?
+
+FilterGenes_control_Pmar_GDC_navajowhite2_df %>% filter(ID == "rna44333" | ID == "rna31750" | ID == "rna6693")
+  # rna6693 is also a hub gene and is connected to the apoptosis genes 
 
 #### EXPORT WGNCA MATRIX TO CALCULATE INTRAMODULAR CONNECTIVITY IN BLUEWAVES ####
 
