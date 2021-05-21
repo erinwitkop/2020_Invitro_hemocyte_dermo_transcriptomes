@@ -3004,14 +3004,16 @@ hemo_hub_gene_ids_MEnavajowhite2_apop_hub_oxidoreductase <- hemo_hub_gene_ids_ME
     TRUE ~ apop))
 
 # only rna6693 was changed because the others aren't hub genes...add these to the list
-navajowhite2_oxido_cytochrome <- data.frame("ID" = c("rna44333", "rna31750"), "apop" = c("apop","apop"), "hub" = c("no","no"))
+navajowhite2_oxido_cytochrome <- data.frame("ID" = c("rna44333", "rna31750", "rna24080", "rna46044"), "apop" = c("apop","apop","apop","apop"), "hub" = c("no","no","no","no"))
+
+# also add the non hub gene apoptosis transcripts cdc42 homolog and caspase 8 
+hemo_MEnavajowhite2_annot
+  # "rna24080", "rna46044"
 
 # join together
 hemo_hub_gene_ids_MEnavajowhite2_apop_hub_oxidoreductase <- rbind(hemo_hub_gene_ids_MEnavajowhite2_apop_hub_oxidoreductase, navajowhite2_oxido_cytochrome)
 
 write.table(hemo_hub_gene_ids_MEnavajowhite2_apop_hub_oxidoreductase, file = "./Cytoscape_files/hemo_hub_gene_ids_MEnavajowhite2_apop_hub_oxidoreductase.txt",sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
-
-# only 
 
 
 ## Repeat for Perkinsus: modules of interest lightblue4, lightpink3, navajowhite2,
