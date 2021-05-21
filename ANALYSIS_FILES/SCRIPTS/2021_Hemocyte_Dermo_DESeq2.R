@@ -1589,12 +1589,12 @@ perk_coldata_noZVAD$pool <- as.factor(perk_coldata_noZVAD$pool)
 colnames(perk_coldata_noZVAD) <- c("Condition","Pool")
 # change group names so I can italicize with markdown in plot
 perk_coldata_noZVAD <- perk_coldata_noZVAD %>% mutate(Condition = case_when(
-  Condition == "Pmar_GDC" ~ "*P. marinus* and GDC-0152",
-  Condition == "Pmar" ~ "*P. marinus*",
+  Condition == "Pmar_GDC" ~ "Hemocytes and GDC-0152",
+  Condition == "Pmar" ~ "Hemocytes",
   TRUE ~ NA_character_
 ))
 
-## Make perkcyte PCA figure for Publication
+## Make perk PCA figure for Publication
 perk_noZVAD_PCA <- autoplot(pcperk_noZVAD,
                             data = perk_coldata_noZVAD, 
                             colour="Condition", 
@@ -1817,6 +1817,37 @@ ComplexHeatmap::draw(Perk_heatmap, heatmap_legend_side = "left", padding = unit(
 
 dev.off()
 
+### Upset plot heatmap of significant gene expression across Hemocyte and GDC treatments ####
+
+# combine all dataframes
+perk_GDC_noZVAD <- perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot %>% mutate(transcript_product = paste(product, transcript_id)) %>%
+  dplyr::select(transcript_product, condition, log2FoldChange)
+perk_GDC_noZVAD_spread <- spread(perk_GDC_noZVAD, condition, log2FoldChange, fill = 0)
+perk_GDC_noZVAD_spread <- column_to_rownames(perk_GDC_noZVAD_spread , var = "transcript_product") 
+perk_GDC_noZVAD_spread_mat <- as.matrix(perk_GDC_noZVAD_spread)
+
+perk_labels_noZVAD =c( "Hemocyte\nGDC-0152 \nvs Hemocyte")
+# create named vector to hold column names
+perk_column_labels_noZVAD = structure(paste0(perk_labels_noZVAD), names = paste0(colnames(perk_GDC_noZVAD_spread_mat)))
+
+library(circlize)
+col_fun = colorRamp2(c(-10, 0, 10), c("blue", "white", "red"))
+col_fun(seq(-3, 3))
+
+perk_heatmap_noZVAD <- ComplexHeatmap::Heatmap(perk_GDC_noZVAD_spread_mat, border = TRUE, 
+                                                #column_title = ComplexHeatmap::gt_render("*P. marinus* Experimental Group"), 
+                                                column_order = order(desc(colnames(perk_GDC_noZVAD_spread_mat))), 
+                                                column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                                row_title = "Transcript and Product Name", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                                row_dend_width = unit(2, "cm"),
+                                                column_labels = perk_column_labels_noZVAD[colnames(perk_GDC_noZVAD_spread_mat)],
+                                                # apply split by k-meams clustering to highlight groups
+                                                row_km = 3, column_km = 1, row_names_gp = gpar(fontsize = 8),
+                                                column_names_gp = gpar(fontsize = 16),
+                                                heatmap_legend_param = list(title = "Log2 Fold Change"),
+                                                col= col_fun, rect_gp = gpar(col = "grey", lwd = 0.1))
+perk_heatmap_noZVAD <- ComplexHeatmap::draw(perk_heatmap_noZVAD, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+
 
 ## Plot transformed counts across each sample ####
 # example codes from RNAseq workflow: https://www.bioconductor.org/packages/devel/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#other-comparisons
@@ -1863,6 +1894,21 @@ colnames(perk_anno)[1] <- "Condition"
 pdf("./FIGURES/perk_mat_SOD1.pdf", width = 10, height = 5)
 pheatmap(perk_mat_SOD , annotation_col = perk_anno)
 dev.off()
+
+### Remove ZVAD samples from plot for paper supplementary figure
+perk_mat_SOD_noZVAD <- perk_mat_SOD[,c(1,3,4,6,7,9)]
+perk_anno_noZVAD <- perk_anno %>% rownames_to_column(.,var = "names") %>% mutate(Condition = case_when(Condition == "Pmar_GDC" ~ "Hemocytes and GDC-0152",
+                                                                                                          Condition == "Pmar"~ "Hemocytes"))
+perk_anno_noZVAD <- perk_anno_noZVAD[c(1,3,4,6,7,9),] 
+rownames(perk_anno_noZVAD) <- perk_anno_noZVAD$names
+perk_anno_noZVAD$names <- NULL
+
+pdf("./FIGURES/perk_mat_SOD1_noZVAD.pdf", width = 10, height = 5)
+pheatmap(perk_mat_SOD_noZVAD , annotation_col = perk_anno_noZVAD)
+dev.off()
+
+
+
 
 #### Plot transformed counts distribution to find the most highly expressed transcripts ####
 
@@ -1918,7 +1964,7 @@ perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_volcano_multipanel <-
   scale_size_manual(values= c(2)) +
   scale_color_manual(values = c('black')) +
   theme_minimal() + 
-  labs(y = "-log10(adj. p-value)", title = "*P. marinus* vs *P. marinus* and GDC-0152 Treated Hemocyte DEGs", x = "log2 Fold Change") +
+  labs(y = "-log10(adj. p-value)", title = "Hemocyte vs Hemocyte and GDC-0152 Treated *P. marinus* DEGs", x = "log2 Fold Change") +
   theme(legend.text = element_text(size = 14), legend.title = element_text(size = 16, face = "bold"), axis.title = element_text(size = 16, face = "bold"),
         axis.text = element_text(size = 14), plot.title = ggtext::element_markdown()) +
   geom_vline(xintercept = 0)
@@ -2193,6 +2239,27 @@ perk_ZVAD_GOdata_MF_Res <- GenTable(perk_ZVAD_GOdata_MF, topgoFisher = perk_ZVAD
 perk_ZVAD_GOdata_BP_Res <- GenTable(perk_ZVAD_GOdata_BP, topgoFisher = perk_ZVAD_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 4)
 perk_GDC_GOdata_MF_Res <- GenTable(perk_GDC_GOdata_MF, topgoFisher = perk_GDC_GOdata_MF_Fisher_Weight, orderBy = "topgoFisher", topNodes = 5)
 perk_GDC_GOdata_BP_Res <- GenTable(perk_GDC_GOdata_BP, topgoFisher = perk_GDC_GOdata_BP_Fisher_Weight, orderBy = "topgoFisher", topNodes = 4)
+
+#### COMBINED BUBBLE PLOT OF P. MARINUS GDC GO ENRICHMENT MF AND BP ####
+
+perk_hemo_GDC_GO_DEG_dotplot <- rbind(perk_GDC_GOdata_MF_Res,
+                                      perk_GDC_GOdata_BP_Res) %>% filter(topgoFisher <=0.05) %>%
+  mutate(treatment = case_when(treatment == "perk_GDC"~"Hemocyte and GDC-0152*"))
+
+perk_hemo_GDC_GO_DEG_dotplot_plot <- 
+  ggplot(perk_hemo_GDC_GO_DEG_dotplot, aes(x = treatment, y = Term )) +
+  geom_point(aes(size = Significant, color = as.numeric(topgoFisher))) + 
+  scale_size_continuous(range = c(4,10)) +
+  scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
+  facet_grid(type~., scales = "free", space="free") + 
+  theme_minimal() +
+  labs(x = "Treatment", y = "GO Term", title = "GO Enrichment") + 
+  theme(panel.border = element_rect(color = "black", fill = "NA"),
+        axis.text.x = ggtext::element_markdown(size = 14),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 16, face = "bold"),
+        strip.text.y = element_text(size = 16, face = "bold"),
+        title = element_text(size = 12))
 
 #### HEMOCYTE PCA ANALYSIS WITH PHENOTYPE ####
 
@@ -3081,26 +3148,27 @@ ggsave(hemocyte_figure_GO, path = "./FIGURES/", filename = "hemocyte_figure_GO_m
        device = "tiff",width = 35, height = 23, limitsize = FALSE)
 
 #### PERKINSUS COMPILED EXPRESSION FIGURE ####
-C_vir_heatmap_noZVAD_grob <- grid::grid.grabExpr(print(C_vir_heatmap_noZVAD))
-apop_hemo_mat_noZVAD_pheatmap_grob <- grid::grid.grabExpr(print(apop_hemo_mat_noZVAD_pheatmap))
 
-perk_PCA_volcano <- cowplot::plot_grid(perk_noZVAD_PCA,perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_volcano_multipanel, labels = c("A","B"), ncol = 2,
+perk_heatmap_noZVAD_grob <- grid::grid.grabExpr(print(perk_heatmap_noZVAD))
+# increase dotplot margins for plotting
+# unit(c(top, right, bottom, left)
+perk_hemo_GDC_GO_DEG_dotplot_plot_margin <- perk_hemo_GDC_GO_DEG_dotplot_plot + theme(plot.margin = unit(c(3,1,3,1), "cm"))
+
+
+perk_PCA_volcano <- cowplot::plot_grid(perk_noZVAD_PCA,perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_volcano_multipanel, 
+                                       labels = c("A","B"), ncol = 2,
                                            label_size = 16,
-                                           label_fontface = "bold", rel_widths = c(0.5,1))
+                                           label_fontface = "bold", rel_widths = c(0.5,0.5))
 
-hemocyte_PCA_heatmap <- cowplot::plot_grid( C_vir_heatmap_noZVAD_grob, NULL, apop_hemo_mat_noZVAD_pheatmap_grob,
-                                            ncol = 3, labels = c("C"," ","D"),
-                                            label_size = 16,
-                                            label_fontface = "bold", axis = "bt", rel_widths = c(0.5,0.2,0.8))
-hemocyte_figure <- cowplot::plot_grid(hemocyte_PCA_volcano,
-                                      hemocyte_PCA_heatmap,
-                                      nrow = 2, labels = NULL, rel_heights = c(0.5,1))
-hemocyte_figure_GO <- cowplot::plot_grid(hemocyte_figure, Hemocyte_pmar_GDC_GO_DEG_dotplot_plot, nrow = 1, 
-                                         labels = c(" ", "E"), label_size = 16,
-                                         label_fontface = "bold", rel_widths = c(0.8,0.3))
+perkinsus_heatmap <- cowplot::plot_grid(perk_heatmap_noZVAD_grob, NULL, perk_hemo_GDC_GO_DEG_dotplot_plot_margin, labels = c("C","","D"),
+                                        rel_widths = c(0.7,0.2,0.8), ncol =3, label_size = 16,
+                                        label_fontface = "bold")
 
-ggsave(hemocyte_figure_GO, path = "./FIGURES/", filename = "hemocyte_figure_GO_multipanel.tiff",
-       device = "tiff",width = 35, height = 23, limitsize = FALSE)
+perkinsus_figure <- cowplot::plot_grid(perk_PCA_volcano, perkinsus_heatmap, 
+                                            nrow = 2, labels = NULL, rel_heights = c(0.5,1))
+
+ggsave(perkinsus_figure, path = "./FIGURES/", filename = "perkinsus_figure_multipanel.tiff",
+       device = "tiff",width = 14, height = 10, limitsize = FALSE)
 
 
 #### SESSION INFO ####
