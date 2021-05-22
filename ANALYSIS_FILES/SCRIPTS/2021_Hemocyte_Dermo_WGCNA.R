@@ -2343,6 +2343,8 @@ Pmar_GO_hub_dotplot_plot <- ggplot(Pmar_GO_hub_dotplot, aes(x = group, y = Term 
 ggsave(Pmar_GO_hub_dotplot_plot, device = "tiff", path = "./FIGURES/", 
        filename = "Pmar_GO_hub_dotplot_plot.tiff", width = 15, height = 10)
 
+### Pmar blue4 
+
 ### View interesting genes associated with particular terms
 
 # GDC_lightblue4
@@ -2353,7 +2355,6 @@ FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO_enriched <- left_join(FilterGen
                                                                        FilterGenes_Pmar_comb_Interpro_GDC_lightblue4_GO) %>% left_join(., dplyr::select(FilterGenes_Pmar_comb_Interpro_GDC_lightblue4, -Ontology_term))
 # the terms in this list are not the ones that I found interesting! 
 # I think this has to do with bias in GO term identification?
-
 
 ### GO figure from enrichment analysis of all module genes
 GDC_steelblue_GOdata_Res$group <- "steelblue"
@@ -2395,6 +2396,30 @@ Pmar_GO_all_dotplot_plot <- ggplot(Pmar_GO_all_dotplot, aes(x = group, y = Term 
 
 ggsave(Pmar_GO_all_dotplot_plot, device = "tiff", path = "./FIGURES/", 
        filename = "Pmar_GO_all_dotplot_plot.tiff", width = 15, height = 10)
+
+### Dotplot of just the blue4 module BP and MF terms
+GDC_ZVAD_blue4_GOdata_BP_Res$type <- "BP"
+GDC_ZVAD_blue4_GOdata_Res$type <- "MF"
+
+GDC_ZVAD_blue4_GOdata_combined <- rbind(GDC_ZVAD_blue4_GOdata_BP_Res,GDC_ZVAD_blue4_GOdata_Res[,-8]) %>% filter(topgoFisher <=0.05)
+
+perk_blue4_GOdata_combined_dotplot <- 
+  ggplot(GDC_ZVAD_blue4_GOdata_combined, aes(x = group, y = Term )) +
+  geom_point(aes(size = Significant, color = as.numeric(topgoFisher))) + 
+  scale_size_continuous(range = c(4,10)) +
+  scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
+  facet_grid(type~., scales = "free", space="free") + 
+  theme_minimal() +
+  labs(x = NULL, y = "GO Term", title = "GO Enrichment") + 
+  theme(panel.border = element_rect(color = "black", fill = "NA"),
+        axis.text.x = ggtext::element_markdown(size = 14),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 16, face = "bold"),
+        strip.text.y = element_text(size = 16, face = "bold"),
+        title = element_text(size = 12))
+ggsave(perk_blue4_GOdata_combined_dotplot, filename = "perk_blue4_GOdata_combined_dotplot.tiff", 
+       path = "./FIGURES/", device = "tiff", width = 5.5, height = 3)
+
 
 #### Assess Pmar SOD ####
 
@@ -2861,6 +2886,27 @@ ZVAD_navajowhite2_all_genes_annot <- as.data.frame(ZVAD_navajowhite2_all_genes) 
 # add in blue4
 GDC_ZVAD_blue4_all_genes_annot <- as.data.frame(GDC_ZVAD_blue4_all_genes) %>% dplyr::rename("transcript_id" = "GDC_ZVAD_blue4_all_genes") %>% left_join(., Perk_Interpro_GO_terms_XP)
 
+
+#### Which Pmarinus blue4 genes overlapped with enriched GO terms ####
+ 
+GDC_ZVAD_blue4_GOdata_combined
+  #GO.ID                                        Term Annotated Significant Expected topgoFisher group type
+  #1 GO:0016485                          protein processing         8           1     0.01      0.0062 blue4   BP
+  #2 GO:0045454                      cell redox homeostasis        28           1     0.04      0.0217 blue4   BP
+  #3 GO:0004197        cysteine-type endopeptidase activity        12           1     0.03       0.019 blue4   MF
+  #4 GO:0016763 transferase activity, transferring pento...        14           1     0.03       0.022 blue4   MF
+
+
+GDC_ZVAD_blue4_all_genes_annot %>% filter(grepl("GO:0016485", Ontology_term) | grepl("GO:0045454", Ontology_term) |
+                                            grepl("GO:0004197", Ontology_term) | grepl("GO:0016763", Ontology_term)) %>% dplyr::select(transcript_id,product,Dbxref,signature_desc)
+#transcript_id                        product       Dbxref signature_desc
+#1 XM_002778447.1           hypothetical protein "InterPr....   Thioredo....
+#2 XM_002772524.1 CAAX prenyl protease, putative "InterPr....   CPBP int....  
+
+# no hits to protein processing GO:0016485
+# XM_002778447.1 hits to cell redox homeostasis and contains a Thioredoxin family active site (IPR017937) AND ERV/ALR sulfhydryl oxidase domain profile (IPR017905)
+# XM_002772524.1 hits to cysteine endopeptidase activity and contains a CPBP intramembrane metalloprotease domain IPR003675. This transcript is also a hub gene
+# 
 
 #### EXPORT COMPILED DATA TO SPREADSHEETS ####
 
