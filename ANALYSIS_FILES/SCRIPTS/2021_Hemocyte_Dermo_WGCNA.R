@@ -751,6 +751,22 @@ lapply(perk_full_moduleTraitCor_Pval_df_Pmar_GDC_vs_Pmar_sig_list,  GS_MM_plot_p
   #blue4 = 0.78
   #lightblue4 = 0.78
 
+## Create plot for just blue4 with GDC correlation for use in paper
+perk_full_module = "blue4" 
+perk_full_column = match(perk_full_module, perk_full_modNames)
+perk_full_moduleGenes = perk_full_moduleColors==perk_full_module
+sizeGrWindow(7, 7);
+par(mfrow = c(1,1));
+pdf("./FIGURES/perk_blue4_GDC_GS_MM_plot.pdf",width=5, height = 5)
+verboseScatterplot(abs(perk_full_geneModuleMembership [perk_full_moduleGenes, perk_full_column]),
+                   abs(perk_full_geneTraitSignificance_Pmar_Pmar_GDC[perk_full_moduleGenes, 1]),
+                   xlab = paste("Module Membership in", perk_full_module, "module"),
+                   ylab = "Gene significance for Hemocyte and GDC-0152",
+                   main = paste("Module Membership vs. Gene Significance\n"),
+                   cex.main = 1.0, cex.lab = 1.0, cex.axis = 1.0, col = "black")
+dev.off()
+dev.off()
+
 # P. mar Control vs P. mar_ZVAD
 # view the modules significant with GDC treatment 
 perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig_list <-  as.character(unlist(perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig$mod_names))
@@ -781,6 +797,23 @@ lapply(perk_full_moduleTraitCor_Pval_df_Pmar_ZVAD_vs_Pmar_sig_list,  GS_MM_plot_
   #navajowhite2 = 0.7
   # darkturqiouse = 0.61
   #blue4 = 0.53
+
+## Create plot for just blue4 with ZVAD correlation for use in paper
+perk_full_module = "blue4" 
+perk_full_column = match(perk_full_module, perk_full_modNames)
+perk_full_moduleGenes = perk_full_moduleColors==perk_full_module
+sizeGrWindow(7, 7);
+par(mfrow = c(1,1));
+pdf("./FIGURES/perk_blue4_ZVAD_GS_MM_plot.pdf",width=5, height = 5)
+verboseScatterplot(abs(perk_full_geneModuleMembership [perk_full_moduleGenes, perk_full_column]),
+                   abs(perk_full_geneTraitSignificance_Pmar_Pmar_ZVAD[perk_full_moduleGenes, 1]),
+                   xlab = paste("Module Membership in", perk_full_module, "module"),
+                   ylab = "Gene significance for Hemocyte and Z-VAD-fmk",
+                   main = paste("Module Membership vs. Gene Significance\n"),
+                   cex.main = 1.0, cex.lab = 1.0, cex.axis = 1.0, col = "black")
+dev.off()
+dev.off()
+
 
 #### Identify hub genes in each module  ####
 
@@ -2454,12 +2487,12 @@ hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare <-
 hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare_shared <- drop_na(hemo_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_compare)
 # 12 shared between both...the arcine transform does not make a difference! Correlation values are very similar for both, in general slightly lower correlation for arcsine 
 
-## Plot only those modules with significant apoptosis members as before
+## Plot only those modules with significant apoptosis members as before- used code below for paper figure
 ## Heatmap of only the significantly correlated modules that have apoptosis hub genes
 # Graph and color code each the strength of association (correlation) of module eigengenes and trait
 
 # subset hemo_full_moduleTraitCor, hemo_full_moduleTraitPvalue, hemo_full_MEs for only those modules significant in either challenge
-# also remove for plotting those modules that are only correlated with ZVAD
+# also remove for plotting those modules that are only correlated with ZVAD - for figure
 FilterGenes_comb_apop_count_mod_names_noZVAD <- FilterGenes_comb_apop_count_mod_names[!FilterGenes_comb_apop_count_mod_names %in% "MEdarkslateblue"]
 hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_apop_moduleTraitCor[rownames(hemo_full_apop_moduleTraitCor) %in% FilterGenes_comb_apop_count_mod_names_noZVAD,]
 hemo_full_moduleTraitCor_sig_apop_pheno <- hemo_full_moduleTraitCor_sig_apop_pheno[,c(1,2,8)] # keep only control, GDC, and apop_arcsin
@@ -2583,7 +2616,7 @@ par(mar = c(6, 8.5, 3, 3))
 # Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
 # green is more negatively correlated)
 labeledHeatmap(Matrix = perk_full_apop_moduleTraitCor_sig,
-               xLabels = c("P.mar. and GDC-0152", "P. mar. and ZVAD-fmk", "Apoptosis_Percentage", "Apoptosis Percentage Arcsine"),
+               xLabels = c("P.mar. and GDC-0152", "P. mar. and ZVAD-fmk", "Arcsine Transformed Apoptosis Percentage"),
                yLabels = names(perk_full_apop_MEs_sig),
                ySymbols = names(perk_full_apop_MEs_sig),
                colorLabels = FALSE,
@@ -2595,7 +2628,44 @@ labeledHeatmap(Matrix = perk_full_apop_moduleTraitCor_sig,
                #zlim = c(-1,1), 
                yColorWidth = 0.2, 
                main = paste("P. marinus Module-Challenge Relationships"))
-# have to save manually...weird!
+
+### Make revised plot with only modules with high GS and MM for both, and the arcsine transformed percentage for figure
+# only three modules had high GS and MM for both GDC and ZVAD treatment
+Pmar_figure_plot_names <- c("MEdarkseagreen2","MEdarkturquoise","MEblue4")
+
+# subset perk_full_moduleTraitCor, perk_full_moduleTraitPvalue, perk_full_MEs for only those modules significant in either challenge
+perk_full_apop_moduleTraitCor_fig <- perk_full_apop_moduleTraitCor[rownames(perk_full_apop_moduleTraitCor) %in% Pmar_figure_plot_names,]
+perk_full_apop_moduleTraitCor_fig <- perk_full_apop_moduleTraitCor_fig[,c(-3,-4)] # keep arcsine transformed one
+perk_full_apop_moduleTraitPvalue_fig <- perk_full_apop_moduleTraitPvalue[rownames(perk_full_apop_moduleTraitPvalue) %in% Pmar_figure_plot_names,]
+perk_full_apop_moduleTraitPvalue_fig <- perk_full_apop_moduleTraitPvalue_fig[,c(-3, -4)]
+perk_full_apop_MEs_fig <- perk_full_MEs[,colnames(perk_full_MEs) %in% Pmar_figure_plot_names]
+perk_coldata_collapse_binarize_apop_perk_fig <- perk_coldata_collapse_binarize_apop_perk[,c(-3,-4)]
+
+# Will display correlations and their p-values
+perk_full_apop_textMatrix_fig = paste(signif(perk_full_apop_moduleTraitCor_fig, 2), "\n(",
+                                      signif(perk_full_apop_moduleTraitPvalue_fig, 1), ")", sep = "");
+dim(perk_full_apop_textMatrix_fig) = dim(perk_full_apop_moduleTraitCor_fig)
+
+# make plot
+sizeGrWindow(10,6)
+par(mar = c(6, 8.5, 3, 3))
+#pdf("./FIGURES/perk_full_apop_trait_sig_heatmap.pdf", width = 2.5, height = 4)
+# can't get right aspect ratio on PDF!!! saving my hand
+# Display the correlation values within a heatmap plot, color coded by correlation value (red means more highly positively correlated,
+# green is more negatively correlated)
+labeledHeatmap(Matrix = perk_full_apop_moduleTraitCor_fig,
+               xLabels = c("Hemocyte and GDC-0152", "Hemocyte and Z-VAD-fmk", "Arcsine Transformed\nApoptosis Percentage"),
+               yLabels = names(perk_full_apop_MEs_fig),
+               ySymbols = names(perk_full_apop_MEs_fig),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = perk_full_apop_textMatrix_fig,
+               setStdMargins = FALSE,
+               cex.text = 0.8,
+               cex.lab = 0.8,
+               yColorWidth = 0.2, yColorOffset = 0.15)
+               #zlim = c(-1,1))
+
 
 ### Gene relationship to trait and important modules: Gene Significance and Module Membership ####
 
@@ -2654,7 +2724,7 @@ pdf("./FIGURES/hemo_navajowhite2_apop_GS_MM_plot.pdf",width=5, height = 5)
 verboseScatterplot(abs(hemo_full_geneModuleMembership [hemo_full_moduleGenes, hemo_full_column]),
                    abs(hemo_full_geneTraitSignificance_apop[hemo_full_moduleGenes, 1]),
                    xlab = paste("Module Membership in", hemo_full_module, "module"),
-                   ylab = "Gene significance for challenge",
+                   ylab = "Gene significance for apoptosis phenotype",
                    main = paste("Module Membership vs. Gene Significance\n"),
                    cex.main = 1.0, cex.lab = 1.0, cex.axis = 1.0, col = "black")
 dev.off()
@@ -2704,6 +2774,23 @@ lapply(perk_full_apop_moduleTraitCor_Pval_df_APOP_hemo_perk_sig_list,  GS_MM_plo
   # purple = 0.47
   # lightblue4 = 0.4
   # grey = 0.45
+
+## Create plot for just blue for use in paper
+perk_full_module = "blue4" 
+perk_full_column = match(perk_full_module, perk_full_modNames)
+perk_full_moduleGenes = perk_full_moduleColors==perk_full_module
+sizeGrWindow(7, 7);
+par(mfrow = c(1,1));
+pdf("./FIGURES/perk_blue4_apop_GS_MM_plot.pdf",width=5, height = 5)
+verboseScatterplot(abs(perk_full_geneModuleMembership [perk_full_moduleGenes, perk_full_column]),
+                   abs(perk_full_geneTraitSignificance_apop[perk_full_moduleGenes, 1]),
+                   xlab = paste("Module Membership in", perk_full_module, "module"),
+                   ylab = "Gene significance for challenge",
+                   main = paste("Module Membership vs. Gene Significance\n"),
+                   cex.main = 1.0, cex.lab = 1.0, cex.axis = 1.0, col = "black")
+dev.off()
+dev.off()
+
 
 ### FIND INTRAMODULAR HUB GENES USING APOPTOSIS PHENOTYPE ####
 
