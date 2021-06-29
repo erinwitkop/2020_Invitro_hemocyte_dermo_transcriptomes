@@ -1820,10 +1820,10 @@ dev.off()
 ### Upset plot heatmap of significant gene expression across Hemocyte and GDC treatments ####
 
 # combine all dataframes
-perk_GDC_noZVAD <- perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot %>% mutate(transcript_product = paste(product, transcript_id)) %>%
-  dplyr::select(transcript_product, condition, log2FoldChange)
+perk_GDC_noZVAD <- perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot %>%
+  dplyr::select(product, condition, log2FoldChange)
 perk_GDC_noZVAD_spread <- spread(perk_GDC_noZVAD, condition, log2FoldChange, fill = 0)
-perk_GDC_noZVAD_spread <- column_to_rownames(perk_GDC_noZVAD_spread , var = "transcript_product") 
+perk_GDC_noZVAD_spread <- column_to_rownames(perk_GDC_noZVAD_spread , var = "product") 
 perk_GDC_noZVAD_spread_mat <- as.matrix(perk_GDC_noZVAD_spread)
 
 perk_labels_noZVAD =c( "Hemocyte\nGDC-0152 \nvs Hemocyte")
@@ -3134,17 +3134,17 @@ hemocyte_PCA_volcano <- cowplot::plot_grid(hemo_noZVAD_PCA,hemo_volcano_apop, la
                                            label_fontface = "bold", rel_widths = c(0.5,1))
 
 hemocyte_PCA_heatmap <- cowplot::plot_grid( C_vir_heatmap_noZVAD_grob, NULL, apop_hemo_mat_noZVAD_pheatmap_grob,
-                                           ncol = 3, labels = c("C"," ","D"),
+                                           ncol = 3, labels = c("D"," ","E"),
                                            label_size = 16,
                                            label_fontface = "bold", axis = "bt", rel_widths = c(0.5,0.2,0.8))
 hemocyte_figure <- cowplot::plot_grid(hemocyte_PCA_volcano,
                                       hemocyte_PCA_heatmap,
                                       nrow = 2, labels = NULL, rel_heights = c(0.5,1))
 hemocyte_figure_GO <- cowplot::plot_grid(hemocyte_figure, Hemocyte_pmar_GDC_GO_DEG_dotplot_plot, nrow = 1, 
-                                         labels = c(" ", "E"), label_size = 16,
+                                         labels = c(" ", "C"), label_size = 16,
                                          label_fontface = "bold", rel_widths = c(0.8,0.3))
 
-ggsave(hemocyte_figure_GO, path = "./FIGURES/", filename = "hemocyte_figure_GO_multipanel.tiff",
+ggsave(hemocyte_figure_GO, path = "./FIGURES/", filename = "hemocyte_figure_GO_multipanel_6_29_21.tiff",
        device = "tiff",width = 35, height = 23, limitsize = FALSE)
 
 #### PERKINSUS COMPILED EXPRESSION FIGURE ####
