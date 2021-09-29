@@ -29,7 +29,7 @@ library(ggfortify)
 library(ggpubr)
 library(viridis)
 library(extrafont)
-library(limma)
+library(limma) 
 library(data.table)
 library(topGO)
 library(GOSim)
@@ -549,7 +549,8 @@ hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot_apop <- hemo_dds_deseq_res_Pma
 
 # plot the volcano plots
 hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot_apop <- 
-  ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot_apop), aes(x=log2FoldChange, y=log10, group = apop)) + 
+  as.data.frame(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_annot_apop) %>% filter(log2FoldChange >= 0.1 | log2FoldChange <= -0.1) %>%
+  ggplot(aes(x=log2FoldChange, y=log10, group = apop)) + 
   geom_point(aes(color = apop,shape = apop, size = apop)) + 
   scale_shape_manual(values = c(17,16)) + 
   scale_size_manual(values= c(3,2)) +
@@ -563,7 +564,8 @@ hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot_apop <-
   geom_vline(xintercept = 0)
 
 hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_plot_apop <- 
-  ggplot(data = as.data.frame(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot_apop), aes(x=log2FoldChange, y=log10, group = apop)) + 
+  as.data.frame(hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_annot_apop) %>% filter(log2FoldChange >= 0.1 | log2FoldChange <= -0.1) %>%
+  ggplot(aes(x=log2FoldChange, y=log10, group = apop)) + 
   geom_point(aes(color = apop,shape = apop, size = apop)) + 
   scale_shape_manual(values = c(17,16)) + 
   scale_size_manual(values= c(3,2)) +
@@ -815,6 +817,22 @@ C_vir_heatmap_noZVAD <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_noZVAD_spread_ma
                                          heatmap_legend_param = list(title = "Log2 Fold Change"),
                                          col= col_fun, rect_gp = gpar(col = "grey", lwd = 0.1))
 C_vir_heatmap_noZVAD <- ComplexHeatmap::draw(C_vir_heatmap_noZVAD, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
+
+# 7_9_21 increase font
+
+C_vir_heatmap_noZVAD_increased_font <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_noZVAD_spread_mat, border = TRUE, 
+                                                  #column_title = ComplexHeatmap::gt_render("*C. virginica* Experimental Group"), 
+                                                  column_order = order(desc(colnames(C_vir_hemo_comb_noZVAD_spread_mat))), 
+                                                  column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                                  row_title = "Apoptosis Transcript and Product Name", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                                  row_dend_width = unit(2, "cm"),
+                                                  column_labels = C_vir_column_labels_noZVAD[colnames(C_vir_hemo_comb_noZVAD_spread_mat)],
+                                                  # apply split by k-meams clustering to highlight groups
+                                                  row_km = 3, column_km = 1, row_names_gp = gpar(fontsize = 8),
+                                                  column_names_gp = gpar(fontsize = 20),
+                                                  heatmap_legend_param = list(title = "Log2 Fold Change"),
+                                                  col= col_fun, rect_gp = gpar(col = "grey", lwd = 0.1))
+C_vir_heatmap_noZVAD_increased_font <- ComplexHeatmap::draw(C_vir_heatmap_noZVAD_increased_font, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
 
 ## Plot apoptosis transcformed counts across each sample ####
 # example codes from RNAseq workflow: https://www.bioconductor.org/packages/devel/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#other-comparisons
@@ -1958,7 +1976,8 @@ ggsave(perk_volcano, file = "./FIGURES/perk_volcano_plot", device = "tiff", heig
 
 # plot the volcano plot using the same format as the hemocyte volcano plots
 perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot_volcano_multipanel <- 
-  ggplot(data = as.data.frame(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot), aes(x=log2FoldChange, y=log10)) + 
+  as.data.frame(perk_dds_deseq_res_Pmar_GDC_LFC_sig_annot) %>% filter(log2FoldChange >= 0.1 | log2FoldChange <= -0.1 ) %>%
+  ggplot( aes(x=log2FoldChange, y=log10)) + 
   geom_point() + 
   scale_shape_manual(values = c(16)) + 
   scale_size_manual(values= c(2)) +
@@ -3144,7 +3163,7 @@ hemocyte_figure_GO <- cowplot::plot_grid(hemocyte_figure, Hemocyte_pmar_GDC_GO_D
                                          labels = c(" ", "C"), label_size = 16,
                                          label_fontface = "bold", rel_widths = c(0.8,0.3))
 
-ggsave(hemocyte_figure_GO, path = "./FIGURES/", filename = "hemocyte_figure_GO_multipanel_6_29_21.tiff",
+ggsave(hemocyte_figure_GO, path = "./FIGURES/", filename = "hemocyte_figure_GO_multipanel_9_29_21.tiff",
        device = "tiff",width = 35, height = 23, limitsize = FALSE)
 
 #### PERKINSUS COMPILED EXPRESSION FIGURE ####
