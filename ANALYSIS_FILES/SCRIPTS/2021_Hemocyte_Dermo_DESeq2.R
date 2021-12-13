@@ -151,10 +151,10 @@ hemo_noZVAD_PCA <- autoplot(pchemo_noZVAD,
   theme_minimal() +
   scale_color_manual(values = c("#ca5733","#5b69c9","#62b650")) + 
   scale_fill_manual(values = c("#ca5733","#5b69c9","#62b650")) +
-  theme(legend.text = ggtext::element_markdown(size = 14), 
-        legend.title = element_text(size = 16, face = "bold"),
-        axis.text = element_text(size = 14), 
-        axis.title = element_text(size = 16, face = "bold"))
+  theme(legend.text = ggtext::element_markdown(size = 20), 
+        legend.title = element_text(size = 22, face = "bold"),
+        axis.text = element_text(size = 20), 
+        axis.title = element_text(size = 20, face = "bold"))
 
 ## Plot total reads in each sample
 hemo_counts_total <- colSums(hemo_counts)
@@ -557,8 +557,8 @@ hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot_apop <-
   scale_color_manual(values = c("red",'black')) +
   theme_minimal() + 
   labs(y = "-log10(adj. p-value)", title = "Control vs *P. marinus* Treated Hemocyte DEGs", x = "log2 Fold Change") +
-  theme(legend.text = element_text(size = 14), legend.title = element_text(size = 16, face = "bold"), axis.title = element_text(size = 16, face = "bold"),
-        axis.text = element_text(size = 14), plot.title = ggtext::element_markdown()) +
+  theme(legend.text = element_text(size = 20), legend.title = element_text(size = 20, face = "bold"), axis.title = element_text(size = 20, face = "bold"),
+        axis.text = element_text(size = 20), plot.title = ggtext::element_markdown(size = 20)) +
   # remove legend because legend is going to be shared
   theme(legend.position = "none") +
   geom_vline(xintercept = 0)
@@ -572,8 +572,8 @@ hemo_dds_deseq_res_Pmar_GDC_LFC_sig_volcano_plot_apop <-
   scale_color_manual(values = c("red",'black')) +
   theme_minimal() + 
   labs(y = "-log10(adj. p-value)", title = "Control vs *P. marinus* and GDC-0152 Treated Hemocyte DEGs", x = "log2 Fold Change") +
-  theme(legend.text = element_text(size = 14), legend.title = element_text(size = 16, face = "bold"), axis.title = element_text(size = 16, face = "bold"),
-        axis.text = element_text(size = 14), plot.title = ggtext::element_markdown()) +
+  theme(legend.text = element_text(size = 20), legend.title = element_text(size = 20, face = "bold"), axis.title = element_text(size = 20, face = "bold"),
+        axis.text = element_text(size = 20), plot.title = ggtext::element_markdown(size = 20)) +
   geom_vline(xintercept = 0)
 
 hemo_volcano_apop <- ggarrange(hemo_dds_deseq_res_Pmar_LFC_sig_volcano_plot_apop, 
@@ -828,7 +828,7 @@ C_vir_heatmap_noZVAD_increased_font <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_n
                                                   row_dend_width = unit(2, "cm"),
                                                   column_labels = C_vir_column_labels_noZVAD[colnames(C_vir_hemo_comb_noZVAD_spread_mat)],
                                                   # apply split by k-meams clustering to highlight groups
-                                                  row_km = 3, column_km = 1, row_names_gp = gpar(fontsize = 8),
+                                                  row_km = 3, column_km = 1, row_names_gp = gpar(fontsize = 12),
                                                   column_names_gp = gpar(fontsize = 20),
                                                   heatmap_legend_param = list(title = "Log2 Fold Change"),
                                                   col= col_fun, rect_gp = gpar(col = "grey", lwd = 0.1))
@@ -885,7 +885,7 @@ apop_hemo_anno_noZVAD <- apop_hemo_anno_noZVAD %>% mutate(Condition = case_when(
 rownames(apop_hemo_anno_noZVAD) <- str_replace(str_replace(str_remove(colnames(hemo_dds_rlog_noZVAD), "_R1_001"), "_","-"),"_","-")
 
 
-apop_hemo_mat_noZVAD_pheatmap <- pheatmap(apop_hemo_mat_noZVAD, annotation_col = apop_hemo_anno_noZVAD)
+apop_hemo_mat_noZVAD_pheatmap <- pheatmap(apop_hemo_mat_noZVAD, annotation_col = apop_hemo_anno_noZVAD, fontsize = 20)
 
 
 ### Upset plot of significant LFCs > 1
@@ -1300,15 +1300,15 @@ Hemocyte_pmar_GDC_GO_DEG_dotplot_plot <-
   geom_point(aes(size = Significant, color = as.numeric(topgoFisher))) + 
   scale_size_continuous(range = c(4,10)) +
   scale_color_viridis(option = "viridis", name = "p-value", direction = -1) + 
-  facet_grid(type~., scales = "free", space="free") + 
+  facet_grid(.~type, scales = "free", space="free") + 
   theme_minimal() +
   labs(x = "Treatment", y = "GO Term", title = "GO Enrichment of Significant Hemocyte DEGs") + 
   theme(panel.border = element_rect(color = "black", fill = "NA"),
-        axis.text.x = ggtext::element_markdown(size = 14),
-        axis.text.y = element_text(size = 12),
-        axis.title = element_text(size = 16, face = "bold"),
-        strip.text.y = element_text(size = 16, face = "bold"),
-        title = element_text(size = 12))
+        axis.text.x = ggtext::element_markdown(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title = element_text(size = 20, face = "bold"),
+        strip.text.y = element_text(size = 20, face = "bold"),
+        title = element_text(size = 20))
 ggsave(Hemocyte_pmar_GDC_GO_DEG_dotplot_plot, filename = "Hemocyte_pmar_GDC_GO_DEG_dotplot_plot.tiff", path = "./FIGURES/", device = "tiff", width = 10, height = 15)
 
 #### HEMOCYTE REVIGO TREEMAP PLOTS ####
@@ -3145,26 +3145,32 @@ write.table(perk_GO_comb, file = "perk_GO_comb.txt",sep = "\t", row.names = FALS
 
 
 #### HEMOCYTE COMPILED EXPRESSION FIGURE ####
-C_vir_heatmap_noZVAD_grob <- grid::grid.grabExpr(print(C_vir_heatmap_noZVAD))
+C_vir_heatmap_noZVAD_grob <- grid::grid.grabExpr(print(C_vir_heatmap_noZVAD_increased_font))
 apop_hemo_mat_noZVAD_pheatmap_grob <- grid::grid.grabExpr(print(apop_hemo_mat_noZVAD_pheatmap))
 
 hemocyte_PCA_volcano <- cowplot::plot_grid(hemo_noZVAD_PCA,hemo_volcano_apop, labels = c("A","B"), ncol = 2,
-                                           label_size = 16,
+                                           label_size = 24,
                                            label_fontface = "bold", rel_widths = c(0.5,1))
 
-hemocyte_PCA_heatmap <- cowplot::plot_grid( C_vir_heatmap_noZVAD_grob, NULL, apop_hemo_mat_noZVAD_pheatmap_grob,
-                                           ncol = 3, labels = c("D"," ","E"),
-                                           label_size = 16,
-                                           label_fontface = "bold", axis = "bt", rel_widths = c(0.5,0.2,0.8))
+hemocyte_PCA_heatmap <- cowplot::plot_grid( Hemocyte_pmar_GDC_GO_DEG_dotplot_plot, C_vir_heatmap_noZVAD_grob,
+                                           ncol = 2, labels = c("C","D"),
+                                           label_size = 24,
+                                           label_fontface = "bold", axis = "bt", rel_widths = c(0.5,0.8))
 hemocyte_figure <- cowplot::plot_grid(hemocyte_PCA_volcano,
                                       hemocyte_PCA_heatmap,
                                       nrow = 2, labels = NULL, rel_heights = c(0.5,1))
-hemocyte_figure_GO <- cowplot::plot_grid(hemocyte_figure, Hemocyte_pmar_GDC_GO_DEG_dotplot_plot, nrow = 1, 
-                                         labels = c(" ", "C"), label_size = 16,
-                                         label_fontface = "bold", rel_widths = c(0.8,0.3))
 
-ggsave(hemocyte_figure_GO, path = "./FIGURES/", filename = "hemocyte_figure_GO_multipanel_9_29_21.tiff",
-       device = "tiff",width = 35, height = 23, limitsize = FALSE)
+#ggsave(hemocyte_figure_GO, path = "./FIGURES/", filename = "hemocyte_figure_GO_multipanel_9_29_21.tiff",
+#       device = "tiff",width = 35, height = 23, limitsize = FALSE)
+
+# 12/12/21 increased font size of the figure
+ggsave(hemocyte_figure, path = "./FIGURES/", filename = "hemocyte_figure_GO_multipanel_12_12_21.tiff",
+              device = "tiff",width = 40, height = 25, limitsize = FALSE)
+
+# reororganize figure so that the original part E - apop_hemo_mat_noZVAD_pheatmap_grob is now part of supplementary material
+pdf("./FIGURES/apop_hemo_mat_noZVAD_pheatmap.pdf", height = 17, width = 27)
+apop_hemo_mat_noZVAD_pheatmap
+dev.off()
 
 #### PERKINSUS COMPILED EXPRESSION FIGURE ####
 
