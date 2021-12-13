@@ -818,19 +818,20 @@ C_vir_heatmap_noZVAD <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_noZVAD_spread_ma
                                          col= col_fun, rect_gp = gpar(col = "grey", lwd = 0.1))
 C_vir_heatmap_noZVAD <- ComplexHeatmap::draw(C_vir_heatmap_noZVAD, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
 
-# 7_9_21 increase font
+# 7_9_21 and 12/12/21 increase font
 
 C_vir_heatmap_noZVAD_increased_font <- ComplexHeatmap::Heatmap(C_vir_hemo_comb_noZVAD_spread_mat, border = TRUE, 
                                                   #column_title = ComplexHeatmap::gt_render("*C. virginica* Experimental Group"), 
                                                   column_order = order(desc(colnames(C_vir_hemo_comb_noZVAD_spread_mat))), 
-                                                  column_title_side = "bottom", column_title_gp = gpar(fontsize = 12, fontface = "bold"),
-                                                  row_title = "Apoptosis Transcript and Product Name", row_title_gp = gpar(fontsize = 12, fontface = "bold"),
+                                                  column_title_side = "bottom", column_title_gp = gpar(fontsize = 20, fontface = "bold"),
+                                                  row_title = "Apoptosis Transcript and Product Name", row_title_gp = gpar(fontsize = 20, fontface = "bold"),
                                                   row_dend_width = unit(2, "cm"),
                                                   column_labels = C_vir_column_labels_noZVAD[colnames(C_vir_hemo_comb_noZVAD_spread_mat)],
                                                   # apply split by k-meams clustering to highlight groups
-                                                  row_km = 3, column_km = 1, row_names_gp = gpar(fontsize = 12),
+                                                  row_km = 3, column_km = 1, row_names_gp = gpar(fontsize = 16),
                                                   column_names_gp = gpar(fontsize = 20),
-                                                  heatmap_legend_param = list(title = "Log2 Fold Change"),
+                                                  heatmap_legend_param = list(title = "Log2 Fold Change", title_gp = gpar(fontsize = 20), 
+                                                                              labels_gp = gpar(fontsize = 20)),
                                                   col= col_fun, rect_gp = gpar(col = "grey", lwd = 0.1))
 C_vir_heatmap_noZVAD_increased_font <- ComplexHeatmap::draw(C_vir_heatmap_noZVAD_increased_font, heatmap_legend_side = "left", padding = unit(c(2, 2, 2, 100), "mm")) #bottom, left, top, right paddings
 
@@ -1292,8 +1293,8 @@ hemo_dds_deseq_res_Pmar_LFC_sig_gene_list_GO
 Hemocyte_pmar_GDC_GO_DEG_dotplot <- rbind(Pmar_control_Res_BP,
 Pmar_GDC_control_Res_BP,
 Pmar_control_Res, 
-Pmar_GDC_control_Res) %>% filter(topgoFisher <=0.05) %>% mutate(treatment = case_when(treatment == "control_Pmar"~"*P.marinus*", treatment == "control_Pmar_GDC" ~ "*P. marinus* and GDC-0152"))
-Hemocyte_pmar_GDC_GO_DEG_dotplot$treatment <- factor(Hemocyte_pmar_GDC_GO_DEG_dotplot$treatment, levels = c("*P.marinus*","*P. marinus* and GDC-0152"))
+Pmar_GDC_control_Res) %>% filter(topgoFisher <=0.05) %>% mutate(treatment = case_when(treatment == "control_Pmar"~"*P. mar.*", treatment == "control_Pmar_GDC" ~ "*P. mar.* and GDC-0152"))
+Hemocyte_pmar_GDC_GO_DEG_dotplot$treatment <- factor(Hemocyte_pmar_GDC_GO_DEG_dotplot$treatment, levels = c("*P. mar*","*P. mar.* and GDC-0152"))
 
 Hemocyte_pmar_GDC_GO_DEG_dotplot_plot <- 
   ggplot(Hemocyte_pmar_GDC_GO_DEG_dotplot, aes(x = treatment, y = Term )) +
@@ -1307,8 +1308,9 @@ Hemocyte_pmar_GDC_GO_DEG_dotplot_plot <-
         axis.text.x = ggtext::element_markdown(size = 20),
         axis.text.y = element_text(size = 20),
         axis.title = element_text(size = 20, face = "bold"),
-        strip.text.y = element_text(size = 20, face = "bold"),
-        title = element_text(size = 20))
+        strip.text.y = element_text(size = 40, face = "bold"),
+        title = element_text(size = 20),
+        text = element_text(size = 20))
 ggsave(Hemocyte_pmar_GDC_GO_DEG_dotplot_plot, filename = "Hemocyte_pmar_GDC_GO_DEG_dotplot_plot.tiff", path = "./FIGURES/", device = "tiff", width = 10, height = 15)
 
 #### HEMOCYTE REVIGO TREEMAP PLOTS ####
@@ -3149,13 +3151,13 @@ C_vir_heatmap_noZVAD_grob <- grid::grid.grabExpr(print(C_vir_heatmap_noZVAD_incr
 apop_hemo_mat_noZVAD_pheatmap_grob <- grid::grid.grabExpr(print(apop_hemo_mat_noZVAD_pheatmap))
 
 hemocyte_PCA_volcano <- cowplot::plot_grid(hemo_noZVAD_PCA,hemo_volcano_apop, labels = c("A","B"), ncol = 2,
-                                           label_size = 24,
+                                           label_size = 28,
                                            label_fontface = "bold", rel_widths = c(0.5,1))
 
-hemocyte_PCA_heatmap <- cowplot::plot_grid( Hemocyte_pmar_GDC_GO_DEG_dotplot_plot, C_vir_heatmap_noZVAD_grob,
-                                           ncol = 2, labels = c("C","D"),
-                                           label_size = 24,
-                                           label_fontface = "bold", axis = "bt", rel_widths = c(0.5,0.8))
+hemocyte_PCA_heatmap <- cowplot::plot_grid(C_vir_heatmap_noZVAD_grob, NULL, Hemocyte_pmar_GDC_GO_DEG_dotplot_plot,
+                                           ncol = 3, labels = c("C","", "D"),
+                                           label_size = 28,
+                                           label_fontface = "bold", axis = "bt", rel_widths = c(0.3,0.3,0.5))
 hemocyte_figure <- cowplot::plot_grid(hemocyte_PCA_volcano,
                                       hemocyte_PCA_heatmap,
                                       nrow = 2, labels = NULL, rel_heights = c(0.5,1))
@@ -3165,7 +3167,7 @@ hemocyte_figure <- cowplot::plot_grid(hemocyte_PCA_volcano,
 
 # 12/12/21 increased font size of the figure
 ggsave(hemocyte_figure, path = "./FIGURES/", filename = "hemocyte_figure_GO_multipanel_12_12_21.tiff",
-              device = "tiff",width = 40, height = 25, limitsize = FALSE)
+              device = "tiff",width = 35, height = 30, limitsize = FALSE)
 
 # reororganize figure so that the original part E - apop_hemo_mat_noZVAD_pheatmap_grob is now part of supplementary material
 pdf("./FIGURES/apop_hemo_mat_noZVAD_pheatmap.pdf", height = 17, width = 27)
